@@ -1,4 +1,4 @@
-#!/usr/bin/perl /home/thilo/public_html/fl/t2/ptempl.pl
+#!/usr/bin/perl /home/thilo/public_html/pdf/ptempl.pl
 <!DOCTYPE html>
 <html dir="ltr" lang="de">
 <head>
