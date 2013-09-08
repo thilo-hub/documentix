@@ -1,0 +1,3 @@
+Options +Indexes +FollowSymLinks
+Options +ExecCGI
+AddCharset UTF-8 .html
