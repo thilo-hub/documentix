@@ -11,7 +11,7 @@ my $get_f;
 
 sub new {
 my $dbn="SQLite";
-my $d_name="/home/thilo/public_html/fl/t2/doc_db.db";
+my $d_name="/var/db/pdf/doc_db.db";
 my $user="";
 my $pass="";
     my $class = shift;
