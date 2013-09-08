@@ -71,13 +71,25 @@ sub error_exit
 sub mk_page 
 {
 	my ($item,$idx,$mtime)=@_;
-	my $ntime=0;
 	# client want a single page (we asume -resize 20
-	return undef if ( $mtime && -r $item && ($ntime=(stat(_))[9]) < $mtime );
+	my $ntime=(stat($item))[9];
+	open(F,">>/tmp/f.log"); print F "$item - $idx $mtime <> $ntime\n";
+	return undef if ( $mtime && -r $item && $ntime < $mtime );
+	print F "OK\n";
 	return undef unless $idx-- >0;
+	print F "REDO\n";
 	my $res=qq{/usr/pkg/bin/convert "${item}[$idx]" -trim -resize 180 jpg:- 2>/tmp/f.err};
-	# open(F,">>/tmp/f.log"); print F "$res\n";
 	$res=qx{$res};
+	if ( $? )
+	{
+		sub slurp { local $/; open(my $fh,"<".shift) or return "File ?";  return <$fh>; };
+		my $r=slurp("/tmp/f.err");
+		return << "EOM";
+Content-Type: text/text
+
+$r
+EOM
+	}
 	return undef if $?;
 
 	my  $out = "Content-Type: image/jpg\n";

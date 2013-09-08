@@ -340,13 +340,16 @@ sub pdf_process
 	}
 	$tex =~ s/%PAGES%/$top/;
 	unlink("$tmpdir/$texfn") if -f "$tmpdir/$texfn";
-	open(F,">$tmpdir/$texfn")  or die ;
+	open(F,">$tmpdir/$texfn")  or die "Cannot open: $tmpdir/$texfn" ;
 	print F $tex;
 	close(F);
 
+	 use Cwd 'abs_path';
+         my $pdf_fmt = abs_path("pdflatex.fmt");
+
 	unlink("$tmpdir/in.pdf") if -f "$tmpdir/in.pdf";
-	symlink $fn,"$tmpdir/in.pdf" or die;
-	system("cd $tmpdir; /usr/pkg/bin/pdflatex -fmt=../pdflatex.fmt $texfn >&2");
+	symlink $fn,"$tmpdir/in.pdf" or die "Failed symln: $fn $tmpdir/in.pdf: $!";
+	system("cd $tmpdir; /usr/pkg/bin/pdflatex -fmt=$pdf_fmt $texfn >&2");
 	unlink("$tmpdir/out.pdf") if -f "$tmpdir/out.pdf";
 	rename("$tmpdir/file.pdf","$tmpdir/out.pdf");
 
