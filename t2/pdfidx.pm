@@ -8,6 +8,7 @@ use DBI qw(:sql_types);
 # use threads::shared;
 
 my $get_f;
+my $cleanup=1;
 
 sub new {
 my $dbn="SQLite";
@@ -165,7 +166,160 @@ sub expand_templ
    	{}
    return $tpl;
 }
+use PDF::API2;
+use XML::Parser::Expat;
 
+sub ocrpdf
+{
+    my $self = shift;
+    my ($inpdf,$outpdf,$ascii)=@_;
+    my $tmpdir="/tmp/conv.$$.tmp";
+    -d $tmpdir or mkdir($tmpdir);
+    $pdf = PDF::API2->open($inpdf);
+    my $pages=$pdf->pages();
+
+    foreach $pn (1..$pages)
+    {
+	# ocr page into $tmpdir
+	my $pn0=$pn-1;
+	my $opb="$tmpdir/page-$pn";
+	my $op="$opb.tiff";
+	qx{convert -density 300 "${inpdf}\[$pn0\]" -normalize -median 1 -contrast-stretch "27%,76%" -monochrome -depth 1 tif:$op};
+	if ( fork() == 0 )
+	{
+	    print STDERR "Start: $op\n";
+	    system(qq{ tesseract "$op"  "$opb"  -l deu+eng hocr});
+	    unlink $op if $cleanup;
+	    print STDERR "End $op\n";
+	    exit 0;
+	}
+    }
+    while( wait() > 0)
+    {
+    	print STDERR ".";
+    }
+    $font = $pdf->corefont('Helvetica');
+    my @htmls;
+    foreach $pn (1..$pages)
+    {
+	my $opb="$tmpdir/page-$pn";
+	my $html=$opb.".html";
+	die "Where is page $pn ($html)?" unless -f $html;
+	add_html($pdf,$pn,$html);
+	push @htmls,$html;
+    }
+    if ( $ascii )
+    {
+    	print STDERR "Call lynx for: @htmls\n";
+	open(FX,">&STDOUT"); 
+	open(STDOUT,">",$ascii); 
+    	system(qw{/usr/pkg/bin/lynx -dump},@htmls);
+	open(STDOUT,">&FX"); print "END\n";
+	system("cat","$ascii");
+    }
+    unlink @htmls if $cleanup;
+    $pdf->saveas($outpdf);
+    rmdir $tmpdir if $cleanup;
+    return;
+    sub add_qrcode
+    {
+	my $pdf=shift;
+	my $page_number=shift;
+	my $html=shift;
+
+	my $page = $pdf->openpage($page_number);
+	my ($llx, $lly, $urx, $ury) = $page->get_mediabox;
+	my $gfx = $page->gfx();
+	use GD::Image; 
+	use GD::Barcode; 
+	my $o=GD::Barcode->new('QRcode',$html,{Ecc=>'M', Version=>2,ModuleSize=>2}); 
+	my $gd=$o->plot(NoText=>1); 
+
+	my $img = $pdf->image_gd($gd);
+	$gfx->image($img, $llx,$ury-72,72,72);
+			    
+
+    }
+    sub add_html
+    {
+	my $pdf=shift;
+	my $page_number=shift;
+	my $html=shift;
+
+	my $page = $pdf->openpage($page_number);
+	my $text = $page->text();
+	$text->render(3);
+
+	my ($llx, $lly, $urx, $ury) = $page->get_mediabox;
+	# print LOG "MB: $llx $lly $urx $ury\n";
+
+	 my $parser = XML::Parser::Expat->new;
+	$parser->setHandlers('Start' => \&sh);
+	$parser->{"my_text"}=$text;
+	my $bbox;
+	my ($px0,$py0,$wx,$wy);
+	$parser->parsefile($html);
+	return;
+	sub conv_xy
+	{
+		my ($x,$y)=@_;
+		#MB: 0 0 595 842
+		#BBOX: 0 0 2479 3508
+		#CH (1765 122 1899 166):�<80><98>Keith
+		#CH (1925 125 1964 166):Et
+		#CH (1983 123 2106 177):Keep
+		$x=$x*$urx/$wx;
+		$y=($wy-$y)*$ury/$wy;
+		return ($x,$y);
+	}
+
+	 sub sh
+	 {
+	   my ($p, $el, %atts) = @_;
+	   if ($atts{'class'} eq 'ocr_page')
+	   {
+		  ($px0,$py0,$wx,$wy)= 
+		  	$atts{'title'} =~ m/bbox\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/;
+		  #print LOG "BBOX: $px0 $py0 $wx $wy\n";
+		  return;
+	   }
+	   return unless ($el eq 'span');
+	   return unless $atts{'class'} eq 'ocrx_word';
+	   $p->setHandlers('Char' => \&ch)
+		if ($el eq 'span');
+	   $bbox=$atts{'title'};
+	   # print "SH:$el\n";
+	   # print Dumper(\%atts);
+	 }
+
+	 sub ch
+	 {
+	   my ($p, $el) = @_;
+	   return if $el =~ /^\s*$/;
+	   $bbox =~ m/(\d+)\s(\d+)\s(\d+)\s(\d+)/;
+	   #print LOG "BB $bbox\n";
+	   # Add some text to the page
+		my ($x1,$y1)=conv_xy($1,$2);
+		my ($x2,$y2)=conv_xy($3,$4);
+		my $w=$x2-$x1;
+		my $h=$y1-$y2;
+		my $x=$x1;
+		my $y=$y2;
+		my $text=$p->{"my_text"};
+		die "ups" unless $text;
+		$text->font($font, 10);
+		my $fs= 10.*$w/$text->advancewidth($el);
+		$text->font($font, $fs);
+		$y += 0.2 * $fs if ( $el =~ /[gjpqy,;]/);
+		$text->translate($x,$y);
+		$text->text($el);
+		#   print LOG "CH ($x $y $w $h):$el\n";
+
+	        # print Dumper($p->context);
+	 } 
+
+ }
+}
 sub index_pdf
 {
     my $self = shift;
