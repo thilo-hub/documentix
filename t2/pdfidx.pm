@@ -168,59 +168,93 @@ sub expand_templ
 }
 use PDF::API2;
 use XML::Parser::Expat;
+my $childs=0;
+sub w_load
+{
+	my $l=shift;
+	my $err=0;
+	while($childs > $l)
+	{
+		print STDERR "($childs) ";
+		$childs-- if wait >0 ;
+		$err++  if $? != 0;
+	}
+	return $err;
+}
+
+sub pdftohtml
+{
+    my $self = shift;
+    my ($inpdf,$tmpdir)=@_;
+    # extract all pages first
+    die "$inpdf" unless -r $inpdf;
+    system("/usr/pkg/bin/pdfimages",$inpdf, "-j", "$tmpdir/page");
+    die "Ups: pdfimages $? " if $?;
+    my $errs=0;
+    my @pages;
+    foreach (glob ("$tmpdir/page-*"))
+    {
+	    my $bse="$_";
+	    $bse =~ s|/page-|/post-|;
+	    $bse =~ s|\.[^\./]*$||;
+	    my $o="$bse.ppm";
+	    push @pages,"$bse.html";
+	    if ( fork() == 0 )
+	    {
+		    my $fail=0;
+		    unless ( -f "$bse.html")
+		    {
+			    # $fail += (system("convert", $_,"-trim","+repage", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
+			    $fail += (system("convert", $_, "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
+			    # $fail += (system("convert", $_, "-gravity","north","-background","red","-splice","0x1","-trim","-chop","0x1", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
+			    unlink $_ if $cleanup;
+			    $fail += (system("tesseract", $o, $bse,"-l","deu+eng+equ","hocr","thilo") ? 1 : 0);
+			    unlink $o if $cleanup;
+		    }
+		    print STDERR "$bse - done($fail)\n";
+		    exit($fail);
+	    }
+	    $childs++;
+	    $errs += w_load(5);
+    }
+    $errs += w_load(0);
+    print STDERR "Done Errs:$errs\n";
+    return @pages;
+}
 
 sub ocrpdf
 {
     my $self = shift;
     my ($inpdf,$outpdf,$ascii)=@_;
+    my $txt=undef;
     my $tmpdir="/tmp/conv.$$.tmp";
     -d $tmpdir or mkdir($tmpdir);
     $pdf = PDF::API2->open($inpdf);
     my $pages=$pdf->pages();
-
-    foreach $pn (1..$pages)
-    {
-	# ocr page into $tmpdir
-	my $pn0=$pn-1;
-	my $opb="$tmpdir/page-$pn";
-	my $op="$opb.tiff";
-	qx{convert -density 300 "${inpdf}\[$pn0\]" -normalize -median 1 -contrast-stretch "27%,76%" -monochrome -depth 1 tif:$op};
-	if ( fork() == 0 )
-	{
-	    print STDERR "Start: $op\n";
-	    system(qq{ tesseract "$op"  "$opb"  -l deu+eng hocr});
-	    unlink $op if $cleanup;
-	    print STDERR "End $op\n";
-	    exit 0;
-	}
-    }
-    while( wait() > 0)
-    {
-    	print STDERR ".";
-    }
     $font = $pdf->corefont('Helvetica');
     my @htmls;
-    foreach $pn (1..$pages)
+    @htmls=$self->pdftohtml($inpdf,$tmpdir);
+    my $pn=0;
+    foreach $html (@htmls)
     {
-	my $opb="$tmpdir/page-$pn";
-	my $html=$opb.".html";
+	$pn++;
 	die "Where is page $pn ($html)?" unless -f $html;
 	add_html($pdf,$pn,$html);
-	push @htmls,$html;
+    }
+    print STDERR "Call lynx for: @htmls\n";
+    foreach (@htmls)
+    {
+	    $txt.=qx{/usr/pkg/bin/lynx -assume_unrec_charset utf-8  -assume_charset utf-8 -dump "$_"}; 
     }
     if ( $ascii )
     {
-    	print STDERR "Call lynx for: @htmls\n";
-	open(FX,">&STDOUT"); 
-	open(STDOUT,">",$ascii); 
-    	system(qw{/usr/pkg/bin/lynx -dump},@htmls);
-	open(STDOUT,">&FX"); print "END\n";
-	system("cat","$ascii");
+	open(FD,">$ascii"); print FD $txt; close(FD);
+	# print STDERR $txt;
     }
     unlink @htmls if $cleanup;
     $pdf->saveas($outpdf);
     rmdir $tmpdir if $cleanup;
-    return;
+    return $txt;
     sub add_qrcode
     {
 	my $pdf=shift;
@@ -400,36 +434,22 @@ sub pdf_text
     $txt = qx/pdftotext \"$fn\" -/;
     undef $txt if length($txt) < 100;
     return $txt if $txt;
-    mkdir("/tmp/pages_$$") or die "Bad temp-dir";
-    system("pdftoppm -r 300 -gray \"$fn\" \"/tmp/pages_$$/page-\"");
-    foreach( glob("/tmp/pages_$$/page-*") )
-    {
-	print STDERR "P: $_\n";
-	system("convert -trim \"$_\" \"$_\".tif");
-	system("tesseract -l deu+eng \"$_.tif\"  \"$_\" ");
-	$txt .= slurp("$_.txt");
-    }
-    system("mv /tmp/pages_$$ /tmp/delme.$$ && rm -rf /tmp/delme.$$&");
+    $txt=$self->ocrpdf($fn,$newpdf);
     return $txt;
 }
 sub pdf_thumb
 { 
     my $fn=shift;
-    my $cmd=" pdftoppm -png  -singlefile  -scale-to 400 \"$fn\" | "
-    	     . "convert -trim -contrast - png:- ";
-    my $png = qx{ pdftoppm -png  -singlefile  -scale-to 400 \"$fn\" | 
-    		   convert -trim -contrast - png:- };
-    open(F,">/tmp/t.png"); print F $png; close F;
+    my @cmd=qw{convert},"${fn}[0]",qw{-trim -normalize -thumbnail 400 png:-};
+    my $png=qx{@cmd};
     return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",length($png), $png;
-    return $png;
 }
 sub pdf_icon
 { 
     my $fn=shift;
-    my $ico =  qx{convert -contrast -thumbnail 200x100 \"$fn\" png:-};
-    open(F,">/tmp/i.png"); print F $ico; close F;
-    return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",length($ico), $ico;
-    return $ico;
+    my @cmd=qw{convert},"${fn}[0]",qw{-trim -normalize -thumbnail 200 png:-};
+    my $png=qx{@cmd};
+    return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",length($png), $png;
 }
 sub pdf_class
 { 
