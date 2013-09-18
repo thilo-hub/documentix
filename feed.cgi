@@ -30,6 +30,7 @@ if ( $ext && $f =~ /\.pdf$/  && -f $f )
 	print $out;
 }elsif ( (!$t || $t eq "pdf" ) && -f $f && ((my $sz=(stat(_))[6]))>0)
 {
+	$f = $1.".ocr.pdf" if ( $f =~ /^(.*)\.pdf$/ && -f $1.".ocr.pdf" && ($sz=(stat(_))[6])>0);
 	open(F,"<$f");
 	print "Content-Type: application/pdf\n\n";
 	print "Content-Length: ".length($sz)."\n";
