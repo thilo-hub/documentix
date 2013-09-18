@@ -1,5 +1,6 @@
 package pdfidx;
 use XMLRPC::Lite;
+use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 
 
 use parent DBI;
@@ -97,9 +98,12 @@ sub get_cont
     my ($typ,$fn)=@_;
     my $idx=$dh->selectrow_array("select idx from hash where md5=?",undef,$fn);
     return unless $idx;
-    my $gt=$dh->prepare("select $typ from data where idx=?");
+    my $q = "select value from metadata where idx=? and tag=\"$typ\"";
+    $q="select $typ from data where idx=?"
+	if ( $typ =~ /thumb|ico|html/ );
+    my $gt=$dh->prepare($q);
     my $res=$dh->selectrow_array($gt,undef,$idx);
-
+    
     return $res;
 
 }
@@ -168,15 +172,16 @@ sub expand_templ
 }
 use PDF::API2;
 use XML::Parser::Expat;
-my $childs=0;
+my %childs;
 sub w_load
 {
 	my $l=shift;
 	my $err=0;
-	while($childs > $l)
+	my $pid;
+	while((my $pn=scalar(keys(%childs))) > $l)
 	{
-		print STDERR "($childs) ";
-		$childs-- if wait >0 ;
+		print STDERR "($pn) ";
+		delete $childs{$pid} if ((($pid=wait)) >0 );
 		$err++  if $? != 0;
 	}
 	return $err;
@@ -194,28 +199,30 @@ sub pdftohtml
     my @pages;
     foreach (glob ("$tmpdir/page-*"))
     {
-	    my $bse="$_";
-	    $bse =~ s|/page-|/post-|;
-	    $bse =~ s|\.[^\./]*$||;
-	    my $o="$bse.ppm";
-	    push @pages,"$bse.html";
-	    if ( fork() == 0 )
+	my $bse="$_";
+	$bse =~ s|/page-|/post-|;
+	$bse =~ s|\.[^\./]*$||;
+	my $o="$bse.ppm";
+	push @pages,"$bse.html";
+	my $pid;
+	if ( ($pid=fork()) == 0 )
+	{
+	    print STDERR "Conv $_\n";
+	    my $fail=0;
+	    unless ( -f "$bse.html")
 	    {
-		    my $fail=0;
-		    unless ( -f "$bse.html")
-		    {
-			    # $fail += (system("convert", $_,"-trim","+repage", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
-			    $fail += (system("convert", $_, "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
-			    # $fail += (system("convert", $_, "-gravity","north","-background","red","-splice","0x1","-trim","-chop","0x1", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
-			    unlink $_ if $cleanup;
-			    $fail += (system("tesseract", $o, $bse,"-l","deu+eng+equ","hocr","thilo") ? 1 : 0);
-			    unlink $o if $cleanup;
-		    }
-		    print STDERR "$bse - done($fail)\n";
-		    exit($fail);
+		# $fail += (system("convert", $_,"-trim","+repage", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
+		$fail += (system("convert", $_, "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
+		# $fail += (system("convert", $_, "-gravity","north","-background","red","-splice","0x1","-trim","-chop","0x1", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
+		unlink $_ if $cleanup;
+		$fail += (system("tesseract", $o, $bse,"-l","deu+eng+equ","hocr","thilo") ? 1 : 0);
+		unlink $o if $cleanup;
 	    }
-	    $childs++;
-	    $errs += w_load(5);
+		print STDERR "$bse - done($fail)\n";
+		exit($fail);
+	}
+	$childs{$pid}++;
+	$errs += w_load(5);
     }
     $errs += w_load(0);
     print STDERR "Done Errs:$errs\n";
@@ -230,6 +237,8 @@ sub ocrpdf
     my $tmpdir="/tmp/conv.$$.tmp";
     -d $tmpdir or mkdir($tmpdir);
     $pdf = PDF::API2->open($inpdf);
+    warn "Failed open $inpdf $?"unless $pdf;
+    return unless $pdf;
     my $pages=$pdf->pages();
     $font = $pdf->corefont('Helvetica');
     my @htmls;
@@ -359,18 +368,20 @@ sub index_pdf
     my $self = shift;
     my $dh   = $self->{"dh"};
     my $fn=shift;
+    # make sure we skip already ocred docs
+    $fn =~ s/\.ocr\.pdf$/\.pdf/;
 
 
-    my $md5_f=qx{md5 -n \"$fn\"};
-    $md5_f =~ s/\s.*$//s;
+    my $md5_f = file_md5_hex($fn);
+
     $dh->prepare("insert or replace into file (md5,file) values(?,?)")
        ->execute($md5_f,$fn);
 
     my ($idx)=$dh->selectrow_array("select idx from hash where md5=?",undef,$md5_f);
 
-    return if $idx;
+    return $idx if $idx;  # already indexed -- TODO:potentially check timestamp 
     print STDERR "Loading: $fn\n";
-    $dh->do("begin transaction");
+    # $dh->do("begin transaction");
     $dh->prepare("insert into hash(md5) values(?)")
         ->execute($md5_f);
 
@@ -386,7 +397,7 @@ sub index_pdf
     my %meta;
     $meta{"Docname"}=$fn;;
     $meta{"Docname"}=~ s/^.*\///s;
-    $meta{"Text"}=pdf_text($fn,$md5_f);
+    $meta{"Text"}=$self->pdf_text($fn,$md5_f);
     $meta{"Text"}=~  m/^\s*(([^\n]*\n){24}).*/s;
     $meta{"Content"}=$1;
     $meta{"mtime"}=(stat($fn))[9];
@@ -409,11 +420,15 @@ sub index_pdf
     $tpl = sprintf "Content-Type: text/html; charset=utf-8\nContent-Length: %d\n\n%s",length($tpl), $tpl;
     $dh->prepare(q{update data set html=? where idx=? })
 	   ->execute($tpl,$idx);
-    $dh->do("commit");
+	   # $dh->do("commit");
+    $meta{"thumb"}=\$thumb;
+    $meta{"ico"}=\$ico;
+    return $idx,\$meta;
 }
 
 sub pdf_text
 { 
+    my $self=shift;
     my $fn=shift;
     my $md5=shift;
     my $txt;
@@ -440,14 +455,14 @@ sub pdf_text
 sub pdf_thumb
 { 
     my $fn=shift;
-    my @cmd=qw{convert},"${fn}[0]",qw{-trim -normalize -thumbnail 400 png:-};
+    my @cmd=(qw{convert},"${fn}[0]",qw{-trim -normalize -thumbnail 400 png:-});
     my $png=qx{@cmd};
     return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",length($png), $png;
 }
 sub pdf_icon
 { 
     my $fn=shift;
-    my @cmd=qw{convert},"${fn}[0]",qw{-trim -normalize -thumbnail 200 png:-};
+    my @cmd=(qw{convert},"${fn}[0]",qw{-trim -normalize -thumbnail 200 png:-});
     my $png=qx{@cmd};
     return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",length($png), $png;
 }
