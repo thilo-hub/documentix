@@ -37,8 +37,9 @@ if ( $ext && $f =~ /\.pdf$/  && -f $f )
 	print $_ while ( sysread F , $_ , 8192 ); 
 } elsif (  $t && (my $data=$pdfidx->get_cont($t,$md5)))
 {
+    print "Content-Type: text/text\n\n" unless $data =~ /Content-Type/;
 	print $data;
-}
+}else
 {
 	error_exit();
 }
