@@ -207,11 +207,13 @@ sub pdftohtml {
     die "Ups: pdfimages $? " if $?;
     my $errs = 0;
     my @pages;
-    foreach ( glob("$tmpdir/page-*") ) {
+    my @images= glob("$tmpdir/page-*");
+    printf STDERR "Converting %d Pages\n",scalar(@images);
+    foreach ( @images ) {
         my $bse = "$_";
         $bse =~ s|/page-|/post-|;
         $bse =~ s|\.[^\./]*$||;
-        my $o = "$bse.ppm";
+        my $o = "$bse.jpg";
         push @pages, "$bse.html";
         my $pid;
         if ( ( $pid = fork() ) == 0 ) {
@@ -265,7 +267,7 @@ sub ocrpdf {
     foreach $html (@htmls) {
         $pn++;
         die "Where is page $pn ($html)?" unless -f $html;
-        add_html( $pdf, $pn, $html );
+        $self->add_html( $pdf, $pn, $html );
     }
     print STDERR "Call lynx for: @htmls\n";
     foreach (@htmls) {
@@ -280,6 +282,7 @@ qx{/usr/pkg/bin/lynx -assume_unrec_charset utf-8  -assume_charset utf-8 -dump "$
         # print STDERR $txt;
     }
     unlink @htmls if $cleanup;
+    print STDERR "Creating: $outpdf\n";
     $pdf->saveas($outpdf);
     rmdir $tmpdir if $cleanup;
     return $txt;
@@ -304,6 +307,7 @@ qx{/usr/pkg/bin/lynx -assume_unrec_charset utf-8  -assume_charset utf-8 -dump "$
     }
 
     sub add_html {
+	my $self        = shift;
         my $pdf         = shift;
         my $page_number = shift;
         my $html        = shift;
@@ -464,8 +468,9 @@ sub pdf_text {
     # split pdf into page
     my $ofn = $fn;
     $ofn =~ s/\.pdf$/.txt/;
-    return slurp($ofn) if ( -f $ofn );
+    # return slurp($ofn) if ( -f $ofn );
 
+    if(0){
     my $ocr_db = '/home/thilo/public_html/fl/t2/ocr.db';
     if ( -f $ocr_db ) {
         my $dh = DBI->connect( "dbi:SQLite:$ocr_db", undef, undef )
@@ -474,9 +479,12 @@ sub pdf_text {
             undef, $md5 );
         return $txt if $txt;
     }
+    }
     $txt = qx/pdftotext \"$fn\" -/;
     undef $txt  if length($txt) < 100;
     return $txt if $txt;
+    # next ressort to ocr 
+    my $newpdf = $fn; $newpdf =~ s/\.pdf$/.ocr.pdf/;
     $txt = $self->ocrpdf( $fn, $newpdf );
     return $txt;
 }

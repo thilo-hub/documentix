@@ -26,7 +26,7 @@ while(<FN>)
     next unless -f $_;
     my $md5_f = file_md5_hex($_);
     -d "$archive/$md5_f" || mkdir "$archive/$md5_f";
-    move($_,"$archive/$md5_f/.") or die "Cannot move: $!";
+    move($_,"$archive/$md5_f/.") or die "Cannot move ($_ -> $archive/$md5_f): $!";
     my $ofn=$_;
     my $inpdf = abs_path($_);
     $inpdf =~ s|^.*/|$archive/$md5_f/|;
@@ -41,8 +41,24 @@ while(<FN>)
 	     $meta=$sel->fetchall_hashref("tag");
 	 }
 	print STDERR "Result: $idx\n";
-    print STDERR Dumper($meta);
-    die;
+	#print STDERR Dumper($meta);
+	if ( my $tx=$meta->{"Text"}->{"value"} )
+	{
+		# print $tx;
+		use IPC::Open2;
+		my $pid=open2(my $out,my $in,qw{hunspell -G -d},"de_DE,en_EN");
+		print $in $tx;
+		close($in);
+		my $good=0;
+		while(<$out>)
+		{
+			$good++ unless /^..?.?$/;
+		}
+		close($out);
+		waitpid $pid, 0;
+		print STDERR "$good Good words\n";
+	}
+	#die;
 }
 
 #create html index
