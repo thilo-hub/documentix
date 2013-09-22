@@ -7,9 +7,9 @@ use Cwd 'abs_path';
 
 my $pdfidx=pdfidx->new();
 
-my $popfile="perl /var/db/pdf/start_pop.pl";
+my $popfile="/var/db/pdf/start_pop";
 
-system($popfile);
+# system($popfile);
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 my $DOCUMENT= abs_path("../search/scanner/DOCUMENT");
 my $archive=abs_path("../search/scanner/archive");
@@ -69,7 +69,7 @@ while(<FN>)
 use POSIX;
 
 my $dh=$pdfidx->{"dh"};
-my $lst=$dh->selectcol_arrayref(q{select idx from metadata where tag="mtime" order by value desc limit 10});
+my $lst=$dh->selectcol_arrayref(q{select idx from metadata where tag="mtime" order by value desc limit 20});
 
 my $sel=$dh->prepare(q{select tag,value from metadata where idx = ?});
   
@@ -110,10 +110,16 @@ my $meta=$sel->fetchall_hashref("tag");
     $d=$&;
    print HTML  <<EOT;
 <tr>
-  <td> <img src=$q$ico$q></td>
+  <td> 
+  <a href="$pdf" onmouseover="Tip($q$tip$q)" onmouseout="UnTip()"> 
+    <img src=$q$ico$q>
+    </a>
+  </td>
   <td valign=top> 
-  $meta->{Class}->{value}<br>
-  <a href="$pdf" onmouseover="Tip($q$tip$q)" onmouseout="UnTip()"> $short_name </a> 
+  <a href="$meta->{PopFile}->{value}">$meta->{Class}->{value}</a><br>
+  <a href="$pdf" onmouseover="Tip($q$tip$q)" onmouseout="UnTip()"> 
+     $short_name 
+  </a> 
   <br> $d <br>Pages: $p<br>$s
   </td>
 </tr>

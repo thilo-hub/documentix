@@ -4,7 +4,9 @@ use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 
 use parent DBI;
 use DBI qw(:sql_types);
-
+use File::Temp qw/tempfile tempdir/;
+$File::Temp::KEEP_ALL = 1;
+ 
 # use threads;
 # use threads::shared;
 
@@ -253,8 +255,7 @@ sub ocrpdf {
     my $self = shift;
     my ( $inpdf, $outpdf, $ascii ) = @_;
     my $txt    = undef;
-    my $tmpdir = "/tmp/conv.$$.tmp";
-    -d $tmpdir or mkdir($tmpdir);
+    my $tmpdir = tempdir( CLEANUP => 1);
     $pdf = PDF::API2->open($inpdf);
     warn "Failed open $inpdf $?" unless $pdf;
     return unless $pdf;
@@ -270,10 +271,15 @@ sub ocrpdf {
         $self->add_html( $pdf, $pn, $html );
     }
     print STDERR "Call lynx for: @htmls\n";
+    my $outhtml=$outpdf; $outhtml =~ s/\.pdf/.html/;
+    my $o;
     foreach (@htmls) {
-        $txt .=
-qx{/usr/pkg/bin/lynx -assume_unrec_charset utf-8  -assume_charset utf-8 -dump "$_"};
+	$o .= slurp($_);
+        $txt .= qx{/usr/pkg/bin/lynx -display_charset=utf-8  -dump "$_"};
     }
+    open HTM,">$outhtml";
+    print HTM $o;
+    close HTM;
     if ($ascii) {
         open( FD, ">$ascii" );
         print FD $txt;
@@ -431,7 +437,7 @@ sub index_pdf {
     $meta{"hash"}    = $md5_f;
     $meta{"pdfinfo"} = pdf_info($fn);
     $meta{"Image"}   = '<img src="?type=thumb&send=#hash#">';
-    $meta{"Class"}   = pdf_class( $fn, $meta{"Text"}, $meta{"hash"} );
+    ($meta{"PopFile"},$meta{"Class"})   = ($self->pdf_class( $fn, $meta{"Text"}, $meta{"hash"} ));
 
     $meta{"keys"} = join( ' ', keys(%meta) );
     foreach ( keys %meta ) {
@@ -470,6 +476,11 @@ sub pdf_text {
     $ofn =~ s/\.pdf$/.txt/;
     # return slurp($ofn) if ( -f $ofn );
 
+    my $dh=$self->{"dh"};
+
+    $txt = $dh->selectrow_array( q{select value from hash natural join metadata where md5=? and tag="Text"},
+            undef, $md5 );
+    return $txt if $txt;
     if(0){
     my $ocr_db = '/home/thilo/public_html/fl/t2/ocr.db';
     if ( -f $ocr_db ) {
@@ -506,15 +517,49 @@ sub pdf_icon {
     return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",
       length($png), $png;
 }
+sub classify_all
+{
+    my $self = shift;
+    my $all_t = qw{ select idx,md5,Tag,Value from hash natural join metadata where Tag =  "Text" };
+    my $ins_t = qw{ insert or replace into metadata (idx,Tag,Value) values(?,?,?)};
+    my $ins_s=$self->{"dh"}->prepare($ins_t);
+    my $all_s=$self->{"dh"}->prepare($all_t);
+    $all_s->execute;
+    my $sk  = pop_session();
+    while( my $r=fetch_hashref() )
+    {
+my @res=$self->class_txt($fn,$txt,$md5,$sk);
+    }
+}
+{
+	my $popsession=undef;
+	sub pop_session {
+		$popsession  = XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
+		      ->call( 'POPFile/API.get_session_key', 'admin', '' )->result
+		      unless $popsession;
+		return $popsession;
+	}
+
+	END{
+	    XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
+	      ->call( 'POPFile/API.release_session_key', $popsession )
+	       if $popsession;
+	    undef $popsession;
+	}
+}
 
 sub pdf_class {
+    my $self  = shift;
     my $fn  = shift;
     my $txt = shift;
     my $md5 = shift;
-    my $sk  = XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
-      ->call( 'POPFile/API.get_session_key', 'admin', '' )->result;
-    my $tmp_doc = "/tmp/$$.txt";
-    open( my $fh, ">$tmp_doc" );
+    my $sk  = pop_session();
+    my $temp_dir = "/tmp";
+     
+    # and a temporary file, with the full path specified
+    my ($fh, $tmp_doc) 
+	= tempfile('popfileinXXXXXXX', SUFFIX => ".msg", UNLINK => 1 , DIR => $temp_dir);
+     
     my $f = $fn;
     $f =~ s/^.*\///;
     print $fh "Subject:  $f\n";
@@ -531,12 +576,26 @@ sub pdf_class {
     # print "T:$tf:$msg\n";
     close($fh);
 
-    my $res = XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
-      ->call( 'POPFile/API.classify', $sk, $tmp_doc )->result;
-
-    XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
-      ->call( 'POPFile/API.release_session_key', $sk );
-    return $res;
+    my ($fh_out, $tmp_out) 
+	= tempfile('popfileinXXXXXXX', SUFFIX => ".msg", UNLINK => 1, DIR => $temp_dir);
+    chmod( 0622,$tmp_out);
+    chmod( 0644,$tmp_doc);
+		$sk  = XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
+		      ->call( 'POPFile/API.get_session_key', 'admin', '' )->result;
+    my $resv = XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
+	    ->call( 'POPFile/API.handle_message', $sk, $tmp_doc,$tmp_out );
+	    XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
+	      ->call( 'POPFile/API.release_session_key', $sk );
+    my $res=$resv
+	    ->result;
+	    use Data::Dumper;
+    die "ups: $tmp_out" . Dumper($resv) unless $res;
+    my $ln="Err";
+    while(<$fh_out>) {
+	($ln=$1, last) if m/X-POPFile-Link:\s*(.*?)\s*$/;
+    }
+    # print STDERR "$r\nLink: $ln\n";
+    return ($ln,$res);
 }
 sub slurp {
     local $/;
