@@ -32,14 +32,19 @@ if ( $ext && $f =~ /\.pdf$/  && -f $f )
 {
 	$f = $1.".ocr.pdf" if ( $f =~ /^(.*)\.pdf$/ && -f $1.".ocr.pdf" && ($sz=(stat(_))[6])>0);
 	open(F,"<$f");
-	print "Content-Type: application/pdf\n\n";
-	print "Content-Length: ".length($sz)."\n";
-	print "\n";
+	print $q->header( -type=> 'application/pdf',
+			  -expires => '+3d',
+			  -Content_length => length($sz));
 	print $_ while ( sysread F , $_ , 8192 ); 
 } elsif (  $t && (my $data=$pdfidx->get_cont($t,$md5)))
 {
-    print "Content-Type: text/text\n\n" unless $data =~ /Content-Type/;
-	print $data;
+    # print $q->header(-expire => '+4d');
+    $data =~ s/.*?Content-Type:\s+(\S+)\s*.*?\n\n/
+    		$q->header( -type=> $1, -expire=>'+3d')/es;
+    print $q->header( -type=> 'text/text', 
+   			-expire => '+5d'  ) 
+		unless $data =~ /Content-Type/;
+    print $data;
 }else
 {
 	error_exit();
@@ -50,10 +55,10 @@ sub error_exit
 {
 	my $msg=shift || "";
 	$f = "??" unless $f;
-	print "Content-Type: text/html; charset=iso-8859-1\n\n";
-	print "<html><body>\n";
-	print "<h1>Some error happend $msg</h1>\n";
-	print "<h2>$f</h2>\n";
+	print $q->header(),
+		$q->start_html(),
+	    $q->h1("Some error happend $msg"),
+	    $q->h2($f);
 	if ( -f $f )
 	{
 		$f =~ s|/mnt/raid3e/home/thilo|file:////maggi/thilo|;
@@ -65,7 +70,7 @@ sub error_exit
 	    $val =~ s|"|\\"|g;
 	    print "<p>${var}=\"${val}\"";
 	}
-	print "</body></html>\n";
+	print $q->end_html;
 	exit 0;
 }
 
