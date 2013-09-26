@@ -28,13 +28,13 @@ if ( $ext && $f =~ /\.pdf$/  && -f $f )
 {
 	my $out=$pdfidx->get_cache($f,$ext,\&mk_page);
 	print $out;
-}elsif ( (!$t || $t eq "pdf" ) && -f $f && ((my $sz=(stat(_))[6]))>0)
+}elsif ( (!$t || $t eq "pdf" ) && -f $f && ((my $sz=(stat(_))[7]))>0)
 {
-	$f = $1.".ocr.pdf" if ( $f =~ /^(.*)\.pdf$/ && -f $1.".ocr.pdf" && ($sz=(stat(_))[6])>0);
+	$f = $1.".ocr.pdf" if ( $f =~ /^(.*)\.pdf$/ && -f $1.".ocr.pdf" && ($sz=(stat(_))[7])>0);
 	open(F,"<$f");
 	print $q->header( -type=> 'application/pdf',
 			  -expires => '+3d',
-			  -Content_length => length($sz));
+			  -Content_length => $sz);
 	print $_ while ( sysread F , $_ , 8192 ); 
 } elsif (  $t && (my $data=$pdfidx->get_cont($t,$md5)))
 {
