@@ -19,8 +19,11 @@ print $q->header(-charset=>'utf-8'),
 # print pages
 my $p0=($q->param("page")||1)-1;
 my $class=$q->param("class");
+$class =~ s/:\d+$//;
+my $search=$q->param("search");
+undef $search if $search =~ /^\s*$/;
 my $ANY="*ANY*";
-$class="" if $class eq $ANY;
+undef $class if defined($class) && $class eq $ANY;
 
 
 # Process an HTTP request
@@ -46,28 +49,45 @@ my $dh=$pdfidx->{"dh"};
 my $sel=$dh->prepare(q{select tag,value from metadata where idx = ?});
   
 my $q0="";
-$q0=qq{ (select idx from metadata where Tag="Class" and Value="$class") natural join } 
-	if $class;
-my $q1=qq{select idx,date(md.Value,"unixepoch","localtime") dt ,time(md.Value,"unixepoch","localtime") tm
+$q0=qq{ (select idx from metadata where Tag="Class" and Value=?3) natural join } 
+	if defined($class);
+my $q1=qq{select idx,date(md.Value,"unixepoch","localtime") date ,time(md.Value,"unixepoch","localtime") tm
 	   from $q0 metadata md where  md.Tag="mtime" order by md.Value desc 
-	   limit ?,?};
+	   limit ?1,?2};
+
+$q1=q{select idx,date(md.Value,"unixepoch","localtime") date, snippet(text) snip 
+            from text join metadata md on docid=idx  
+	    where content match ?4 and md.Tag="mtime" order by md.Value desc
+	    limit ?1,?2}
+	    if ( $search );
+
 
 
 my $qq="\\'";
 my $sel_class="";
-$sel_class = " and Value = '$class'" if $class;
+$sel_class = " and Value = '$class'" if defined($class);
 #
 my $ppage=18;
 
-my $classes=$dh->selectcol_arrayref("select distinct(Value) from metadata where Tag='Class'");
-my $ndata=($dh->selectrow_array("select count(*) from metadata where Tag='Class' $sel_class"))[0];
+my $classes=$dh->selectall_arrayref("select * from classes");
+#my $classes=$dh->selectcol_arrayref("select * from classes");
+# my $ndata=($dh->selectrow_array("select count(*) from metadata where Tag='Class' $sel_class"))[0];
+my $ndata=($dh->selectrow_array("select sum(count) from classes"))[0];
 my $max_page=int($ndata/$ppage);
 $p0=$max_page if $p0>$max_page;
 my $stm1=$dh->prepare($q1);
-$stm1->execute($p0*$ppage,$ppage);
+$stm1->bind_param(1,$p0*$ppage);
+$stm1->bind_param(2,$ppage);
+$stm1->bind_param(3,$class) if defined($class);
+$stm1->bind_param(4,$search ) if defined ($search);
+$stm1->execute;
 my $t0=0;
-unshift @$classes,$ANY;
+unshift @$classes,[$ANY,$ndata];
+$classes=[map{ join(':',@$_)} @$classes];
+
+
 print $q->start_form(-method=>'get');
+print $q->br,"Search:"; print $q->textfield('search');
 print $q->popup_menu(-name=>'class', -values=>$classes, -default=>$class);
 print $q->submit, $q->end_form;
 
@@ -75,14 +95,15 @@ print pages($q,$p0,$max_page);
 print $q->a({-href=>'scanns.cgi'},"Refresh scanner data");
 my @out;
 my @outrow;
+# fetch idx to display ( + extra )
 while( my $r=$stm1-> fetchrow_hashref )
 {
-    if ( $t0 ne $r->{"dt"} )
+    if ( $t0 ne $r->{"date"} )
     {
 	push @out,join("\n  ",splice(@outrow));
 
-	push @out,$q->th({-colspan=>3},$q->hr,$r->{"dt"});
-	$t0 = $r->{"dt"};
+	push @out,$q->th({-colspan=>3},$q->hr,$r->{"date"});
+	$t0 = $r->{"date"};
     }
     $sel->execute($r->{"idx"});
     my $meta=$sel->fetchall_hashref("tag");
@@ -117,6 +138,7 @@ while( my $r=$stm1-> fetchrow_hashref )
 	       $q->a({-href=>$pdf,
 		      -onmouseover=>"Tip($tip)",
 		      -onmouseout=>"UnTip()"},$short_name).
+      	      ($r->{"snip"} ? "<br>$r->{snip}" :"").
       	      "<br>".  $q->a({-href=>$lowres, -target=>"_pdf"},"&lt;Lowres&gt;").
       	      "<br>".  $q->a({-href=>$modf, -target=>"_edit"},"&lt;Edit&gt;").
 			 "<br> Pages: $p <br>$s"]);
@@ -138,6 +160,7 @@ sub pages
 	my ($q,$p0,$maxpage)=@_;
 	my @pgurl ;
 	my $myself=$q->url(-query=>1,-relative=>1);
+	$myself =~ s/%/%%/g;
 	$myself =~ s/(;|\?)/\&/g;
 	$myself =~ s/&page=\d+//;
 	$myself =~ s/(&|$)/\?page=%d$1/;
