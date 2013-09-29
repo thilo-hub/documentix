@@ -15,6 +15,6 @@ print "</pre>\n";
 print "<h>Redirecting to index page</h>";
 
 
-print  '<script type="text/javascript"> window.location.href = "index.html" </script>';
-print "<a href=index.html> Refreshed page</a>";
+print  '<script type="text/javascript"> window.location.href = "main.cgi" </script>';
+print "<a href=main.cgi> Refreshed page</a>";
 print "</body></html>\n";

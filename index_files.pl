@@ -30,6 +30,7 @@ while(<FN>)
     my $ofn=$_;
     my $inpdf = abs_path($_);
     $inpdf =~ s|^.*/|$archive/$md5_f/|;
+    system("/usr/bin/chflags", "uchg", $inpdf);
     symlink($inpdf,$ofn) or die "link $!";
      die "? $inpdf $?" unless -r $inpdf;
 	my ($idx,$meta)=$pdfidx->index_pdf($inpdf);
@@ -60,75 +61,4 @@ while(<FN>)
 	}
 	#die;
 }
-
-#create html index
-# find archive -type f -name '*.png' -print0   | xargs -0 ls -t |
-# open(FN,"find $archive -type f -na
-
-# perl -e '
-use POSIX;
-
-my $dh=$pdfidx->{"dh"};
-my $lst=$dh->selectcol_arrayref(q{select idx from metadata where tag="mtime" order by value desc limit 20});
-
-my $sel=$dh->prepare(q{select tag,value from metadata where idx = ?});
-  
-
-my $q="'";
-my $qq="\\'";
-open(HTML,">index.html");
-print HTML  <<HDR;
-<html>
- <body>
-<script type="text/javascript" src="js/wz_tooltip.js"></script>
-<a href="scanns.cgi">Refresh data from scanner</a>
-<table>
-HDR
-my $oldday="0";
-
-foreach my $idx (@$lst)
-{
-$sel->execute($idx);
-my $meta=$sel->fetchall_hashref("tag");
-   my $md5=$meta->{"hash"}->{"value"};
-   my $feed="../pdf/feed.cgi?send=";
-   my $tip=qq{<object type=text/x-scriptlet width=475 height=300 data=$feed$md5&type=Content </object>} ;
-   my $png=$feed."$md5&type=thumb";
-   my $ico=$feed."$md5&type=ico";
-   my $pdf=$feed."$md5&type=pdf";
-  my $s = $1 if $meta->{"pdfinfo"}->{"value"} =~ /File size\s*<\/td><td>(.*?)<\/td>/;
-  my $p = $1 if $meta->{"pdfinfo"}->{"value"} =~ /Pages\s*<\/td><td>(.*?)<\/td>/;
-  my $d = $1 if $meta->{"pdfinfo"}->{"value"} =~ /CreationDate\s*<\/td><td>(.*?)<\/td>/;
-  my $short_name=$meta->{"Docname"}->{"value"};
-  $short_name =~ s/^.*\///;
-   # my @a=stat($pdf); my $e= strftime("%Y-%b-%d %a  %H:%M ($a[7]) $_",localtime($a[10]));
-  my $day=$d;
-  $day =~ s/\s+\d+:\d+:\d+\s+/ /;
-   print HTML  "<tr><td colspan=5><hr>$day</td></tr>"
-	if ($oldday ne $day);
-   $oldday=$day;
-    $d=$&;
-   print HTML  <<EOT;
-<tr>
-  <td> 
-  <a href="$pdf" onmouseover="Tip($q$tip$q)" onmouseout="UnTip()"> 
-    <img src=$q$ico$q>
-    </a>
-  </td>
-  <td valign=top> 
-  <a href="$meta->{PopFile}->{value}">$meta->{Class}->{value}</a><br>
-  <a href="$pdf" onmouseover="Tip($q$tip$q)" onmouseout="UnTip()"> 
-     $short_name 
-  </a> 
-  <br> $d <br>Pages: $p<br>$s
-  </td>
-</tr>
-EOT
-}
-print HTML  <<TAIL;
-</table>
-</body>
-</html>
-TAIL
-
 
