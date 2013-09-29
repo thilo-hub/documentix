@@ -77,15 +77,19 @@ foreach $i ( 1 .. $pages )
 {
    my $pn=$i;
    my $f="$md5-$i";
+   my $cu=$op[$i] eq "U" ? "checked" : "";
+   my $cr=$op[$i] eq "R" ? "checked" : "";
+   my $cn=$op[$i] eq "" ? "checked" : "";
+   my $cl=$op[$i] eq "L" ? "checked" : "";
 ?>
    <tr><td valign=top><img src="../feed.cgi?send=<?=print $f?>"></td>
 	<td valign=top>
     <span class="radio">
     <fieldset><legend > manipulate</legend>
-    <input type="radio" name="r_<?=print $pn?>" value="" checked>--</input> <br>
-    <input type="radio" name="r_<?=print $pn?>" value="R"><img src="icon/r-cw.png"></input> <br>
-    <input type="radio" name="r_<?=print $pn?>" value="L"><img src="icon/r-ccw.png"></input> <br>
-    <input type="radio" name="r_<?=print $pn?>" value="U">UP</input> <br>
+    <input type="radio" name="r_<?=print $pn?>" <?=print $cn?> value="" >--</input> <br>
+    <input type="radio" name="r_<?=print $pn?>" <?=print $cr?> value="R" ><img src="icon/r-cw.png"></input> <br>
+    <input type="radio" name="r_<?=print $pn?>" <?=print $cl?> value="L" ><img src="icon/r-ccw.png"></input> <br>
+    <input type="radio" name="r_<?=print $pn?>" <?=print $cu?> value="U" >UP</input> <br>
     <input type="number" pattern="[0-9]+" min=1 max=<?=print $pages?> size=2 name="p_<?=print $pn?>" value="<?=print $pn?>"></input>
     </fieldset>
     </span>

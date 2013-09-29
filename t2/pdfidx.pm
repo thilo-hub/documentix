@@ -255,21 +255,11 @@ sub ocrpdf {
     my $self = shift;
     my ( $inpdf, $outpdf, $ascii ) = @_;
     my $txt    = undef;
-    my $tmpdir = tempdir( CLEANUP => 1);
-    $pdf = PDF::API2->open($inpdf);
-    warn "Failed open $inpdf $?" unless $pdf;
-    return unless $pdf;
-    my $pages = $pdf->pages();
-    $font = $pdf->corefont('Helvetica');
     my @htmls;
-    @htmls = $self->pdftohtml( $inpdf, $tmpdir );
-    my $pn = 0;
-
-    foreach $html (@htmls) {
-        $pn++;
-        die "Where is page $pn ($html)?" unless -f $html;
-        $self->add_html( $pdf, $pn, $html );
-    }
+    my $tmpdir = tempdir( CLEANUP => 1);
+    my @htmls = $self->pdftohtml( $inpdf, $tmpdir );
+    return unless scalar(@htmls);
+    $self->join_pdfhtml($tmpdir,$outpdf,$inpdf,@htmls);
     print STDERR "Call lynx for: @htmls\n";
     my $outhtml=$outpdf; $outhtml =~ s/\.pdf/.html/;
     my $o;
@@ -607,45 +597,25 @@ sub slurp {
 sub pdf_process {
     my $self = shift;
     my ( $fn, $op, $tmpdir, $outf ) = @_;
-    my $texfn = "file.tex";
-
-    my $tex = q{
-	\batchmode
-	\documentclass[a4paper,]{article}
-	\usepackage[utf8]{inputenc}
-	\usepackage{pdfpages}
-
-	\begin{document}
-	%PAGES%
-	\end{document}
-	};
-
     my $ol = "";
+    $spdf=PDF::API2->open($fn) || die "Failed open: $?";
+    $pdf=PDF::API2->new() || die "No new PDF $?";
+
     foreach ( split( /,/, $op ) ) {
         next if s/D$//;    # delete
-        next unless /\d/;
-        my $att;
-        $att = "angle=90"  if s/R$//;
-        $att = "angle=180" if s/U$//;
-        $att = "angle=270" if s/L$//;
-        $top .= "\\includepdfmerge[$att]{in.pdf,$_}\n";
+        next unless s/^(\d+)([RUL]?)//;
+        my $att=0;
+        $att = "90"  if $2 eq "R";
+        $att = "180" if $2 eq "U";
+        $att = "270" if $2 eq "L";
+	$pdf->importpage($spdf,$1,0);
+	if ( $att ) {
+		my $p=$pdf->openpage(0);
+		$p->rotate($att);
+	}
     }
-    $tex =~ s/%PAGES%/$top/;
-    unlink("$tmpdir/$texfn") if -f "$tmpdir/$texfn";
-    open( F, ">$tmpdir/$texfn" ) or die "Cannot open: $tmpdir/$texfn";
-    print F $tex;
-    close(F);
-
     use Cwd 'abs_path';
-    my $pdf_fmt = abs_path("pdflatex.fmt");
-
-    unlink("$tmpdir/in.pdf") if -f "$tmpdir/in.pdf";
-    symlink $fn, "$tmpdir/in.pdf" or die "Failed symln: $fn $tmpdir/in.pdf: $!";
-    system("cd $tmpdir; /usr/pkg/bin/pdflatex -fmt=$pdf_fmt $texfn >&2");
-    unlink("$tmpdir/out.pdf") if -f "$tmpdir/out.pdf";
-    rename( "$tmpdir/file.pdf", "$tmpdir/out.pdf" );
-
-    #	copy($pdftmp,"$outf") or die "Copy failed: $!";
+    $pdf->saveas("$tmpdir/out.pdf");
 }
 
 sub get_cache {
