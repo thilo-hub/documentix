@@ -34,25 +34,38 @@ sub setup_db {
     my $self = shift;
     my $dh   = $self->{"dh"};
 
-    $dh->do(
-q{create table if not exists hash ( idx integer primary key autoincrement, md5 text unique )}
-    );
-    $dh->do(
-q{create table if not exists file ( md5 text primary key, file text unique)}
-    );
-    $dh->do(
-        q{create table if not exists data ( idx integer primary key , 
-	     thumb text, ico text, html text) }
-    );
-    $dh->do(q{create table if not exists ocr ( idx integer, text text)});
-    $dh->do(
-q{create table if not exists metadata ( idx integer, tag text, value text, unique ( idx,tag) )}
-    );
-    $dh->do(
-q{create table if not exists cache (item text,idx integer,data blob,date integer,
-		unique (item,idx)
-	)}
-    );
+   my @slist=(
+	q{create table if not exists hash ( idx integer primary key autoincrement, md5 text unique )} ,
+	q{create table if not exists file ( md5 text primary key, file text unique)} ,
+	q{create table if not exists data ( idx integer primary key , thumb text, ico text, html text) } ,
+	q{create table if not exists ocr ( idx integer, text text)},
+	q{create table if not exists metadata ( idx integer, tag text, value text, unique ( idx,tag) )} ,
+	q{create table if not exists cache (item text,idx integer,data blob,date integer, unique (item,idx))},
+	q{CREATE VIRTUAL TABLE if not exists text USING fts3(content="",tokenize=porter);},
+	q{CREATE TRIGGER if not exists del2 before delete on hash begin 
+					delete from file where file.md5 = old.md5; 
+					delete from data where data.idx = old.idx; 
+					delete from metadata where metadata.idx=old.idx; 
+					delete from cache where cache.idx=old.idx; 
+				 end;},
+	q{CREATE TABLE if not exists classes (class text primary key, count integer);},
+	q{CREATE TRIGGER if not exists inclass after insert on metadata when new.tag = "Class" begin 
+					insert or ignore into classes (class,count) values(new.value,0); 
+					update classes set count=count+1 where class=new.value; 
+				end;},
+	q{CREATE TRIGGER if not exists inclassdel after delete on metadata when old.tag = "Class" begin 
+						update classes set count=count-1 where class=old.value; 
+					end;},
+	q{CREATE TRIGGER if not exists intxt after insert on metadata when new.tag = "text" begin 
+						insert into text (docid,content) values (new.idx,new.value); 
+					end;}
+);
+foreach(@slist)
+{
+	#print STDERR "DO: $_\n";
+	$dh->do($_);
+}
+
 
 }
 
@@ -279,9 +292,51 @@ sub ocrpdf {
     }
     unlink @htmls if $cleanup;
     print STDERR "Creating: $outpdf\n";
-    $pdf->saveas($outpdf);
-    rmdir $tmpdir if $cleanup;
     return $txt;
+
+}
+# Read input pdf and join the given html file
+sub mk_pdf
+{
+    my $self = shift;
+    my ($outpdf,$inpdf,$htm)=@_;
+    my $tmpdir = tempdir( CLEANUP => 1);
+    my $pn="00";
+    my $h=slurp($htm);
+    while( $h=~ s|^\s*<.*?</html>\s*||s )
+    {
+	my $p="$tmpdir/page-$pn.html";
+	open (P,">$p"); print P $&; close P;
+	push @html,$p;
+	$pn++;
+    }
+    $outpdf=$tmpdir."/out.pdf" unless $outpdf;
+    $self->join_pdfhtml($tmpdir,$outpdf,$inpdf,@html);
+    if ( $outpdf =~ /^$tmpdir/ )
+    {
+	return slurp($outpdf);
+    }
+    return 1;
+}
+sub join_pdfhtml
+{
+    my $self=shift;
+	my ($tmpdir,$outpdf,$inpdf,@htmls)=@_;
+
+    $pdf = PDF::API2->open($inpdf);
+    warn "Failed open $inpdf $?" unless $pdf;
+    return unless $pdf;
+    my $pages = $pdf->pages();
+    $font = $pdf->corefont('Helvetica');
+    my $pn = 0;
+
+    foreach $html (@htmls) {
+        $pn++;
+        die "Where is page $pn ($html)?" unless -f $html;
+        $self->add_html( $pdf, $pn, $html );
+    }
+    $pdf->saveas($outpdf);
+    return 1;
 
     sub add_qrcode {
         my $pdf         = shift;

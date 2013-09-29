@@ -88,12 +88,15 @@ while( my $r=$stm1-> fetchrow_hashref )
     my $meta=$sel->fetchall_hashref("tag");
     my $md5=$meta->{"hash"}->{"value"};
     my $feed="../pdf/feed.cgi?send=";
+    my $mod1_pdf="../pdf/t2/mod1_pdf.cgi?send=";
     my $qt="'";
     my $tip=qq{'<object type=text/x-scriptlet width=475 height=300 data=$feed$md5&type=Content> </object>'} ;
     # my $png=$feed."$md5&type=thumb";
     my $ico=qq{<img width=150 heigth=212 src='$feed$md5&type=ico'};
     # my $ico=qq{<img width=150 heigth=212 src='a.gif'};
     my $pdf=$feed."$md5&type=pdf";
+    my $lowres=$feed."$md5&type=lowres";
+    my $modf=$mod1_pdf."$md5&type=lowres";
     my $s = $1 if $meta->{"pdfinfo"}->{"value"} =~ /File size\s*<\/td><td>(.*?)<\/td>/;
     my $p = $1 if $meta->{"pdfinfo"}->{"value"} =~ /Pages\s*<\/td><td>\s*(\d+)\s*<\/td>/;
     my $d = $1 if $meta->{"pdfinfo"}->{"value"} =~ /CreationDate\s*<\/td><td>(.*?)<\/td>/;
@@ -114,6 +117,8 @@ while( my $r=$stm1-> fetchrow_hashref )
 	       $q->a({-href=>$pdf,
 		      -onmouseover=>"Tip($tip)",
 		      -onmouseout=>"UnTip()"},$short_name).
+      	      "<br>".  $q->a({-href=>$lowres, -target=>"_pdf"},"&lt;Lowres&gt;").
+      	      "<br>".  $q->a({-href=>$modf, -target=>"_edit"},"&lt;Edit&gt;").
 			 "<br> Pages: $p <br>$s"]);
 	
        push @outrow, $q->td($q->table($q->Tr(@data)));
