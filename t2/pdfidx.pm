@@ -41,14 +41,14 @@ sub setup_db {
 	q{create table if not exists ocr ( idx integer, text text)},
 	q{create table if not exists metadata ( idx integer, tag text, value text, unique ( idx,tag) )} ,
 	q{create table if not exists cache (item text,idx integer,data blob,date integer, unique (item,idx))},
-	q{CREATE VIRTUAL TABLE if not exists text USING fts3(content="",tokenize=porter);},
+	q{CREATE VIRTUAL TABLE if not exists text USING fts4(tokenize=porter);},
 	q{CREATE TRIGGER if not exists del2 before delete on hash begin 
 					delete from file where file.md5 = old.md5; 
 					delete from data where data.idx = old.idx; 
 					delete from metadata where metadata.idx=old.idx; 
 					delete from cache where cache.idx=old.idx; 
 				 end;},
-	q{CREATE TABLE if not exists classes (class text primary key, count integer);},
+	q{CREATE TABLE if not exists classes (class text primary key unique, count integer);},
 	q{CREATE TRIGGER if not exists inclass after insert on metadata when new.tag = "Class" begin 
 					insert or ignore into classes (class,count) values(new.value,0); 
 					update classes set count=count+1 where class=new.value; 
@@ -218,27 +218,51 @@ sub pdftohtml {
 
     # extract all pages first
     die "$inpdf" unless -r $inpdf;
-    system( "/usr/pkg/bin/pdfimages", $inpdf, "-j", "$tmpdir/page" );
-    die "Ups: pdfimages $? " if $?;
+    system( "/usr/pkg/bin/pdfimages", $inpdf, "-j", "-p","$tmpdir/page" );
+    return undef if $?;
+    my @rot;
+    foreach $p (qx{/usr/pkg/bin/pdfinfo -l 9999 "$inpdf"})
+    {
+	next unless $p =~ m/Page\s+(\d+)\s+rot:\s+(\d+)/;
+	$rot[$1]=$2;
+    }
     my $errs = 0;
     my @pages;
     my @images= glob("$tmpdir/page-*");
+    if ( scalar(@images) == 0 || scalar(@images) > scalar(@rot) )
+    {
+	    # try conversion differently
+	    # using pdftoppm
+	    print STDERR "Using pdftoppm\n";
+	    qx{/usr/pkg/bin/pdftoppm -r 300 "$inpdf" "$tmpdir/ppage"};
+	    die "Ups: pdftoppm $? " if $?;
+	    @images=glob("$tmpdir/ppage-*");
+    }
     printf STDERR "Converting %d Pages\n",scalar(@images);
-    foreach ( @images ) {
-        my $bse = "$_";
-        $bse =~ s|/page-|/post-|;
-        $bse =~ s|\.[^\./]*$||;
-        my $o = "$bse.jpg";
-        push @pages, "$bse.html";
-        my $pid;
-        if ( ( $pid = fork() ) == 0 ) {
-            print STDERR "Conv $_\n";
-            my $fail = 0;
-            unless ( -f "$bse.html" ) {
+    foreach (@images)
+    {
+	m/(^.*page-(\d+)((-\d+)?))\.(.*)/;
+	my $page=$2;
+	my $base=$1;
+	my $ext=$5;
 
-# $fail += (system("convert", $_,"-trim","+repage", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
+        push @pages, "$base.html";
+
+        my $pid=0;
+	if ( ( $pid = fork() ) == 0 ) 
+	{
+            print STDERR "Conv $_\n";
+	    my $o="$base.prc.$ext";
+            my $fail = 0;
+            unless ( -f "$base.html" ) {
+
+		# $fail += (system("convert", $_,"-trim","+repage", 
+		# "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
+		my @opt=qw{-normalize -gamma 2.0};
+		push @opt,("-rotate", $rot[$page]) if $rot[$page] != 0;
+		print STDERR join(" ",( "convert", $_, @opt, $o,"\n" ));
                 $fail += (
-                    system( "convert", $_, "-normalize", "-gamma", "2.0", $o )
+                    system( "convert", $_, @opt, $o )
                     ? 1
                     : 0 )
                   unless -f $o;
@@ -247,16 +271,16 @@ sub pdftohtml {
                 unlink $_ if $cleanup;
                 $fail += (
                     system(
-                        "tesseract",   $o,     $bse, "-l",
+                        "tesseract",   $o,     $base, "-l",
                         "deu+eng+equ", "hocr", "thilo"
                     ) ? 1 : 0
                 );
                 unlink $o if $cleanup;
             }
-            print STDERR "$bse - done($fail)\n";
-            exit($fail);
+            print STDERR "$base - done($fail)\n";
+	    exit($fail);
         }
-        $childs{$pid}++;
+	$childs{$pid}++;
         $errs += w_load(5);
     }
     $errs += w_load(0);
@@ -269,29 +293,33 @@ sub ocrpdf {
     my ( $inpdf, $outpdf, $ascii ) = @_;
     my $txt    = undef;
     my @htmls;
-    my $tmpdir = tempdir( CLEANUP => 1);
+    my $tmpdir = tempdir( CLEANUP => 1,TEMPLATE=>"/tmp/ocrpdf_XXXXXX");
     my @htmls = $self->pdftohtml( $inpdf, $tmpdir );
     return unless scalar(@htmls);
-    $self->join_pdfhtml($tmpdir,$outpdf,$inpdf,@htmls);
-    print STDERR "Call lynx for: @htmls\n";
-    my $outhtml=$outpdf; $outhtml =~ s/\.pdf/.html/;
-    my $o;
-    foreach (@htmls) {
-	$o .= slurp($_);
-        $txt .= qx{/usr/pkg/bin/lynx -display_charset=utf-8  -dump "$_"};
-    }
-    open HTM,">$outhtml";
-    print HTM $o;
-    close HTM;
-    if ($ascii) {
-        open( FD, ">$ascii" );
-        print FD $txt;
-        close(FD);
+    if ( scalar(@htmls) )
+    {
+	    $self->join_pdfhtml($tmpdir,$outpdf,$inpdf,@htmls);
+	    print STDERR "Call lynx for: @htmls\n";
+	    my $outhtml=$outpdf; $outhtml =~ s/\.pdf/.html/;
+	    my $o;
+	    foreach (@htmls) {
+		$o .= slurp($_);
+		$txt .= qx{/usr/pkg/bin/lynx -display_charset=utf-8  -dump "$_"};
+	    }
+	    open HTM,">$outhtml";
+	    print HTM $o;
+	    close HTM;
+	    if ($ascii) {
+		open( FD, ">$ascii" );
+		print FD $txt;
+		close(FD);
 
-        # print STDERR $txt;
+		# print STDERR $txt;
+	    }
+	    print STDERR "Creating: $outpdf\n";
+	    unlink @htmls if $cleanup;
     }
-    unlink @htmls if $cleanup;
-    print STDERR "Creating: $outpdf\n";
+    rmdir $tempdir if $cleanup;
     return $txt;
 
 }
@@ -300,7 +328,7 @@ sub mk_pdf
 {
     my $self = shift;
     my ($outpdf,$inpdf,$htm)=@_;
-    my $tmpdir = tempdir( CLEANUP => 1);
+    my $tmpdir = tempdir( CLEANUP => 1,TEMPLATE=>"/tmp/mkpdf_XXXXXX");
     my $pn="00";
     my $h=slurp($htm);
     while( $h=~ s|^\s*<.*?</html>\s*||s )
@@ -323,120 +351,121 @@ sub join_pdfhtml
     my $self=shift;
 	my ($tmpdir,$outpdf,$inpdf,@htmls)=@_;
 
-    $pdf = PDF::API2->open($inpdf);
-    warn "Failed open $inpdf $?" unless $pdf;
+    my $pdf;
+    eval { $pdf = PDF::API2->open($inpdf) };
+    warn "Failed open $inpdf $? @_" unless $pdf;
     return unless $pdf;
     my $pages = $pdf->pages();
     $font = $pdf->corefont('Helvetica');
     my $pn = 0;
 
     foreach $html (@htmls) {
-        $pn++;
-        die "Where is page $pn ($html)?" unless -f $html;
-        $self->add_html( $pdf, $pn, $html );
+	$pn++;
+	die "Where is page $pn ($html)?" unless -f $html;
+	$self->add_html( $pdf, $pn, $html );
     }
     $pdf->saveas($outpdf);
     return 1;
 
     sub add_qrcode {
-        my $pdf         = shift;
-        my $page_number = shift;
-        my $html        = shift;
+	my $pdf         = shift;
+	my $page_number = shift;
+	my $html        = shift;
 
-        my $page = $pdf->openpage($page_number);
-        my ( $llx, $lly, $urx, $ury ) = $page->get_mediabox;
-        my $gfx = $page->gfx();
-        use GD::Image;
-        use GD::Barcode;
-        my $o = GD::Barcode->new( 'QRcode', $html,
-            { Ecc => 'M', Version => 2, ModuleSize => 2 } );
-        my $gd = $o->plot( NoText => 1 );
+	my $page = $pdf->openpage($page_number);
+	my ( $llx, $lly, $urx, $ury ) = $page->get_mediabox;
+	my $gfx = $page->gfx();
+	use GD::Image;
+	use GD::Barcode;
+	my $o = GD::Barcode->new( 'QRcode', $html,
+	    { Ecc => 'M', Version => 2, ModuleSize => 2 } );
+	my $gd = $o->plot( NoText => 1 );
 
-        my $img = $pdf->image_gd($gd);
-        $gfx->image( $img, $llx, $ury - 72, 72, 72 );
+	my $img = $pdf->image_gd($gd);
+	$gfx->image( $img, $llx, $ury - 72, 72, 72 );
 
     }
 
     sub add_html {
 	my $self        = shift;
-        my $pdf         = shift;
-        my $page_number = shift;
-        my $html        = shift;
+	my $pdf         = shift;
+	my $page_number = shift;
+	my $html        = shift;
 
-        my $page = $pdf->openpage($page_number);
-        my $text = $page->text();
-        $text->render(3);
+	my $page = $pdf->openpage($page_number);
+	my $text = $page->text();
+	$text->render(3);
 
-        my ( $llx, $lly, $urx, $ury ) = $page->get_mediabox;
+	my ( $llx, $lly, $urx, $ury ) = $page->get_mediabox;
 
-        # print LOG "MB: $llx $lly $urx $ury\n";
+	# print LOG "MB: $llx $lly $urx $ury\n";
 
-        my $parser = XML::Parser::Expat->new;
-        $parser->setHandlers( 'Start' => \&sh );
-        $parser->{"my_text"} = $text;
-        my $bbox;
-        my ( $px0, $py0, $wx, $wy );
-        $parser->parsefile($html);
-        return;
+	my $parser = XML::Parser::Expat->new;
+	$parser->setHandlers( 'Start' => \&sh );
+	$parser->{"my_text"} = $text;
+	my $bbox;
+	my ( $px0, $py0, $wx, $wy );
+	$parser->parsefile($html);
+	return;
 
-        sub conv_xy {
-            my ( $x, $y ) = @_;
+	sub conv_xy {
+	    my ( $x, $y ) = @_;
 
-            #MB: 0 0 595 842
-            #BBOX: 0 0 2479 3508
-            #CH (1765 122 1899 166):�<80><98>Keith
-            #CH (1925 125 1964 166):Et
-            #CH (1983 123 2106 177):Keep
-            $x = $x * $urx / $wx;
-            $y = ( $wy - $y ) * $ury / $wy;
-            return ( $x, $y );
-        }
+	    #MB: 0 0 595 842
+	    #BBOX: 0 0 2479 3508
+	    #CH (1765 122 1899 166):�<80><98>Keith
+	    #CH (1925 125 1964 166):Et
+	    #CH (1983 123 2106 177):Keep
+	    $x = $x * $urx / $wx;
+	    $y = ( $wy - $y ) * $ury / $wy;
+	    return ( $x, $y );
+	}
 
-        sub sh {
-            my ( $p, $el, %atts ) = @_;
-            if ( $atts{'class'} eq 'ocr_page' ) {
-                ( $px0, $py0, $wx, $wy ) =
-                  $atts{'title'} =~ m/bbox\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/;
+	sub sh {
+	    my ( $p, $el, %atts ) = @_;
+	    if ( $atts{'class'} eq 'ocr_page' ) {
+		( $px0, $py0, $wx, $wy ) =
+		  $atts{'title'} =~ m/bbox\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/;
 
-                #print LOG "BBOX: $px0 $py0 $wx $wy\n";
-                return;
-            }
-            return unless ( $el eq 'span' );
-            return unless $atts{'class'} eq 'ocrx_word';
-            $p->setHandlers( 'Char' => \&ch )
-              if ( $el eq 'span' );
-            $bbox = $atts{'title'};
+		#print LOG "BBOX: $px0 $py0 $wx $wy\n";
+		return;
+	    }
+	    return unless ( $el eq 'span' );
+	    return unless $atts{'class'} eq 'ocrx_word';
+	    $p->setHandlers( 'Char' => \&ch )
+	      if ( $el eq 'span' );
+	    $bbox = $atts{'title'};
 
-            # print "SH:$el\n";
-            # print Dumper(\%atts);
-        }
+	    # print "SH:$el\n";
+	    # print Dumper(\%atts);
+	}
 
-        sub ch {
-            my ( $p, $el ) = @_;
-            return if $el =~ /^\s*$/;
-            $bbox =~ m/(\d+)\s(\d+)\s(\d+)\s(\d+)/;
+	sub ch {
+	    my ( $p, $el ) = @_;
+	    return if $el =~ /^\s*$/;
+	    $bbox =~ m/(\d+)\s(\d+)\s(\d+)\s(\d+)/;
 
-            #print LOG "BB $bbox\n";
-            # Add some text to the page
-            my ( $x1, $y1 ) = conv_xy( $1, $2 );
-            my ( $x2, $y2 ) = conv_xy( $3, $4 );
-            my $w    = $x2 - $x1;
-            my $h    = $y1 - $y2;
-            my $x    = $x1;
-            my $y    = $y2;
-            my $text = $p->{"my_text"};
-            die "ups" unless $text;
-            $text->font( $font, 10 );
-            my $fs = 10. * $w / $text->advancewidth($el);
-            $text->font( $font, $fs );
-            $y += 0.2 * $fs if ( $el =~ /[gjpqy,;]/ );
-            $text->translate( $x, $y );
-            $text->text($el);
+	    #print LOG "BB $bbox\n";
+	    # Add some text to the page
+	    my ( $x1, $y1 ) = conv_xy( $1, $2 );
+	    my ( $x2, $y2 ) = conv_xy( $3, $4 );
+	    my $w    = $x2 - $x1;
+	    my $h    = $y1 - $y2;
+	    my $x    = $x1;
+	    my $y    = $y2;
+	    my $text = $p->{"my_text"};
+	    die "ups" unless $text;
+	    $text->font( $font, 10 );
+	    my $fs = 10. * $w / $text->advancewidth($el);
+	    $text->font( $font, $fs );
+	    $y += 0.2 * $fs if ( $el =~ /[gjpqy,;]/ );
+	    $text->translate( $x, $y );
+	    $text->text($el);
 
-            #   print LOG "CH ($x $y $w $h):$el\n";
+	    #   print LOG "CH ($x $y $w $h):$el\n";
 
-            # print Dumper($p->context);
-        }
+	    # print Dumper($p->context);
+	}
 
     }
 }
@@ -465,8 +494,8 @@ sub index_pdf {
 
     $idx = $dh->last_insert_id( "", "", "", "" );
 
-    my $thumb = pdf_thumb($fn);
-    my $ico   = pdf_icon($fn);
+    my $thumb = $self->pdf_thumb($fn);
+    my $ico   = $self->pdf_icon($fn);
     my $ins_d = $dh->prepare("insert into data (idx,thumb,ico) values(?,?,?)");
     $ins_d->bind_param( 1, $idx,   SQL_INTEGER );
     $ins_d->bind_param( 2, $thumb, SQL_BLOB );
@@ -486,10 +515,7 @@ sub index_pdf {
 
     $meta{"keys"} = join( ' ', keys(%meta) );
     foreach ( keys %meta ) {
-        $dh->prepare(
-            q{insert or replace into metadata (idx,tag,value) 
-		    values(?,?,?)}
-        )->execute( $idx, $_, $meta{$_} );
+	$self->ins_e($idx, $_, $meta{$_} );
     }
 
     # load and fill file-template
@@ -508,6 +534,19 @@ sub index_pdf {
     $meta{"ico"}   = \$ico;
     return $idx, \$meta;
 }
+sub ins_e
+{
+	my ($self,$idx,$t,$c)=@_;
+
+	$self->{"new_e"}= $self->{"dh"}->prepare("insert or ignore into metadata (idx,tag,value)
+			 values (?,?,?)")
+		unless $self->{"new_e"};
+	$self->{"new_e"}->bind_param( 1, $idx,SQL_INTEGER);
+	$self->{"new_e"}->bind_param( 2, $t);
+	$self->{"new_e"}->bind_param( 3, $c, SQL_BLOB );
+	die "DBerror :$? ".$self->{"new_e"}->errstr unless
+	$self->{"new_e"}->execute;
+}
 
 sub pdf_text {
     my $self = shift;
@@ -524,18 +563,8 @@ sub pdf_text {
     my $dh=$self->{"dh"};
 
     $txt = $dh->selectrow_array( q{select value from hash natural join metadata where md5=? and tag="Text"},
-            undef, $md5 );
+	    undef, $md5 );
     return $txt if $txt;
-    if(0){
-    my $ocr_db = '/home/thilo/public_html/fl/t2/ocr.db';
-    if ( -f $ocr_db ) {
-        my $dh = DBI->connect( "dbi:SQLite:$ocr_db", undef, undef )
-          || die "Err database connection $!";
-        $txt = $dh->selectrow_array( "select text from ocr where md5=?",
-            undef, $md5 );
-        return $txt if $txt;
-    }
-    }
     $txt = qx/pdftotext \"$fn\" -/;
     undef $txt  if length($txt) < 100;
     return $txt if $txt;
@@ -546,18 +575,22 @@ sub pdf_text {
 }
 
 sub pdf_thumb {
+    my $self=shift;
     my $fn = shift;
     my @cmd =
-      ( qw{convert}, "${fn}[0]", qw{-trim -normalize -thumbnail 400 png:-} );
+      ( qw{convert}, "'${fn}'[0]", qw{-trim -normalize -thumbnail 400 png:-} );
+    print STDERR "X:".join(" ",@cmd)."\n";
     my $png = qx{@cmd};
     return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",
       length($png), $png;
 }
 
 sub pdf_icon {
+    my $self=shift;
     my $fn = shift;
     my @cmd =
-      ( qw{convert}, "${fn}[0]", qw{-trim -normalize -thumbnail 200 png:-} );
+      ( qw{convert}, "'${fn}'[0]", qw{-trim -normalize -thumbnail 200 png:-} );
+    print STDERR "X:".join(" ",@cmd)."\n";
     my $png = qx{@cmd};
     return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",
       length($png), $png;
@@ -566,14 +599,12 @@ sub classify_all
 {
     my $self = shift;
     my $all_t = qw{ select idx,md5,Tag,Value from hash natural join metadata where Tag =  "Text" };
-    my $ins_t = qw{ insert or replace into metadata (idx,Tag,Value) values(?,?,?)};
-    my $ins_s=$self->{"dh"}->prepare($ins_t);
     my $all_s=$self->{"dh"}->prepare($all_t);
     $all_s->execute;
     my $sk  = pop_session();
     while( my $r=fetch_hashref() )
     {
-my @res=$self->class_txt($fn,$txt,$md5,$sk);
+	my @res=$self->class_txt($fn,$txt,$md5,$sk);
     }
 }
 {
@@ -598,6 +629,7 @@ sub pdf_class {
     my $fn  = shift;
     my $txt = shift;
     my $md5 = shift;
+    my $classify = shift || 0;
     my $sk  = pop_session();
     my $temp_dir = "/tmp";
      
@@ -622,24 +654,27 @@ sub pdf_class {
     close($fh);
 
     my ($fh_out, $tmp_out) 
-	= tempfile('popfileinXXXXXXX', SUFFIX => ".msg", UNLINK => 1, DIR => $temp_dir);
+	= tempfile('popfileinXXXXXXX', SUFFIX => ".out", UNLINK => 1, DIR => $temp_dir);
     chmod( 0622,$tmp_out);
     chmod( 0644,$tmp_doc);
-		$sk  = XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
-		      ->call( 'POPFile/API.get_session_key', 'admin', '' )->result;
+    $sk  = XMLRPC::Lite->proxy('http://localhost:8081/RPC2') ->call( 'POPFile/API.get_session_key', 'admin', '' )->result;
+    my $typ='POPFile/API.handle_message';
+    $typ='POPFile/API.classify' if $classify;
     my $resv = XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
-	    ->call( 'POPFile/API.handle_message', $sk, $tmp_doc,$tmp_out );
-	    XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
-	      ->call( 'POPFile/API.release_session_key', $sk );
+	    ->call( $typ, $sk, $tmp_doc,$tmp_out );
+	XMLRPC::Lite->proxy('http://localhost:8081/RPC2') ->call( 'POPFile/API.release_session_key', $sk );
     my $res=$resv
 	    ->result;
-	    use Data::Dumper;
+    use Data::Dumper;
     die "ups: $tmp_out" . Dumper($resv) unless $res;
+    return $res if $classify;
     my $ln="Err";
     while(<$fh_out>) {
 	($ln=$1, last) if m/X-POPFile-Link:\s*(.*?)\s*$/;
     }
     # print STDERR "$r\nLink: $ln\n";
+    unlink($tmp_doc);
+    unlink($tmp_out);
     return ($ln,$res);
 }
 sub slurp {
@@ -657,12 +692,12 @@ sub pdf_process {
     $pdf=PDF::API2->new() || die "No new PDF $?";
 
     foreach ( split( /,/, $op ) ) {
-        next if s/D$//;    # delete
-        next unless s/^(\d+)([RUL]?)//;
-        my $att=0;
-        $att = "90"  if $2 eq "R";
-        $att = "180" if $2 eq "U";
-        $att = "270" if $2 eq "L";
+	next if s/D$//;    # delete
+	next unless s/^(\d+)([RUL]?)//;
+	my $att=0;
+	$att = "90"  if $2 eq "R";
+	$att = "180" if $2 eq "U";
+	$att = "270" if $2 eq "L";
 	$pdf->importpage($spdf,$1,0);
 	if ( $att ) {
 		my $p=$pdf->openpage(0);
@@ -677,15 +712,15 @@ sub get_cache {
     my ( $self, $item, $idx, $callback ) = @_;
     my $dh = $self->{"dh"};
     my $q  = $dh->selectrow_arrayref(
-        "select data,date from cache where item=? and idx=?",
-        undef, $item, $idx );
+	"select data,date from cache where item=? and idx=?",
+	undef, $item, $idx );
 
     my $data = $callback->( $item, $idx, @$q[1] );
     return @$q[0] if @$q[0] && !$data;
     return "Content-Type: text/text\n\nERROR\n" unless $data;
 
     my $ins_d = $dh->prepare(
-        q{insert or replace into cache (date,item,idx,data) values(?,?,?,?)});
+	q{insert or replace into cache (date,item,idx,data) values(?,?,?,?)});
     my $date = time();
     $ins_d->bind_param( 1, $date, SQL_INTEGER );
     $ins_d->bind_param( 2, $item );

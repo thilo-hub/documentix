@@ -7,6 +7,7 @@ my $pdfidx=pdfidx->new();
 
 classify($pdfidx);
 
+$pdfidx->{"dh"}->do('insert or replace into classes (class,count) select value,count(*) from metadata where tag="Class" group by value');
 
 sub classify {
     my $self = shift;
@@ -18,7 +19,7 @@ sub classify {
     while (my $r = $sh->fetchrow_hashref) 
     {
 	$dh->do("begin transaction");
-	    my ($ln,$class)=$self->pdf_class($r->{"file"},$r->{"value"},$r->{"md5"});
+	    my ($ln,$class)=$self->pdf_class($r->{"file"},$r->{"value"},$r->{"md5"},0);
 	    #my $class="X";
 	    print "$class\t$r->{file}\n";
 	    # $upd->execute($r->{"idx"},$class);
