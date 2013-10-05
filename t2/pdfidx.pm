@@ -58,7 +58,9 @@ sub setup_db {
 					end;},
 	q{CREATE TRIGGER if not exists intxt after insert on metadata when new.tag = "text" begin 
 						insert into text (docid,content) values (new.idx,new.value); 
-					end;}
+					end;},
+	q{ CREATE INDEX if not exists tags on metadata(tag)}
+
 );
 foreach(@slist)
 {
@@ -127,8 +129,6 @@ sub get_cont {
       $dh->selectrow_array( "select idx from hash where md5=?", undef, $fn );
     return unless $idx;
     my $q = "select value from metadata where idx=? and tag=\"$typ\"";
-    $q = "select $typ from data where idx=?"
-      if ( $typ =~ /thumb|ico|html/ );
     my $gt = $dh->prepare($q);
     my $res = $dh->selectrow_array( $gt, undef, $idx );
 
@@ -136,7 +136,8 @@ sub get_cont {
 
 }
 
-sub pdf_info($) {
+sub pdf_info($$) {
+    my $self = shift;
     my $fn  = shift;
     my $res = qx{pdfinfo \"$fn\"};
     $res =~ s|:\s|</td><td>|mg;
@@ -360,8 +361,11 @@ sub join_pdfhtml
     my $pn = 0;
 
     foreach $html (@htmls) {
+	next unless -f $html;
+	
 	$pn++;
-	die "Where is page $pn ($html)?" unless -f $html;
+	$pn = $1 if $html =~ /-(\d+)-\d+\.html/;
+	# print STDERR "Check: $html\n";
 	$self->add_html( $pdf, $pn, $html );
     }
     $pdf->saveas($outpdf);
@@ -393,6 +397,7 @@ sub join_pdfhtml
 	my $html        = shift;
 
 	my $page = $pdf->openpage($page_number);
+	die "No page: $page_number" unless $page;
 	my $text = $page->text();
 	$text->render(3);
 
@@ -509,7 +514,7 @@ sub index_pdf {
     $meta{"Content"} = $1;
     $meta{"mtime"}   = ( stat($fn) )[9];
     $meta{"hash"}    = $md5_f;
-    $meta{"pdfinfo"} = pdf_info($fn);
+    $meta{"pdfinfo"} = $self->pdf_info($fn);
     $meta{"Image"}   = '<img src="?type=thumb&send=#hash#">';
     ($meta{"PopFile"},$meta{"Class"})   = ($self->pdf_class( $fn, $meta{"Text"}, $meta{"hash"} ));
 
@@ -536,14 +541,14 @@ sub index_pdf {
 }
 sub ins_e
 {
-	my ($self,$idx,$t,$c)=@_;
-
+	my ($self,$idx,$t,$c,$bin)=@_;
+	$bin = SQL_BLOB if defined $bin;
 	$self->{"new_e"}= $self->{"dh"}->prepare("insert or ignore into metadata (idx,tag,value)
 			 values (?,?,?)")
 		unless $self->{"new_e"};
 	$self->{"new_e"}->bind_param( 1, $idx,SQL_INTEGER);
 	$self->{"new_e"}->bind_param( 2, $t);
-	$self->{"new_e"}->bind_param( 3, $c, SQL_BLOB );
+	$self->{"new_e"}->bind_param( 3, $c, $bin );
 	die "DBerror :$? ".$self->{"new_e"}->errstr unless
 	$self->{"new_e"}->execute;
 }
@@ -615,12 +620,16 @@ sub classify_all
 		      unless $popsession;
 		return $popsession;
 	}
+        sub pop_release
+	{
+		XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
+			->call( 'POPFile/API.release_session_key', $popsession )
+			if $popsession;
+		undef $popsession;
+	}
 
 	END{
-	    XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
-	      ->call( 'POPFile/API.release_session_key', $popsession )
-	       if $popsession;
-	    undef $popsession;
+	    pop_release();
 	}
 }
 
@@ -630,7 +639,9 @@ sub pdf_class {
     my $txt = shift;
     my $md5 = shift;
     my $classify = shift || 0;
-    my $sk  = pop_session();
+    my $sk;
+    eval { $sk  = pop_session() };
+    return undef unless $sk;
     my $temp_dir = "/tmp";
      
     # and a temporary file, with the full path specified
@@ -667,12 +678,16 @@ sub pdf_class {
 	    ->result;
     use Data::Dumper;
     die "ups: $tmp_out" . Dumper($resv) unless $res;
-    return $res if $classify;
-    my $ln="Err";
+    my $ln=undef;
+    unless ($classify)
+    {
     while(<$fh_out>) {
 	($ln=$1, last) if m/X-POPFile-Link:\s*(.*?)\s*$/;
     }
     # print STDERR "$r\nLink: $ln\n";
+    }
+    pop_release();
+    close($fh_out);
     unlink($tmp_doc);
     unlink($tmp_out);
     return ($ln,$res);

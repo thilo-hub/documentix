@@ -33,16 +33,26 @@ error_exit(":Not allowed") if ( $md5 =~ m{^/|\.\.} );
 # convert hash or filename with page spec
 ($f,$ext) = ($pdfidx->get_file($1),$3) if $md5 =~ /^(.*?)(-(\d+))?$/;
 
+sub aborting
+{
+	die "Not available: @_";
+}
 # get a single page from pdf
+my $converter={
+	"pdfpage" => \&mk_page,
+	"lowres" => \&mk_lowres,
+	"thumb" => \&mk_thumb,
+	"ico" => \&aborting,
+};
 my $sz=undef;
 $sz=(stat(_))[7] if -f $f;
 if ( $ext && $f =~ /\.pdf$/  && $sz )
 {
-	my $out=$pdfidx->get_cache($f,$ext,\&mk_page);
-	print $out;
-}elsif ( (!$t || $t eq "lowres" ) && $sz )
+	$t="pdfpage";
+}
+if ( $sz && $t && $converter->{$t} )
 {
-	my $out=$pdfidx->get_cache($f,$t,\&mk_lowres);
+	my $out=$pdfidx->get_cache($f,$ext,$converter->{$t});
 	print $out;
 }elsif ( (!$t || $t eq "pdf" ) && $sz)
 {
@@ -126,6 +136,24 @@ EOM
 	}
 	return undef if $?;
 
+	my  $out = "Content-Type: image/jpg\n";
+	    $out .="Content-Length: ".length($res)."\n";
+	    $out .="Last-Modified: ".localtime($ntime)."\n";
+	    $out .="\n";
+	    $out .= $res;
+	return $out;
+}
+
+sub mk_thumb
+{
+	my ($item,$idx,$mtime)=@_;
+	# client want a single page (we asume -resize 20
+	my $ntime=(stat($item))[9];
+	$mtime=0 unless $mtime;
+	# open(F,">>/tmp/f.log"); print F "$item - $idx $mtime <> $ntime\n";
+	return undef if ( $mtime && -r $item && $ntime < $mtime );
+	# print F "OK\n";
+	my $res=$pdfidx->pdf_thumb($item);
 	my  $out = "Content-Type: image/jpg\n";
 	    $out .="Content-Length: ".length($res)."\n";
 	    $out .="Last-Modified: ".localtime($ntime)."\n";

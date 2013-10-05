@@ -5,12 +5,14 @@ use Data::Dumper;
 use pdfidx;
 my $pdfidx=pdfidx->new();
 
-classify($pdfidx);
+my $maxcnt=$ARGV[0] || 999999;
+classify($pdfidx,$maxcnt);
 
 $pdfidx->{"dh"}->do('insert or replace into classes (class,count) select value,count(*) from metadata where tag="Class" group by value');
 
 sub classify {
     my $self = shift;
+    my $count = shift;
     my $dh   = $self->{"dh"};
 
     my $sh=$dh->prepare(q{select idx,md5,value,file from hash natural join metadata natural join file where tag ="Text" group by md5});
@@ -18,14 +20,15 @@ sub classify {
     $sh->execute();
     while (my $r = $sh->fetchrow_hashref) 
     {
+	last if $count-- == 0;
 	$dh->do("begin transaction");
-	    my ($ln,$class)=$self->pdf_class($r->{"file"},$r->{"value"},$r->{"md5"},0);
+	    my ($ln,$class)=$self->pdf_class($r->{"file"},$r->{"value"},$r->{"md5"},1);
 	    #my $class="X";
 	    print "$class\t$r->{file}\n";
 	    # $upd->execute($r->{"idx"},$class);
 	    print spell($r->{"value"})."\n";
 	    $upd->execute($r->{"idx"},"Class",$class);
-	    $upd->execute($r->{"idx"},"PopFile",$ln);
+	    $upd->execute($r->{"idx"},"PopFile",$ln) if $ln;
     $dh->do("commit");
     }
     die "$sh->err" if $sh->err;

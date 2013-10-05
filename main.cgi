@@ -18,11 +18,12 @@ print $q->header(-charset=>'utf-8'),
 
 # print pages
 my $p0=($q->param("page")||1)-1;
-my $class=$q->param("class");
-$class =~ s/:\d+$//;
 my $search=$q->param("search");
 undef $search if $search =~ /^\s*$/;
+
 my $ANY="*ANY*";
+my $class=$q->param("class");
+$class =~ s/:\d+$//;
 undef $class if defined($class) && $class eq $ANY;
 
 
