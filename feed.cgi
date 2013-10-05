@@ -6,7 +6,17 @@ use pdfidx;
 use CGI;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
 
+
 my $q = CGI->new;
+
+my $debugf;
+if ( $ENV{"DEBUG_ME"} )
+{
+	open($debugf,"/tmp/feed.call.param") and
+		$q=CGI->new($debugf);
+}
+open( $debugf,">/tmp/feed.call.param") &&
+$q->save($debugf);
 
 # Process an HTTP request
 my @values  = $q->param('send');
