@@ -17,7 +17,9 @@ foreach (@ARGV)
 	next if /\.ocr.pdf$/;
          my $inpdf = abs_path($_);
 	die "? $inpdf $?" unless -r $inpdf;
+	$pdfidx->{"dh"}->do("begin transaction");
 	my $res=$pdfidx->index_pdf($inpdf);
+	$pdfidx->{"dh"}->do("commit");
 	print STDERR "Result: $res $inpdf\n";
 }
 
