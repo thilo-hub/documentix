@@ -18,18 +18,15 @@ print $q->header(-charset=>'utf-8'),
 
 # print pages
 my $p0=($q->param("page")||1)-1;
-my $search=$q->param("search");
-undef $search if $search =~ /^\s*$/;
+my $search=$q->param("search") || undef;
+undef $search if $search && $search =~ /^\s*$/;
 
 my $ANY="*ANY*";
-my $class=$q->param("class");
-$class =~ s/:\d+$//;
+my $class=$q->param("class") || undef;
+$class =~ s/:\d+$// if $class;
 undef $class if defined($class) && $class eq $ANY;
 
 
-# Process an HTTP request
-my @values  = $q->param('send');
-#
 
 my $pdfidx=pdfidx->new();
 
@@ -47,44 +44,69 @@ use POSIX;
 
 my $dh=$pdfidx->{"dh"};
 
-my $sel=$dh->prepare(q{select tag,value from metadata where idx = ?});
-  
-my $q0="";
-$q0=qq{ (select idx from metadata where Tag="Class" and Value=?3) natural join } 
-	if defined($class);
-my $q1=qq{select idx,date(md.Value,"unixepoch","localtime") date ,time(md.Value,"unixepoch","localtime") tm
-	   from $q0 metadata md where  md.Tag="mtime" order by md.Value desc 
-	   limit ?1,?2};
-
-$q1=q{select idx,date(md.Value,"unixepoch","localtime") date, snippet(text) snip 
-            from text join metadata md on docid=idx  
-	    where content match ?4 and md.Tag="mtime" order by md.Value desc
-	    limit ?1,?2}
-	    if ( $search );
-
-
-
 my $qq="\\'";
-my $sel_class="";
-$sel_class = " and Value = '$class'" if defined($class);
-#
 my $ppage=18;
+#
+# case 1: no class and no search
+# case 2: no class and    search
+# case 3:    class and no search
+# case 4:    class and    search
+#
+# 1: select from metadata , select from classes
+#
+# 2-4:  create temporary table l as select
+#     2:   docid as idx,snippet(text) snip,value as class  from text join metadata on docid=idx where content match ? and tag="class"
+#     3:            idx,           "" snip,value as class  from           metadata              where                     tag="class" 
+#                                                                                                                         and value= ?
+#     4:   docid as idx,snippet(text) snip,value as class  from text join metadata on docid=idx where content match ? and tag="class" 
+#                                                                                                                         and value= ?
+#
+my $sel=$dh->prepare(q{select * from metadata where idx=?});
 
-my $classes=$dh->selectall_arrayref("select * from classes");
-#my $classes=$dh->selectcol_arrayref("select * from classes");
-# my $ndata=($dh->selectrow_array("select count(*) from metadata where Tag='Class' $sel_class"))[0];
-my $ndata=($dh->selectrow_array("select sum(count) from classes"))[0];
-my $max_page=int($ndata/$ppage);
-$p0=$max_page if $p0>$max_page;
-my $stm1=$dh->prepare($q1);
-$stm1->bind_param(1,$p0*$ppage);
-$stm1->bind_param(2,$ppage);
-$stm1->bind_param(3,$class) if defined($class);
-$stm1->bind_param(4,$search ) if defined ($search);
-$stm1->execute;
-my $t0=0;
+my $l=undef;
+if ( $search and $class )
+{
+    $l .=q{,snippet(text) as snip from class join text on (docid=idx) where text match ?2 and class = ?1 };
+} elsif ( $search ) 
+{
+    $l .=q{,snippet(text) as snip from class join text on (docid=idx) where text match ?2 };
+} elsif ( $class )
+{
+    $l .=q{                      from class where class=?1 };
+}
+
+if ( $l ) {
+    my $stm_l=$dh->prepare("create temporary table l as select idx,class $l");
+    $stm_l->bind_param(1,$class) if defined($class);
+    $stm_l->bind_param(2,$search ) if defined ($search);
+    $stm_l->execute();
+}
+
+my $query=q{select idx,date(mtime,"unixepoch","localtime") date  from mtime order by mtime desc limit ?,?};
+my $resset=q{select class,count(*) count from class group by class};
+
+
+$query=q{select idx,date(mtime,"unixepoch","localtime") date  from l natural join mtime order by mtime desc limit ?,?} if $l;
+$resset=q{select class,count(*) count from l group by class} if $l;
+
+
+my $stm_r=$dh->prepare($resset);
+$stm_r->execute();
+my $classes=$dh->selectall_arrayref($stm_r);
+
+my $ndata=0;
+ $ndata += $$_[1]
+    foreach ( @$classes );
 unshift @$classes,[$ANY,$ndata];
 $classes=[map{ join(':',@$_)} @$classes];
+
+my $max_page=int($ndata/$ppage);
+$p0=$max_page if $p0>$max_page;
+my $stm1=$dh->prepare($query);
+$stm1->bind_param(1,$p0*$ppage);
+$stm1->bind_param(2,$ppage);
+$stm1->execute();
+my $t0=0;
 
 
 print $q->start_form(-method=>'get');

@@ -42,22 +42,30 @@ sub setup_db {
 	q{create table if not exists metadata ( idx integer, tag text, value text, unique ( idx,tag) )} ,
 	q{create table if not exists cache (item text,idx integer,data blob,date integer, unique (item,idx))},
 	q{CREATE VIRTUAL TABLE if not exists text USING fts4(tokenize=porter);},
+	q{CREATE TABLE if not exists mtime ( idx integer primary key, mtime integer)},
+	q{CREATE INDEX if not exists mtime_i on mtime(mtime)},
+	q{CREATE TABLE if not exists class ( idx integer primary key, class text )},
+	q{CREATE INDEX if not exists class_i on class(class)},
+
 	q{CREATE TRIGGER if not exists del2 before delete on hash begin 
 					delete from file where file.md5 = old.md5; 
 					delete from data where data.idx = old.idx; 
 					delete from metadata where metadata.idx=old.idx; 
 					delete from cache where cache.idx=old.idx; 
+					delete from text where docid=old.idx; 
+					delete from mtime where mtime.idx=old.idx; 
+					delete from class where class.idx=old.idx; 
 				 end;},
-	q{CREATE TABLE if not exists classes (class text primary key unique, count integer);},
-	q{CREATE TRIGGER if not exists inclass after insert on metadata when new.tag = "Class" begin 
-					insert or ignore into classes (class,count) values(new.value,0); 
-					update classes set count=count+1 where class=new.value; 
-				end;},
-	q{CREATE TRIGGER if not exists inclassdel after delete on metadata when old.tag = "Class" begin 
-						update classes set count=count-1 where class=old.value; 
-					end;},
+	q{CREATE TRIGGER if not exists inmtime after insert on metadata when 
+	                    new.tag = "mtime" begin 
+			    insert into mtime (idx,mtime) values (new.idx,new.value); 
+		end;},
+	q{CREATE TRIGGER if not exists inclass after insert on metadata when 
+	                    new.tag = "Class" begin 
+			    insert into class (idx,class) values (new.idx,new.value); 
+		end;},
 	q{CREATE TRIGGER if not exists intxt after insert on metadata when new.tag = "text" begin 
-						insert into text (docid,content) values (new.idx,new.value); 
+			insert into text (docid,content) values (new.idx,new.value); 
 					end;},
 	q{ CREATE INDEX if not exists tags on metadata(tag)}
 

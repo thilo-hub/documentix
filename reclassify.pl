@@ -8,12 +8,13 @@ my $pdfidx=pdfidx->new();
 my $maxcnt=$ARGV[0] || 999999;
 classify($pdfidx,$maxcnt);
 
-$pdfidx->{"dh"}->do('insert or replace into classes (class,count) select value,count(*) from metadata where tag="Class" group by value');
 
 sub classify {
     my $self = shift;
     my $count = shift;
     my $dh   = $self->{"dh"};
+    $dh->sqlite_busy_timeout( 60000 );
+
 
     my $sh=$dh->prepare(q{select idx,md5,value,file from hash natural join metadata natural join file where tag ="Text" group by md5});
     my $upd=$dh->prepare(q{insert or replace into metadata (idx,tag,value) values(?,?,?)});
@@ -22,7 +23,7 @@ sub classify {
     {
 	last if $count-- == 0;
 	$dh->do("begin transaction");
-	    my ($ln,$class)=$self->pdf_class($r->{"file"},$r->{"value"},$r->{"md5"},1);
+	    my ($ln,$class)=$self->pdf_class($r->{"file"},$r->{"value"},$r->{"md5"},0);
 	    #my $class="X";
 	    print "$class\t$r->{file}\n";
 	    # $upd->execute($r->{"idx"},$class);
