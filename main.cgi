@@ -7,6 +7,7 @@ use Cwd 'abs_path';
 use CGI;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
 
+my $dbs=(stat("/var/db/pdf/doc_db.db"))[7]/1e6 ." Mb";
 my $q = CGI->new;
 print $q->header(-charset=>'utf-8'),
 	$q->start_html(-title=>'PDF Database'),
@@ -14,7 +15,7 @@ print $q->header(-charset=>'utf-8'),
 			-type => 'text/javascript',
 			-src => "js/wz_tooltip.js"
 		},""), 
-	$q->h1('PDF Indexes');
+	$q->h1("PDF Indexes DB:$dbs");
 
 # print pages
 my $p0=($q->param("page")||1)-1;
@@ -86,7 +87,7 @@ my $query=q{select idx,date(mtime,"unixepoch","localtime") date  from mtime orde
 my $resset=q{select class,count(*) count from class group by class};
 
 
-$query=q{select idx,date(mtime,"unixepoch","localtime") date  from l natural join mtime order by mtime desc limit ?,?} if $l;
+$query=q{select l.*,date(mtime,"unixepoch","localtime") date  from l natural join mtime order by mtime desc limit ?,?} if $l;
 $resset=q{select class,count(*) count from l group by class} if $l;
 
 
@@ -134,7 +135,11 @@ while( my $r=$stm1-> fetchrow_hashref )
     my $feed="../pdf/feed.cgi?send=";
     my $mod1_pdf="../pdf/t2/mod1_pdf.cgi?send=";
     my $qt="'";
-    my $tip=qq{'<object type=text/x-scriptlet width=475 height=300 data=$feed$md5&type=Content> </object>'} ;
+    my $tip=qq{<object type=text/x-scriptlet width=475 height=300 data=$feed$md5&type=Content> </object>} ;
+    $tip=$r->{snip}  if $r->{"snip"};
+    $tip =~ s/'/&quot;/g;
+    $tip =~ s/\n/<br>/g;
+    $tip = qq{'$tip'};
     # my $png=$feed."$md5&type=thumb";
     my $ico=qq{<img width=150 heigth=212 src='$feed$md5&type=ico'};
     # my $ico=qq{<img width=150 heigth=212 src='a.gif'};
@@ -161,7 +166,7 @@ while( my $r=$stm1-> fetchrow_hashref )
 	       $q->a({-href=>$pdf,
 		      -onmouseover=>"Tip($tip)",
 		      -onmouseout=>"UnTip()"},$short_name).
-      	      ($r->{"snip"} ? "<br>$r->{snip}" :"").
+	      #  ($r->{"snip"} ? "<br>$r->{snip}" :"").
       	      "<br>".  $q->a({-href=>$lowres, -target=>"_pdf"},"&lt;Lowres&gt;").
       	      "<br>".  $q->a({-href=>$modf, -target=>"_edit"},"&lt;Edit&gt;").
 			 "<br> Pages: $p <br>$s"]);

@@ -31,7 +31,7 @@ error_exit(":What file ?") unless $md5;
 error_exit(":Not allowed") if ( $md5 =~ m{^/|\.\.} );
 
 # convert hash or filename with page spec
-($f,$ext) = ($pdfidx->get_file($1),$3) if $md5 =~ /^(.*?)(-(\d+))?$/;
+($f,$ext) = ($pdfidx->get_file($1),$3) if $md5 =~ /^(.*?)(-(\d+[RLU]?))?$/;
 
 sub aborting
 {
@@ -45,18 +45,19 @@ my $converter={
 	"ico" => \&mk_ico,
 };
 my $sz=undef;
-$sz=(stat(_))[7] if -f $f;
-if ( $ext && $f =~ /\.pdf$/  && $sz )
+$!=undef;
+$sz=(stat(_))[7] if -r $f;
+if ( !defined($t) && $ext && $f =~ /\.pdf$/  && $sz )
 {
 	$t="pdfpage";
 }
 if ( $sz && $t && $converter->{$t} )
 {
-	my $out=$pdfidx->get_cache($f,$ext,$converter->{$t});
+	my $out=$pdfidx->get_cache($f,"$ext-$t",$converter->{$t});
 	print $out;
 }elsif ( (!$t || $t eq "pdf" ) && $sz)
 {
-	$f = $1.".ocr.pdf" if ( $f =~ /^(.*)\.pdf$/ && -f $1.".ocr.pdf" && ($sz=(stat(_))[7])>0);
+	$f = $1.".ocr.pdf" if ( $f =~ /^(.*)\.pdf$/ && -r $1.".ocr.pdf" && ($sz=(stat(_))[7])>0);
 	open(F,"<$f");
 	print $q->header( -type=> 'application/pdf',
 			  -expires => '+3d',
@@ -73,28 +74,33 @@ if ( $sz && $t && $converter->{$t} )
     print $data;
 }else
 {
-	error_exit();
+	error_exit("Permission denied");
 }
 exit(0);
 
 sub error_exit
 {
-	my $msg=shift || "";
+	my $msg=shift || $! || "Some error happened";
 	$f = "??" unless $f;
 	print $q->header(),
 		$q->start_html(),
-	    $q->h1("Some error happend $msg"),
+	    $q->h1($msg),
 	    $q->h2($f);
-	if ( -f $f )
+	if ( $msg =~ /Permission denied/ )
 	{
-		$f =~ s|/mnt/raid3e/home/thilo|file:////maggi/thilo|;
+		$f =~ s|^|file://$ENV{"SERVER_ADDR"}|;
+		$f =~ s|/mnt/raid3e/home/thilo|/thilo|;
 		print "TRY: <a href=\"$f\">$f</a>\n";
+
 	}
-	foreach my $var (sort(keys(%ENV))) {
-	    my $val = $ENV{$var};
-	    $val =~ s|\n|\\n|g;
-	    $val =~ s|"|\\"|g;
-	    print "<p>${var}=\"${val}\"";
+	else
+	{
+		foreach my $var (sort(keys(%ENV))) {
+		    my $val = $ENV{$var};
+		    $val =~ s|\n|\\n|g;
+		    $val =~ s|"|\\"|g;
+		    print "<p>${var}=\"${val}\"";
+		}
 	}
 	print $q->end_html;
 	exit 0;
@@ -149,8 +155,15 @@ sub mk_ico
 	my ($item,$idx,$mtime)=@_;
 	my $ntime=(stat($item))[9];
 	$mtime=0 unless $mtime;
+	my $pg=undef;
+	my $rot=undef;
+	$pg= $1 if $idx =~ s/^(\d+)//;
+	$rot= 90 if $idx =~ s/^R-//;
+	$rot= -90 if $idx =~ s/^L-//;
+	$rot= 180 if $idx =~ s/^U-//;
 	return undef if ( $mtime && -r $item && $ntime < $mtime );
-	my $out =$pdfidx->pdf_icon($item);
+	my $out =$pdfidx->pdf_icon($item,$pg,$rot);
+	return undef unless $out;
 	$out =~ s/\n/"\nLast-Modified: ".localtime($ntime)."\n"/e;
 	return $out;
 }
@@ -158,10 +171,13 @@ sub mk_ico
 sub mk_thumb
 {
 	my ($item,$idx,$mtime)=@_;
+	my $pg=undef;
+	$pg= $1 if $idx =~ /(\d+)/;
 	my $ntime=(stat($item))[9];
 	$mtime=0 unless $mtime;
 	return undef if ( $mtime && -r $item && $ntime < $mtime );
-	my $out = $pdfidx->pdf_thumb($item);
+	my $out = $pdfidx->pdf_thumb($item,$pg);
+	return undef unless $out;
 	$out =~ s/\n/"\nLast-Modified: ".localtime($ntime)."\n"/e;
 	return $out;
 }

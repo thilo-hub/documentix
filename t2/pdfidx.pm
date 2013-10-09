@@ -34,6 +34,7 @@ sub setup_db {
     my $self = shift;
     my $dh   = $self->{"dh"};
 
+    $dh->sqlite_busy_timeout( 60000 );
    my @slist=(
 	q{create table if not exists hash ( idx integer primary key autoincrement, md5 text unique )} ,
 	q{create table if not exists file ( md5 text primary key, file text unique)} ,
@@ -116,6 +117,17 @@ sub get_file {
     my $fn =
       $dh->selectrow_array( "select file from file where md5=?", undef, $md5 );
     return $fn;
+}
+
+sub get_metas {
+    my $self = shift;
+    my $dh   = $self->{"dh"};
+    my ( $fn ) = @_;
+    my $res = $dh->selectall_hashref(
+        "select tag,value from hash natural join metadata where md5=?",
+        "tag", undef, $fn
+    );
+    return $res;
 }
 
 sub get_meta {
@@ -590,10 +602,13 @@ sub pdf_text {
 sub pdf_thumb {
     my $self=shift;
     my $fn = shift;
+    my $pn = (shift || 1) - 1;
+    $fn .= "[$pn]";
     my @cmd =
-      ( qw{convert}, "'${fn}'[0]", qw{-trim -normalize -thumbnail 400 png:-} );
+      ( qw{convert}, $fn, qw{-trim -normalize -thumbnail 400 png:-} );
     print STDERR "X:".join(" ",@cmd)."\n";
     my $png = qx{@cmd};
+    return undef unless length($png);
     return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",
       length($png), $png;
 }
@@ -601,10 +616,15 @@ sub pdf_thumb {
 sub pdf_icon {
     my $self=shift;
     my $fn = shift;
-    my @cmd =
-      ( qw{convert}, "'${fn}'[0]", qw{-trim -normalize -thumbnail 200 png:-} );
+    my $pn = (shift || 1) - 1;
+    my $rot = shift;
+    $fn .= "[$pn]";
+    my @cmd = ( qw{convert}, $fn, qw{-trim -normalize -thumbnail 100});
+    push @cmd,"-rotate",$rot if $rot;
+    push @cmd, "png:-";
     print STDERR "X:".join(" ",@cmd)."\n";
     my $png = qx{@cmd};
+    return undef unless length($png);
     return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",
       length($png), $png;
 }
@@ -747,7 +767,7 @@ sub get_cache {
     my $date = time();
     $ins_d->bind_param( 1, $date, SQL_INTEGER );
     $ins_d->bind_param( 2, $item );
-    $ins_d->bind_param( 3, $idx,  SQL_INTEGER );
+    $ins_d->bind_param( 3, $idx);
     $ins_d->bind_param( 4, $data, SQL_BLOB );
     $ins_d->execute;
     return $data;
