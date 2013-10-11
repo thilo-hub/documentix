@@ -6,11 +6,11 @@ use parent DBI;
 use DBI qw(:sql_types);
 use File::Temp qw/tempfile tempdir/;
 $File::Temp::KEEP_ALL = 1;
+my $mth=1;
  
 # use threads;
 # use threads::shared;
 
-my $get_f;
 my $cleanup = 1;
 
 sub new {
@@ -270,7 +270,7 @@ sub pdftohtml {
         push @pages, "$base.html";
 
         my $pid=0;
-	if ( ( $pid = fork() ) == 0 ) 
+	if ( !$mth ||  ( $pid = fork() ) == 0 ) 
 	{
             print STDERR "Conv $_\n";
 	    my $o="$base.prc.$ext";
@@ -299,12 +299,13 @@ sub pdftohtml {
                 unlink $o if $cleanup;
             }
             print STDERR "$base - done($fail)\n";
-	    exit($fail);
+	    exit($fail) if $mth;
+	    $errs += $fail;
         }
 	$childs{$pid}++;
         $errs += w_load(5);
     }
-    $errs += w_load(0);
+    $errs += w_load(0) if $mth;
     print STDERR "Done Errs:$errs\n";
     return @pages;
 }
