@@ -25,8 +25,6 @@ sub new {
     $dh->{"setup_db"} = \&setup_db;
     my $self = bless { dh => $dh }, $class;
     setup_db($self);
-    $get_f =
-      $dh->prepare("select idx,md5 from file natural join hash  where file=?");
     return $self;
 }
 
@@ -258,6 +256,8 @@ sub pdftohtml {
 	    qx{/usr/pkg/bin/pdftoppm -r 300 "$inpdf" "$tmpdir/ppage"};
 	    die "Ups: pdftoppm $? " if $?;
 	    @images=glob("$tmpdir/ppage-*");
+	    $_=0 
+	    	foreach (@rot);
     }
     printf STDERR "Converting %d Pages\n",scalar(@images);
     foreach (@images)
@@ -591,7 +591,8 @@ sub pdf_text {
     $txt = $dh->selectrow_array( q{select value from hash natural join metadata where md5=? and tag="Text"},
 	    undef, $md5 );
     return $txt if $txt;
-    $txt = qx/pdftotext \"$fn\" -/;
+    #$fn=~ s/\$/\\\$/g;
+    $txt = qx{pdftotext '$fn' -};
     undef $txt  if length($txt) < 100;
     return $txt if $txt;
     # next ressort to ocr 
@@ -662,6 +663,56 @@ sub classify_all
 	}
 }
 
+sub pdf_class2 {
+    my $self  = shift;
+    my $fn  = shift;
+    my $txt = shift;
+    my $md5 = shift;
+    my $classify=1;
+    # my $classify = shift || 0;
+    my $sk;
+    eval { $sk  = pop_session() };
+    return undef unless $sk;
+    my $temp_dir = "/tmp";
+     
+    # and a temporary file, with the full path specified
+    my ($fh, $tmp_doc) 
+	= tempfile('popfileinXXXXXXX', SUFFIX => ".msg", UNLINK => 1 , DIR => $temp_dir);
+     
+    my $f = $fn;
+    $f =~ s/^.*\///;
+    print $fh "Subject:  $f\n";
+    print $fh "From:  Docusys\n";
+    print $fh "To:  Filesystem\n";
+    print $fh "File:  $fn\n";
+    print $fh "Message-ID: $md5\n";
+    print $fh "\n";
+    print $fh $txt;
+    close($fh);
+
+    my ($fh_out, $tmp_out) 
+	= tempfile('popfileinXXXXXXX', SUFFIX => ".out", UNLINK => 1, DIR => $temp_dir);
+    chmod( 0622,$tmp_out);
+    chmod( 0644,$tmp_doc);
+    my $typ='POPFile/API.handle_message';
+    $typ='POPFile/API.classify' if $classify;
+    my $resv = XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
+	    ->call( $typ, $sk, $tmp_doc,$tmp_out );
+    unlink($tmp_doc);
+    my $res=$resv ->result;
+    use Data::Dumper;
+    die "ups: $tmp_out" . Dumper($resv) unless $res;
+    my $ln=undef;
+    unless ($classify)
+    {
+	while(<$fh_out>) {
+		($ln=$1, last) if m/X-POPFile-Link:\s*(.*?)\s*$/;
+	}
+    }
+    close($fh_out);
+    unlink($tmp_out);
+    return ($ln,$res);
+}
 sub pdf_class {
     my $self  = shift;
     my $fn  = shift;
