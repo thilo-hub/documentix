@@ -135,7 +135,7 @@ while( my $r=$stm1-> fetchrow_hashref )
     my $feed="../pdf/feed.cgi?send=";
     my $mod1_pdf="../pdf/t2/mod1_pdf.cgi?send=";
     my $qt="'";
-    my $tip=qq{<object type=text/x-scriptlet width=475 height=300 data=$feed$md5&type=Content> </object>} ;
+    my $tip=qq{<object type=text/x-scriptlet width=475 height=300 data="$feed$md5&type=Content"> </object>} ;
     $tip=$r->{snip}  if $r->{"snip"};
     $tip =~ s/'/&quot;/g;
     $tip =~ s/\n/<br>/g;

@@ -16,18 +16,18 @@ sub classify {
     $dh->sqlite_busy_timeout( 60000 );
 
 
-    my $sh=$dh->prepare(q{select idx,md5,value,file from hash natural join metadata natural join file where tag ="Text" group by md5});
+    my $sh=$dh->prepare(q{select idx,md5,value,file from hash natural join metadata natural join file where tag ="Text" group by md5 order by idx desc});
     my $upd=$dh->prepare(q{insert or replace into metadata (idx,tag,value) values(?,?,?)});
     $sh->execute();
     while (my $r = $sh->fetchrow_hashref) 
     {
 	last if $count-- == 0;
-	$dh->do("begin transaction");
 	    my ($ln,$class)=$self->pdf_class($r->{"file"},$r->{"value"},$r->{"md5"},0);
 	    #my $class="X";
 	    print "$class\t$r->{file}\n";
 	    # $upd->execute($r->{"idx"},$class);
 	    print spell($r->{"value"})."\n";
+	$dh->do("begin transaction");
 	    $upd->execute($r->{"idx"},"Class",$class);
 	    $upd->execute($r->{"idx"},"PopFile",$ln) if $ln;
     $dh->do("commit");

@@ -299,7 +299,7 @@ sub pdftohtml {
                 unlink $o if $cleanup;
             }
             print STDERR "$base - done($fail)\n";
-	    exit($fail) if $mth;
+	    exit($fail) if ! $mth;
 	    $errs += $fail;
         }
 	$childs{$pid}++;
