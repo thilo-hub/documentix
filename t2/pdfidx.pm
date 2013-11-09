@@ -234,6 +234,7 @@ sub w_load {
 sub pdftohtml {
     my $self = shift;
     my ( $inpdf, $tmpdir ) = @_;
+    my $dh   = $self->{"dh"};
 
     # extract all pages first
     die "$inpdf" unless -r $inpdf;
@@ -253,7 +254,7 @@ sub pdftohtml {
 	    # try conversion differently
 	    # using pdftoppm
 	    print STDERR "Using pdftoppm\n";
-	    qx{/usr/pkg/bin/pdftoppm -r 300 "$inpdf" "$tmpdir/ppage"};
+	    qx{/usr/pkg/bin/pdftoppm -r 300 '$inpdf' '$tmpdir/ppage'};
 	    die "Ups: pdftoppm $? " if $?;
 	    @images=glob("$tmpdir/ppage-*");
 	    $_=0 
@@ -272,6 +273,7 @@ sub pdftohtml {
         my $pid=0;
 	if ( !$mth ||  ( $pid = fork() ) == 0 ) 
 	{
+	    $dh->disconnect  if  $mth;
             print STDERR "Conv $_\n";
 	    my $o="$base.prc.$ext";
             my $fail = 0;
@@ -299,7 +301,7 @@ sub pdftohtml {
                 unlink $o if $cleanup;
             }
             print STDERR "$base - done($fail)\n";
-	    exit($fail) if ! $mth;
+	    exit($fail) if  $mth;
 	    $errs += $fail;
         }
 	$childs{$pid}++;
@@ -315,7 +317,7 @@ sub ocrpdf {
     my ( $inpdf, $outpdf, $ascii ) = @_;
     my $txt    = undef;
     my @htmls;
-    my $tmpdir = tempdir( CLEANUP => 1,TEMPLATE=>"/tmp/ocrpdf_XXXXXX");
+    my $tmpdir = tempdir( CLEANUP => 1,TEMPLATE=>"/var/tmp/ocrpdf_XXXXXX");
     my @htmls = $self->pdftohtml( $inpdf, $tmpdir );
     return unless scalar(@htmls);
     if ( scalar(@htmls) )
@@ -537,7 +539,7 @@ sub index_pdf {
     $meta{"hash"}    = $md5_f;
     $meta{"pdfinfo"} = $self->pdf_info($fn);
     $meta{"Image"}   = '<img src="?type=thumb&send=#hash#">';
-    ($meta{"PopFile"},$meta{"Class"})   = ($self->pdf_class( $fn, $meta{"Text"}, $meta{"hash"} ));
+    ($meta{"PopFile"},$meta{"Class"})   = ($self->pdf_class( $fn, substr($meta{"Text"},0,50000), $meta{"hash"} ));
 
     $meta{"keys"} = join( ' ', keys(%meta) );
     foreach ( keys %meta ) {
@@ -592,7 +594,7 @@ sub pdf_text {
 	    undef, $md5 );
     return $txt if $txt;
     #$fn=~ s/\$/\\\$/g;
-    $txt = qx{pdftotext '$fn' -};
+    $txt = qx{pdftotext "$fn" -};
     undef $txt  if length($txt) < 100;
     return $txt if $txt;
     # next ressort to ocr 
@@ -603,7 +605,7 @@ sub pdf_text {
 
 sub pdf_thumb {
     my $self=shift;
-    my $fn = shift;
+    my $fn = '"'.shift.'"';
     my $pn = (shift || 1) - 1;
     $fn .= "[$pn]";
     my @cmd =
@@ -617,7 +619,7 @@ sub pdf_thumb {
 
 sub pdf_icon {
     my $self=shift;
-    my $fn = shift;
+    my $fn = '"'.shift.'"';
     my $pn = (shift || 1) - 1;
     my $rot = shift;
     $fn .= "[$pn]";
@@ -673,7 +675,7 @@ sub pdf_class2 {
     my $sk;
     eval { $sk  = pop_session() };
     return undef unless $sk;
-    my $temp_dir = "/tmp";
+    my $temp_dir = "/var/tmp";
      
     # and a temporary file, with the full path specified
     my ($fh, $tmp_doc) 
@@ -722,7 +724,7 @@ sub pdf_class {
     my $sk;
     eval { $sk  = pop_session() };
     return undef unless $sk;
-    my $temp_dir = "/tmp";
+    my $temp_dir = "/var/tmp";
      
     # and a temporary file, with the full path specified
     my ($fh, $tmp_doc) 

@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 use pdfidx;
+use WWW::Authen::Simple;
 
 use CGI;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
@@ -24,6 +25,16 @@ my @values  = $q->param('send');
 my $md5=$values[0];
 my $pdfidx=pdfidx->new();
 my $t=$q->param('type');
+my $auth=WWW::Authen::Simple->new(
+	db => $pdfidx->{"dh"},
+	cookie_domain => $ENV{"SERVER_NAME"}
+);
+my($s,$user,$uid)=$auth->login($q->param('user'),$q->param('login'));
+if ( $s != 1 )
+{
+	do "login.cgi";
+	exit 0;
+}
 my ($f,$ext);
 # open(F,">>/tmp/f.log"); foreach(keys %ENV){ print F "$_ => $ENV{$_}\n" }; 
 
@@ -90,7 +101,7 @@ sub error_exit
 	{
 		$f =~ s|^|file://$ENV{"SERVER_ADDR"}|;
 		$f =~ s|/mnt/raid3e/home/thilo|/thilo|;
-		print "TRY: <a href=\"$f\">$f</a>\n";
+		print "TRY: ".$q->a({ href=>$f},$f);
 
 	}
 	else

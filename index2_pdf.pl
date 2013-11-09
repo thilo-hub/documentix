@@ -10,6 +10,11 @@ my $pdfidx = pdfidx->new();
 
 my $popfile = "/var/db/pdf/start_pop";
 
+my $popf=$pdfidx->pop_session();
+$pdfidx->pop_release;
+die "No popfile running"
+	unless $popf;
+
 # system($popfile);
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 #
@@ -98,7 +103,7 @@ while ( my $r = $it_idx->fetchrow_hashref ) {
         print STDERR "Class ";
         my ( $PopFile, $Class ) = (
             $pdfidx->pdf_class(
-                $r->{"file"}, $dt->{"Text"}->{"value"},
+                $r->{"file"}, substr($dt->{"Text"}->{"value"},0,100000),
                 $dt->{"hash"}->{"value"}
             )
         );

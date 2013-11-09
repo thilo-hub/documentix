@@ -2,13 +2,27 @@
 use strict;
 use warnings;
 use Data::Dumper;
+use WWW::Authen::Simple;
 use pdfidx;
 use Cwd 'abs_path';
 use CGI;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
 
-my $dbs=(stat("/var/db/pdf/doc_db.db"))[7]/1e6 ." Mb";
 my $q = CGI->new;
+
+my $pdfidx=pdfidx->new();
+my $auth=WWW::Authen::Simple->new(
+	db => $pdfidx->{"dh"},
+	cookie_domain => $ENV{"SERVER_NAME"}
+);
+my($user,$uid)= check_auth($q);
+
+#===== AUTHENTICATED BELOW ===========
+
+
+my $dbs=(stat("/var/db/pdf/doc_db.db"))[7]/1e6 ." Mb";
+my $sessid=$q->cookie('SessionID');
+
 print $q->header(-charset=>'utf-8'),
 	$q->start_html(-title=>'PDF Database'),
 	$q->script({
@@ -17,6 +31,7 @@ print $q->header(-charset=>'utf-8'),
 		},""), 
 	$q->h1("PDF Indexes DB:$dbs");
 
+	print $q->h2("SID: $sessid") if $sessid;
 # print pages
 my $p0=($q->param("page")||1)-1;
 my $search=$q->param("search") || undef;
@@ -27,9 +42,6 @@ my $class=$q->param("class") || undef;
 $class =~ s/:\d+$// if $class;
 undef $class if defined($class) && $class eq $ANY;
 
-
-
-my $pdfidx=pdfidx->new();
 
 my $popfile="/var/db/pdf/start_pop";
 
@@ -82,33 +94,47 @@ if ( $l ) {
     $stm_l->bind_param(2,$search ) if defined ($search);
     $stm_l->execute();
 }
+my $cl_user=$dh->selectall_hashref("select Name from usergroups natural join groups where uid=?","Name",undef,$uid);
 
-my $query=q{select idx,date(mtime,"unixepoch","localtime") date  from mtime order by mtime desc limit ?,?};
-my $resset=q{select class,count(*) count from class group by class};
+my $selc=q{ where class in (select Name from usergroups natural join groups where uid=?)};
+my $query=qq{select idx,date(mtime,"unixepoch","localtime") date  from mtime natural join class $selc order by mtime desc limit ?,?};
+my $resset=qq{select class,count(*) count from class $selc group by class};
 
 
-$query=q{select l.*,date(mtime,"unixepoch","localtime") date  from l natural join mtime order by mtime desc limit ?,?} if $l;
-$resset=q{select class,count(*) count from l group by class} if $l;
+$query=qq{select l.*,date(mtime,"unixepoch","localtime") date  from l natural join mtime natural join class $selc order by mtime desc limit ?,?} if $l;
+$resset=qq{select class,count(*) count from l $selc group by class} if $l;
 
 
 my $stm_r=$dh->prepare($resset);
-$stm_r->execute();
-my $classes=$dh->selectall_arrayref($stm_r);
+$stm_r->execute($uid);
+# the set of classes for the query
+my $cl_found=$dh->selectall_arrayref($stm_r);
 
+my $classes;
 my $ndata=0;
- $ndata += $$_[1]
-    foreach ( @$classes );
+
+foreach (@$cl_found)
+{
+	next unless $cl_user->{$$_[0]};
+	push @$classes,$_;
+	$ndata += $$_[1];
+}
 unshift @$classes,[$ANY,$ndata];
 $classes=[map{ join(':',@$_)} @$classes];
 
 my $max_page=int($ndata/$ppage);
 $p0=$max_page if $p0>$max_page;
 my $stm1=$dh->prepare($query);
-$stm1->bind_param(1,$p0*$ppage);
-$stm1->bind_param(2,$ppage);
+$stm1->bind_param(1,$uid);
+$stm1->bind_param(2,$p0*$ppage);
+$stm1->bind_param(3,$ppage);
 $stm1->execute();
 my $t0=0;
 
+
+print $q->start_form(-method=>'post');
+print $q->submit(-value=>"Log off $user", -name=>'Logout');
+print $q->end_form;
 
 print $q->start_form(-method=>'get');
 print $q->br,"Search:"; print $q->textfield('search');
@@ -167,7 +193,7 @@ while( my $r=$stm1-> fetchrow_hashref )
 		      -onmouseover=>"Tip($tip)",
 		      -onmouseout=>"UnTip()"},$short_name).
 	      #  ($r->{"snip"} ? "<br>$r->{snip}" :"").
-      	      "<br>".  $q->a({-href=>$lowres, -target=>"_pdf"},"&lt;Lowres&gt;").
+      	      ((($s/$p)>500000)? "<br>".  $q->a({-href=>$lowres, -target=>"_pdf"},"&lt;Lowres&gt;"):"").
       	      "<br>".  $q->a({-href=>$modf, -target=>"_edit"},"&lt;Edit&gt;").
 			 "<br> Pages: $p <br>$s"]);
 	
@@ -211,4 +237,25 @@ sub pages
 	push @pgurl, sprintf("<a href=$myself>&gt;<a>",$p0+1);
 	push @pgurl, sprintf("<a href=$myself>&gt;&gt;<a>",$maxpage);
 	return $q->table($q->Tr($q->td(\@pgurl)));
+}
+
+sub check_auth
+{
+	my $q=shift;
+	$auth->logout() if $q->param('Logout');
+
+	my($s,$user,$uid)=$auth->login($q->param('user'),$q->param('login'));
+	if ( $s != 1 )
+	{
+		do "login.cgi";
+		exit 0;
+		my $dst="login.cgi";
+		#print $q->redirect($dst); 
+		print $q->header(),
+			$q->html($q->script({-type=>'text/javascript'},
+			"window.location.href='$dst'"),
+		      $q->a({-href=>$dst},'Refresh page'));
+		exit 0;
+	}
+return ($user,$uid);
 }
