@@ -54,7 +54,14 @@ my $it_idx = $dh->prepare(
 my $gt_md = $dh->prepare(q{select tag,value from metadata where idx=?});
 $it_idx->execute();
 use Data::Dumper;
+my @list;
 while ( my $r = $it_idx->fetchrow_hashref ) {
+	push @list,$r;
+}
+printf STDERR "Process: %d files\n",scalar(@list);
+while(@list)
+{
+    my $r=shift @list;
     my $idx   = $r->{"idx"};
     my $md5_f = $r->{"md5"};
     next unless -r $r->{"file"};
@@ -87,6 +94,7 @@ while ( my $r = $it_idx->fetchrow_hashref ) {
     }
     unless ( $dt->{"Text"} ) {
         print STDERR "Text\n";
+        $dh->do("commit");
         my $t = $pdfidx->pdf_text( $r->{"file"}, $r->{"md5"} );
         if ($t) {
             $pdfidx->ins_e( $r->{"idx"}, "Text", $t );
@@ -98,6 +106,7 @@ while ( my $r = $it_idx->fetchrow_hashref ) {
             $dt->{"Text"}->{"value"}    = $t;
             $dt->{"Content"}->{"value"} = $c;
         }
+        $dh->do("begin transaction");
     }
     unless ( $dt->{"Class"} || !defined $dt->{"Text"} ) {
         print STDERR "Class ";
