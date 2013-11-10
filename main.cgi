@@ -47,10 +47,6 @@ my $popfile="/var/db/pdf/start_pop";
 
 # system($popfile);
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
-my $DOCUMENT= abs_path("../search/scanner/DOCUMENT");
-my $archive=abs_path("../search/scanner/archive");
-die "Wrong dir $DOCUMENT" unless -d $DOCUMENT;
-die "Wrong dir $archive" unless -d $archive;
 use File::Copy;
 
 use POSIX;
