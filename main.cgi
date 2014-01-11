@@ -11,8 +11,15 @@ $ENV{"PATH"} .= ":/usr/pkg/bin";
 my $q = CGI->new;
 
 my $pdfidx=pdfidx->new();
+#if we have the authetication cookies in the parameters
+# put them into a cookie
+my @mycookies;
+# push @mycookies, $q->cookie(-name=>'login',-value=>[$q->param('login')]) if $q->param('login');
+# push @mycookies, $q->cookie(-name=>'ticket',-value=>[$q->param('ticket')]) if $q->param('ticket');
+
 my $auth=WWW::Authen::Simple->new(
 	db => $pdfidx->{"dh"},
+	expire_seconds => 9999,
 	cookie_domain => $ENV{"SERVER_NAME"}
 );
 my($user,$uid)= check_auth($q);
@@ -23,7 +30,7 @@ my($user,$uid)= check_auth($q);
 my $dbs=(stat("/var/db/pdf/doc_db.db"))[7]/1e6 ." Mb";
 my $sessid=$q->cookie('SessionID');
 
-print $q->header(-charset=>'utf-8'),
+print $q->header(-charset=>'utf-8' ), # , -cookie=> \@mycookies),
 	$q->start_html(-title=>'PDF Database'),
 	$q->script({
 			-type => 'text/javascript',
@@ -132,7 +139,9 @@ print $q->start_form(-method=>'post');
 print $q->submit(-value=>"Log off $user", -name=>'Logout');
 print $q->end_form;
 
-print $q->start_form(-method=>'get');
+print $q->start_form(-method=>'post');
+#print $q->hidden(-name=>'login', -default=>$q->cookie('login')) if $q->cookie('login');
+#print $q->hidden(-name=>'ticket', -default=>$q->cookie('ticket')) if $q->cookie('ticket');
 print $q->br,"Search:"; print $q->textfield('search');
 print $q->popup_menu(-name=>'class', -values=>$classes, -default=>$class);
 print $q->submit, $q->end_form;
@@ -173,6 +182,7 @@ while( my $r=$stm1-> fetchrow_hashref )
     $tip =~ s/'/&quot;/g;
     $tip =~ s/\n/<br>/g;
     $tip = qq{'$tip'};
+    print STDERR "TIP:$tip\n";
     # my @a=stat($pdf); my $e= strftime("%Y-%b-%d %a  %H:%M ($a[7]) $_",localtime($a[10]));
     $meta->{PopFile}->{value}=~ s|http://maggi|$q->url(-base=>'1')|e;
     my $day=$d;
@@ -184,9 +194,8 @@ while( my $r=$stm1-> fetchrow_hashref )
 		      -onmouseout=>"UnTip()"},$ico),
 	       $q->a({-href=>$meta->{PopFile}->{value}, -target=>"_popfile"},
 		       $meta->{Class}->{value}).$q->br.
-	       $q->a({-href=>$pdf,
-		      -onmouseover=>"Tip($tip)",
-		      -onmouseout=>"UnTip()"},$short_name).
+	        $q->a({-href=>$pdf},$short_name).
+	       # $q->a({-href=>$pdf, -onmouseover=>"Tip($tip)", -onmouseout=>"UnTip()"},$short_name).
 	      #  ($r->{"snip"} ? "<br>$r->{snip}" :"").
       	      ((($s/$p)>500000)? "<br>".  $q->a({-href=>$lowres, -target=>"_pdf"},"&lt;Lowres&gt;"):"").
       	      "<br>".  $q->a({-href=>$modf, -target=>"_edit"},"&lt;Edit&gt;").
@@ -227,7 +236,7 @@ sub pages
 	{
 		push @pgurl,
 			sprintf("<a href=$myself>%s</a>",$_,
-				($_ == $p0 ? "<big><b>$_</b></big>" : $_ ));
+				($_ == $p0 ? "<big>&lt;$_&gt;</big>" : $_ ));
 	}
 	push @pgurl, sprintf("<a href=$myself>&gt;<a>",$p0+1);
 	push @pgurl, sprintf("<a href=$myself>&gt;&gt;<a>",$maxpage);
@@ -239,7 +248,7 @@ sub check_auth
 	my $q=shift;
 	$auth->logout() if $q->param('Logout');
 
-	my($s,$user,$uid)=$auth->login($q->param('user'),$q->param('login'));
+	my($s,$user,$uid)=$auth->login($q->param('user'),$q->param('passwd'));
 	if ( $s != 1 )
 	{
 		do "login.cgi";

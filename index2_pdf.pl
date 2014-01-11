@@ -23,7 +23,6 @@ my $dh = $pdfidx->{"dh"};
 my $get_f =
   $dh->prepare("select idx,md5 from file natural join hash  where file=?");
 my $new_f = $dh->prepare("insert or replace into file (md5,file) values(?,?)");
-my $new_m = $dh->prepare("insert or ignore into hash (md5) values(?)");
 
 $dh->do("begin transaction");
 
@@ -44,7 +43,6 @@ while (<>) {
     my $md5_f = file_md5_hex($inpdf);
 
     $new_f->execute( $md5_f, $inpdf );
-    $new_m->execute($md5_f);
 
     # print "NEW: $inpdf\n";
     print STDERR "+";
@@ -59,40 +57,49 @@ while ( my $r = $it_idx->fetchrow_hashref ) {
 	push @list,$r;
 }
 printf STDERR "Process: %d files\n",scalar(@list);
+my $chk=0;
+my %md5_;
 while(@list)
 {
     my $r=shift @list;
     my $idx   = $r->{"idx"};
     my $md5_f = $r->{"md5"};
+    next if $md5_{$md5_f}++ >0;
     next unless -r $r->{"file"};
-    print STDERR "Ck: $r->{idx} $r->{file}\n";
+    my $m= "Ck: $r->{idx} $r->{file}\n";
     flushdb($dh);
+    $chk++;
 
     $gt_md->execute( $r->{"idx"} );
     my $dt = $gt_md->fetchall_hashref("tag");
     unless ( $dt->{"hash"} ) {
+	print STDERR "$m" ; $m="";
         print STDERR "Hash\n";
         $pdfidx->ins_e( $idx, "hash", $md5_f );
         $dt->{"hash"}->{"value"} = $md5_f;
     }
     unless ( $dt->{"mtime"} ) {
+	print STDERR "$m" ; $m="";
         print STDERR "mtime\n";
         my $mt = ( stat( $r->{file} ) )[9];
         $pdfidx->ins_e( $r->{idx}, "mtime", $mt );
     }
     unless ( $dt->{"Docname"} ) {
+	print STDERR "$m" ; $m="";
         print STDERR "Docname\n";
         my $fn = $r->{file};
         $fn =~ s|^.*/||;
         $pdfidx->ins_e( $r->{"idx"}, "Docname", $fn );
     }
     unless ( $dt->{"pdfinfo"} ) {
+	print STDERR "$m" ; $m="";
         print STDERR "pdfinfo\n";
         my $info = $pdfidx->pdf_info( $r->{"file"} );
         $pdfidx->ins_e( $r->{"idx"}, "pdfinfo", $info )
           if $info;
     }
     unless ( $dt->{"Text"} ) {
+	print STDERR "$m" ; $m="";
         print STDERR "Text\n";
         $dh->do("commit");
         my $t = $pdfidx->pdf_text( $r->{"file"}, $r->{"md5"} );
@@ -109,11 +116,13 @@ while(@list)
         $dh->do("begin transaction");
     }
     unless ( $dt->{"Class"} || !defined $dt->{"Text"} ) {
+	print STDERR "$m" ; $m="";
         print STDERR "Class ";
+
         my ( $PopFile, $Class ) = (
             $pdfidx->pdf_class(
-                $r->{"file"}, substr($dt->{"Text"}->{"value"},0,100000),
-                $dt->{"hash"}->{"value"}
+                $r->{"file"}, \$dt->{"Text"}->{"value"},
+                $dt->{"hash"}->{"value"},0
             )
         );
         $Class   = "----" unless $Class;
@@ -126,6 +135,7 @@ while(@list)
     }
 }
 $dh->do("commit");
+printf STDERR "Checked: $chk files\n";
 
 exit(0);
 my $op = q{select idx from hash except select idx from metadata where tag=?};

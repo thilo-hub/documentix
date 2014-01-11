@@ -15,11 +15,11 @@ my $auth=WWW::Authen::Simple->new(
 	db => $dh,
 	cookie_domain => $ENV{"SERVER_NAME"}
 );
-my @state=$auth->login( $q->param('user'), $q->param('login') );
+my @state=$auth->login( $q->param('user'), $q->param('passwd') );
 print $q->header(-charset=>'utf-8'),
 	$q->start_html(-title=>'Login');
 
-$auth->logout() if $q->param('logout') && !defined($q->param('login'));
+$auth->logout() if $q->param('logout') && !defined($q->param('passwd'));
 push @state,$auth->login(undef,undef);
 	
 if ( $auth->logged_in() )
@@ -42,7 +42,7 @@ print $q->start_form(-method=>'post'),
 	$q->textfield('user'),
 	$q->br,
 	$q->label("Password:"),
-	$q->password_field(-name => 'login', -autocomplete=>'off' ),
+	$q->password_field(-name => 'passwd', -autocomplete=>'off' ),
 	$q->br,
 	$q->submit(-value=>'Login'),
 	$q->end_form;

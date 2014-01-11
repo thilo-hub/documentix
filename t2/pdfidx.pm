@@ -113,8 +113,12 @@ sub get_file {
     my ($md5) = @_;
     return $md5 unless $md5 =~ m/^[0-9a-f]{32}$/;
     my $fn =
-      $dh->selectrow_array( "select file from file where md5=?", undef, $md5 );
-    return $fn;
+      $dh->selectcol_arrayref( "select file from file where md5=?", undef, $md5 );
+    foreach(@$fn)
+    {
+	    return $_ if -r $_;
+    }
+    return $$fn[0];
 }
 
 sub get_metas {
@@ -317,9 +321,9 @@ sub ocrpdf {
     my ( $inpdf, $outpdf, $ascii ) = @_;
     my $txt    = undef;
     my @htmls;
-    my $tmpdir = tempdir( CLEANUP => 1,TEMPLATE=>"/var/tmp/ocrpdf_XXXXXX");
+    my $tmpdir = File::Temp->newdir( "/var/tmp/ocrpdf__XXXXXX");
     my @htmls = $self->pdftohtml( $inpdf, $tmpdir );
-    return unless scalar(@htmls);
+# return unless scalar(@htmls);
     if ( scalar(@htmls) )
     {
 	    $self->join_pdfhtml($tmpdir,$outpdf,$inpdf,@htmls);
@@ -343,7 +347,7 @@ sub ocrpdf {
 	    print STDERR "Creating: $outpdf\n";
 	    unlink @htmls if $cleanup;
     }
-    rmdir $tempdir if $cleanup;
+    # rmdir $tempdir if $cleanup;
     return $txt;
 
 }
@@ -741,7 +745,9 @@ sub pdf_class {
     print $fh "$xinfo";
 
     # print $fh "$p\n";
-    print $fh $txt;
+    my $tx= substr($$txt,0,100000);
+    $tx =~ s/\s+/ /g;
+    print $fh $tx;
 
     # print "T:$tf:$msg\n";
     close($fh);
