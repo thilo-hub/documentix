@@ -91,8 +91,3 @@ CREATE TRIGGER intxt after insert on metadata when new.tag = "text" begin
 			insert into text (docid,content) values (new.idx,new.value); 
 					end;
 CREATE VIRTUAL TABLE "text" USING fts4(tokenize=porter);
-CREATE TABLE 'text_content'(docid INTEGER PRIMARY KEY, 'c0content');
-CREATE TABLE 'text_segments'(blockid INTEGER PRIMARY KEY, block BLOB);
-CREATE TABLE 'text_segdir'(level INTEGER,idx INTEGER,start_block INTEGER,leaves_end_block INTEGER,end_block INTEGER,root BLOB,PRIMARY KEY(level, idx));
-CREATE TABLE 'text_docsize'(docid INTEGER PRIMARY KEY, size BLOB);
-CREATE TABLE 'text_stat'(id INTEGER PRIMARY KEY, value BLOB);
