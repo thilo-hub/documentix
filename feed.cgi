@@ -25,22 +25,36 @@ my @values  = $q->param('send');
 my $md5=$values[0];
 my $pdfidx=pdfidx->new();
 my $t=$q->param('type');
+my $dh= $pdfidx->{"dh"};
+
 my $auth=WWW::Authen::Simple->new(
-	db => $pdfidx->{"dh"},
+	db => $dh,
 	cookie_domain => $ENV{"SERVER_NAME"}
 );
-my($s,$user,$uid)=$auth->login($q->param('user'),$q->param('login'));
 my ($f,$ext);
 # open(F,">>/tmp/f.log"); foreach(keys %ENV){ print F "$_ => $ENV{$_}\n" }; 
 
 my $pi=$ENV{'PATH_INFO'};
+my($username,$passwd)=($q->param('user'),$q->param('passwd'));
 if ( $pi && $pi =~ m|^/(([^/]*)/)?([0-9a-f]{32})/([^/]+.(pdf))|)
 {
 	$md5=$3;
 	$t=$2 || $5;
 	$ext=$5;
+	if ($t =~ s/^s-([0-9a-f]{32})// )
+	{
+		my $sel=$dh->prepare(q{select * from sessions where 
+					ticket=?
+				and point < strftime("%s","now")
+					});
+		$sel->execute($1);
+		my $meta=$sel->fetchall_hashref("ticket");
+		print STDERR "S: $meta ".join(":",keys %{$meta->{$1}})."\n";
+
+	}
 }
 
+my($s,$user,$uid)=$auth->login($username,$passwd);
 if ( $s != 1 )
 {
 	do "login.cgi";
