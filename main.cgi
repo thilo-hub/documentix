@@ -154,26 +154,25 @@ while( my $r=$stm1-> fetchrow_hashref )
     $sel->execute($r->{"idx"});
     my $meta=$sel->fetchall_hashref("tag");
     my $md5=$meta->{"hash"}->{"value"};
-    my $feed="../pdf/feed.cgi?send=";
     my $mod1_pdf="../pdf/t2/mod1_pdf.cgi?send=";
     my $qt="'";
-    my $tip=qq{<object type=text/x-scriptlet width=475 height=300 data="$feed$md5&type=Content"> </object>} ;
-    $tip=$r->{snip}  if $r->{"snip"};
-    $tip =~ s/'/&quot;/g;
-    $tip =~ s/\n/<br>/g;
-    $tip = qq{'$tip'};
-    # my $png=$feed."$md5&type=thumb";
-    my $ico=qq{<img width=150 heigth=212 src='$feed$md5&type=ico'};
-    # my $ico=qq{<img width=150 heigth=212 src='a.gif'};
-    my $pdf=$feed."$md5&type=pdf";
-    my $lowres=$feed."$md5&type=lowres";
     my $modf=$mod1_pdf."$md5&type=lowres";
     my $s = $1 if $meta->{"pdfinfo"}->{"value"} =~ /File size\s*<\/td><td>(.*?)<\/td>/;
     my $p = $1 if $meta->{"pdfinfo"}->{"value"} =~ /Pages\s*<\/td><td>\s*(\d+)\s*<\/td>/;
     my $d = $1 if $meta->{"pdfinfo"}->{"value"} =~ /CreationDate\s*<\/td><td>(.*?)<\/td>/;
     $d ="--" unless $d;
+
     my $short_name=$meta->{"Docname"}->{"value"};
     $short_name =~ s/^.*\///;
+    # build various URLS
+    my $pdf="docs/pdf/$md5/$short_name";
+    my $lowres="docs/lowres/$md5/$short_name";
+    my $ico=qq{<img width=150 heigth=212 src='docs/ico/$md5/$short_name'};
+    my $tip=qq{<object type=text/x-scriptlet width=475 height=300 data="docs/Content/$md5/$short_name"> </object>} ;
+    $tip=$r->{snip}  if $r->{"snip"};
+    $tip =~ s/'/&quot;/g;
+    $tip =~ s/\n/<br>/g;
+    $tip = qq{'$tip'};
     # my @a=stat($pdf); my $e= strftime("%Y-%b-%d %a  %H:%M ($a[7]) $_",localtime($a[10]));
     $meta->{PopFile}->{value}=~ s|http://maggi|$q->url(-base=>'1')|e;
     my $day=$d;

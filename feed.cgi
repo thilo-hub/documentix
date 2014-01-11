@@ -30,19 +30,27 @@ my $auth=WWW::Authen::Simple->new(
 	cookie_domain => $ENV{"SERVER_NAME"}
 );
 my($s,$user,$uid)=$auth->login($q->param('user'),$q->param('login'));
+my ($f,$ext);
+# open(F,">>/tmp/f.log"); foreach(keys %ENV){ print F "$_ => $ENV{$_}\n" }; 
+
+my $pi=$ENV{'PATH_INFO'};
+if ( $pi && $pi =~ m|^/(([^/]*)/)?([0-9a-f]{32})/([^/]+.(pdf))|)
+{
+	$md5=$3;
+	$t=$2 || $5;
+	$ext=$5;
+}
+
 if ( $s != 1 )
 {
 	do "login.cgi";
 	exit 0;
 }
-my ($f,$ext);
-# open(F,">>/tmp/f.log"); foreach(keys %ENV){ print F "$_ => $ENV{$_}\n" }; 
 
 error_exit(":What file ?") unless $md5;
 error_exit(":Not allowed") if ( $md5 =~ m{^/|\.\.} );
-
 # convert hash or filename with page spec
-($f,$ext) = ($pdfidx->get_file($1),$3) if $md5 =~ /^(.*?)(-(\d+[RLU]?))?$/;
+($f,$ext) = ($pdfidx->get_file($1),$3 || "0") if $md5 =~ /^(.*?)(-(\d+[RLU]?))?$/;
 
 sub aborting
 {
@@ -70,9 +78,9 @@ if ( $sz && $t && $converter->{$t} )
 {
 	$f = $1.".ocr.pdf" if ( $f =~ /^(.*)\.pdf$/ && -r $1.".ocr.pdf" && ($sz=(stat(_))[7])>0);
 	open(F,"<$f");
-	print $q->header( -type=> 'application/pdf',
+	print $q->header( -type=> 'application/pdf', -charset=>"",
 			  -expires => '+3d',
-			  -Content_length => $sz);
+			  -Content_Length => $sz);
 	print $_ while ( sysread F , $_ , 8192 ); 
 } elsif (  $t && (my $data=$pdfidx->get_cont($t,$md5)))
 {
@@ -124,9 +132,9 @@ sub mk_lowres
 	my $htm=$item;
 	$htm=~ s/\.pdf$/.ocr.html/;
 	my $rv=$pdfidx->mk_pdf(undef,$item,$htm);
-	return  $q->header( -type=> 'application/pdf',
+	return  $q->header( -type=> 'application/pdf', -charset=>"",
 			  -expires => '+3d',
-			  -Content_length => length($rv)).$rv;
+			  -Content_Length => length($rv)).$rv;
 }
 sub mk_page 
 {
