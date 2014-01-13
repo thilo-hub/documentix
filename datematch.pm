@@ -1,7 +1,7 @@
 package datematch;
 #!/usr/bin/perl -w
 my $Y='((?:20|19)\d\d)';
-my $y='((?:20|19)\d\d\b|\d\d\s)';
+my $y='((?:20|19)\d\d\b|\d\d\b)';
 my $s='\b\s*[\.\/\- ]\s*\b';
 my $d='(3[01]|[012]\d|[1-9])';
 #my $m='(1?\d|[a-zA-Z]{3})';
@@ -68,10 +68,12 @@ sub extr_date
 	# 
 	return $`,todate($2?"$6 $2 $3":"$6 $5 $4 "),$&,$'
 		if( $in =~ m/\b((?:$M$s$d|$d$s$M)$s$y)/i);
-	return $` ,todate("$4 $3 $2 "),$&,$'
-		if( $in =~ m/\s($d\.\s*$m\.\s*$y)/i );
+	return $` ,todate("$5 $4 $3 "),$1,$'
+		if( $in =~ m/\s(($d\.\s*$m\.\s*$y))/i );
 	return $`,todate("$4 $2 $3 "),$&,$'
 		if( $in =~ m/\b($m\/$d\/$y)\b/i );
+	return $`,todate("$4 $2 $3 "),$&,$'
+		if( $in =~ m/\b($M\s+$y)\b/i );
 	return $in;
 }
 

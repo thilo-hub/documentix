@@ -1,15 +1,17 @@
 use datematch;
 
 open(UNUSED,">unused.out");
-while(<>)
-{
-	my $i=undef;
-	do {
-		my ($un,$tm,$m,$l)=datematch::extr_date($_);
-		print "$tm\t$m\n"
-			if($tm);
-		$i .= $un;
-		$_=$l;
-	} while ($_);
-	print UNUSED $i;
-}
+my $t;
+{ local $/; $t=<>;}
+my $i=undef;
+do {
+	my ($un,$tm,$m,$l)=datematch::extr_date($t);
+	if($tm)
+	{
+		print "$tm\t>$m<\n";
+		$t=$l;
+		$t =~ s/$m//gs;
+	}
+	$i .= $un;
+} while ($l);
+print UNUSED $i;
