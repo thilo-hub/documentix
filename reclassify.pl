@@ -22,15 +22,15 @@ sub classify {
     while (my $r = $sh->fetchrow_hashref) 
     {
 	last if $count-- == 0;
-	    my ($ln,$class)=$self->pdf_class($r->{"file"},$r->{"value"},$r->{"md5"},0);
+	    my ($ln,$class)=$self->pdf_class($r->{"file"},\$r->{"value"},$r->{"md5"},0);
 	    #my $class="X";
 	    print "$class\t$r->{file}\n";
 	    # $upd->execute($r->{"idx"},$class);
 	    print spell($r->{"value"})."\n";
-	$dh->do("begin transaction");
+	    $dh->do("begin exclusive transaction");
 	    $upd->execute($r->{"idx"},"Class",$class);
 	    $upd->execute($r->{"idx"},"PopFile",$ln) if $ln;
-    $dh->do("commit");
+	    $dh->do("commit");
     }
     die "$sh->err" if $sh->err;
     # make sure we skip already ocred docs
