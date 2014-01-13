@@ -9,9 +9,10 @@ do {
 	if($tm)
 	{
 		print "$tm\t>$m<\n";
-		$t=$l;
-		$t =~ s/$m//gs;
+		$l =~ s/$m//gs;
 	}
+	$t=$l;
 	$i .= $un;
-} while ($l);
-print UNUSED $i;
+} while ($t);
+#print UNUSED $i;
+print $i;
