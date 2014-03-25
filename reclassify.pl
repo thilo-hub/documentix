@@ -22,7 +22,7 @@ sub classify {
     while (my $r = $sh->fetchrow_hashref) 
     {
 	last if $count-- == 0;
-	    my ($ln,$class)=$self->pdf_class($r->{"file"},$r->{"value"},$r->{"md5"},0);
+	    my ($ln,$class)=$self->pdf_class($r->{"file"},\$r->{"value"},$r->{"md5"},0);
 	    #my $class="X";
 	    print "$class\t$r->{file}\n";
 	    # $upd->execute($r->{"idx"},$class);

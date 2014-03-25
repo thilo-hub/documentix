@@ -161,7 +161,7 @@ sub get_cont {
 sub pdf_info($$) {
     my $self = shift;
     my $fn  = shift;
-    my $res = qx{pdfinfo \"$fn\"};
+    my $res = qx{/usr/pkg/bin/pdfinfo \"$fn\"};
     $res =~ s|:\s|</td><td>|mg;
     $res =~ s|\n|</td></tr>\n<tr><td>|gs;
     $res =~ s|^(.*)$|<table><tr><td>$1</td></tr></table>|s;
@@ -283,34 +283,35 @@ sub pdftohtml {
             my $fail = 0;
             unless ( -f "$base.html" ) {
 
-		# $fail += (system("convert", $_,"-trim","+repage", 
+		# $fail += (system("/usr/pkg/bin/convert", $_,"-trim","+repage", 
 		# "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
 		my @opt=qw{-normalize -gamma 2.0};
 		push @opt,("-rotate", $rot[$page]) if $rot[$page] != 0;
-		print STDERR join(" ",( "convert", $_, @opt, $o,"\n" ));
+		print STDERR join(" ",( "/usr/pkg/bin/convert", $_, @opt, $o,"\n" ));
                 $fail += (
-                    system( "convert", $_, @opt, $o )
+                    system( "/usr/pkg/bin/convert", $_, @opt, $o )
                     ? 1
                     : 0 )
                   unless -f $o;
 
-# $fail += (system("convert", $_, "-gravity","north","-background","red","-splice","0x1","-trim","-chop","0x1", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
+# $fail += (system("/usr/pkg/bin/convert", $_, "-gravity","north","-background","red","-splice","0x1","-trim","-chop","0x1", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
                 unlink $_ if $cleanup;
                 $fail += (
                     system(
-                        "tesseract",   $o,     $base, "-l",
+                        "/usr/pkg/bin/tesseract",   $o,     $base, "-l",
                         "deu+eng+equ", "hocr", "thilo"
                     ) ? 1 : 0
                 );
                 unlink $o if $cleanup;
             }
             print STDERR "$base - done($fail)\n";
-	    exit($fail) if  $mth;
+	    exit($fail) if $mth;
 	    $errs += $fail;
         }
 	$childs{$pid}++;
         $errs += w_load(5);
     }
+    print STDERR "Wait..\n";
     $errs += w_load(0) if $mth;
     print STDERR "Done Errs:$errs\n";
     return @pages;
@@ -381,7 +382,15 @@ sub join_pdfhtml
 
     my $pdf;
     eval { $pdf = PDF::API2->open($inpdf) };
-    warn "Failed open $inpdf $? @_" unless $pdf;
+    if (!$pdf && $@ =~ /not a PDF file version/)
+    {
+	warn "Converting....\n";
+	system("/usr/pkg/bin/pdfopt '$inpdf' $tmpdir/x.pdf");
+	$inpdf="$tmpdir/x.pdf";
+        eval { $pdf = PDF::API2->open($inpdf) };
+    }
+    system("ls -l '$inpdf'");
+    warn "Failed open <$inpdf> $@ $? @_" unless $pdf;
     return unless $pdf;
     my $pages = $pdf->pages();
     $font = $pdf->corefont('Helvetica');
@@ -521,7 +530,7 @@ sub index_pdf {
     return $idx if $idx;   # already indexed -- TODO:potentially check timestamp
     print STDERR "Loading: $fn\n";
 
-    # $dh->do("begin transaction");
+    # $dh->do("begin exclusive transaction");
     $dh->prepare("insert into hash(md5) values(?)")->execute($md5_f);
 
     $idx = $dh->last_insert_id( "", "", "", "" );
@@ -598,7 +607,7 @@ sub pdf_text {
 	    undef, $md5 );
     return $txt if $txt;
     #$fn=~ s/\$/\\\$/g;
-    $txt = qx{pdftotext "$fn" -};
+    $txt = qx{/usr/pkg/bin/pdftotext '$fn' -};
     undef $txt  if length($txt) < 100;
     return $txt if $txt;
     # next ressort to ocr 
@@ -613,7 +622,7 @@ sub pdf_thumb {
     my $pn = (shift || 1) - 1;
     $fn .= "[$pn]";
     my @cmd =
-      ( qw{convert}, $fn, qw{-trim -normalize -thumbnail 400 png:-} );
+      ( qw{/usr/pkg/bin/convert}, $fn, qw{-trim -normalize -thumbnail 400 png:-} );
     print STDERR "X:".join(" ",@cmd)."\n";
     my $png = qx{@cmd};
     return undef unless length($png);
@@ -627,7 +636,7 @@ sub pdf_icon {
     my $pn = (shift || 1) - 1;
     my $rot = shift;
     $fn .= "[$pn]";
-    my @cmd = ( qw{convert}, $fn, qw{-trim -normalize -thumbnail 100});
+    my @cmd = ( qw{/usr/pkg/bin/convert}, $fn, qw{-trim -normalize -thumbnail 100});
     push @cmd,"-rotate",$rot if $rot;
     push @cmd, "png:-";
     print STDERR "X:".join(" ",@cmd)."\n";
@@ -674,7 +683,7 @@ sub pdf_class2 {
     my $fn  = shift;
     my $txt = shift;
     my $md5 = shift;
-    my $classify=1;
+    my $classify=0;
     # my $classify = shift || 0;
     my $sk;
     eval { $sk  = pop_session() };
@@ -693,8 +702,9 @@ sub pdf_class2 {
     print $fh "File:  $fn\n";
     print $fh "Message-ID: $md5\n";
     print $fh "\n";
-    print $fh $txt;
+    print $fh $$txt;
     close($fh);
+# system("head -40 $tmp_doc");
 
     my ($fh_out, $tmp_out) 
 	= tempfile('popfileinXXXXXXX', SUFFIX => ".out", UNLINK => 1, DIR => $temp_dir);
@@ -791,7 +801,7 @@ sub pdf_process {
     my $self = shift;
     my ( $fn, $op, $tmpdir, $outf ) = @_;
     my $ol = "";
-    $spdf=PDF::API2->open($fn) || die "Failed open: $?";
+    $spdf=PDF::API2->open($fn) || die "Failed open: $? *$fn*";
     $pdf=PDF::API2->new() || die "No new PDF $?";
 
     foreach ( split( /,/, $op ) ) {
