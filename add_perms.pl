@@ -40,13 +40,13 @@ use Data::Dumper;
 # print Dumper($bk);
 # print Dumper($gl);
 
-my $hdr =" ";
+my $hdr ="";
 my @bk=sort keys(%$bk);
 my $ind="";
 foreach( @bk )
 {
-	$hdr .= $ind . $_."\n";
-	$ind .=  (" " x 3) ."|";
+	$hdr .= $ind . ",-".$_."\n";
+	$ind .=  "|".(" " x 3) ;
 }
 print "$hdr";
 foreach my $u ( sort keys %$gl )
@@ -56,9 +56,9 @@ foreach my $u ( sort keys %$gl )
 	{
 		#my $a=$_;
 		#$a =~ s/\S/ /g;
-		my $s="-";
+		my $s=".";
 		$s="X" if $gl->{$u}->{$_};
-		$l .= (" " x 3) . $s;
+		$l .= $s.(" " x 3) ;
 	}
 	print "$l  $u\n";
 }

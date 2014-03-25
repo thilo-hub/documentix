@@ -1,9 +1,5 @@
 package datematch;
 #!/usr/bin/perl -w
-my $Y='((?:20|19)\d\d)';
-my $y='((?:20|19)\d\d\b|\d\d\s)';
-my $s='\b\s*[\.\/\- ]\s*\b';
-my $d='(3[01]|[012]\d|[1-9])';
 #my $m='(1?\d|[a-zA-Z]{3})';
 my %mth=(
 	"jan" =>	1,
@@ -47,31 +43,33 @@ my %mth=(
 	"dezember" =>  12
 );
 my $Mb=join('|',keys %mth);
-my $M="($Mb)";
-my $m="(1[0-2]|0?[1-9]|$Mb)";
+my $M="(?<M>$Mb)";
+my $m="(?<M>1[0-2]|0?[1-9]|$Mb)";
+my $Y='(?<Y>(?:20|19)\d\d)';
+my $y='(?<Y>(?:20|19)\d\d|\d\d)';
+my $s='(?: +|\. *|-|\/)';
+my $d='(?<D>3[01]|[012]\d|[1-9])';
 use Date::Parse;
 use POSIX;
 sub extr_date
 {
 	sub todate
 	{
-		my $s= shift;
-		my @d=split(" ",$s);
-		$d[1]=$mth{lc($d[1])} || $d[1];
-		$d[0] += 2000 if $d[0] < 50;
-		$d[0] += 1900 if $d[0] < 100;
-		return sprintf("%04d-%02d-%02d",$d[0],$d[1],$d[2]);
+		my ($y,$m,$d)=@_;
+		$m=$mth{lc($m)} || $m;
+		$y += 2000 if $y < 50;
+		return sprintf("%04d-%02d-%02d",$y,$m,$d);
 	}
 	my $in=shift;
 	# return:
-	# ( $pre, $norm-date, $match, $taiL )
 	# 
-	return $`,todate($2?"$6 $2 $3":"$6 $5 $4 "),$&,$'
-		if( $in =~ m/\b((?:$M$s$d|$d$s$M)$s$y)/i);
-	return $` ,todate("$4 $3 $2 "),$&,$'
-		if( $in =~ m/\s($d\.\s*$m\.\s*$y)/i );
-	return $`,todate("$4 $2 $3 "),$&,$'
-		if( $in =~ m/\b($m\/$d\/$y)\b/i );
-	return $in;
+	$in =~ s/\b\d\d? +\d\d? +\d\d?\b//sg;
+	if ($in =~ s/\b($m\/$d\/$y|$d$s$m$s$y|$M$s$y)\b//si)
+	{
+		$d=todate($+{Y},$+{M},$+{D});
+		return ( $`,$d,$&,$');
+	}
+	# ( $pre, $norm-date, $match, $taiL )
+	return ($in,undef,undef,undef);
 }
 

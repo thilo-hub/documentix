@@ -27,10 +27,10 @@ sub classify {
 	    print "$class\t$r->{file}\n";
 	    # $upd->execute($r->{"idx"},$class);
 	    print spell($r->{"value"})."\n";
-	$dh->do("begin transaction");
+	    $dh->do("begin exclusive transaction");
 	    $upd->execute($r->{"idx"},"Class",$class);
 	    $upd->execute($r->{"idx"},"PopFile",$ln) if $ln;
-    $dh->do("commit");
+	    $dh->do("commit");
     }
     die "$sh->err" if $sh->err;
     # make sure we skip already ocred docs
