@@ -1,0 +1,11 @@
+Options ExecCGI
+LimitRequestBody 10000000000000
+
+<IfModule mod_security.c>
+SetEnvIfNoCase Content-Type \
+"^multipart/form-data;" "MODSEC_NOPOSTBUFFERING=Do not buffer file uploads"
+</IfModule>
+
+<IfModule mod_gzip.c>
+mod_gzip_on No
+</IfModule>

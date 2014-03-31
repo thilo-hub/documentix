@@ -1,0 +1,86 @@
+<HTML>
+<head>
+<Title>File upload page</Title>
+
+<Style>
+body {background-color: #f9f9f9; font: 13px Arial;}
+</Style>
+
+<Script language="JavaScript">
+
+//var exts = "jpg|gif|png|bmp|mp3|mpg|mpeg|avi|rar|zip|7z|gz|txt";
+var exts = ".*"; //Use this to accept all Extensions
+
+var UID,NF=0,cx=0;
+function openStatusWindow()
+{ 
+ if(document.F1.popup.checked == true)
+ {
+   win1 = window.open('upload_status.cgi?upload_id='+UID,'win1','width=320,height=240,resizable=1');
+   win1.window.focus();
+ }
+}
+
+function generateSID()
+{
+ UID = Math.round(10000*Math.random())+'0'+Math.round(10000*Math.random());
+ var f1=document.F1;
+ f1.action = f1.action.split('?')[0]+'?upload_id='+UID;
+}
+
+function StartUpload()
+{
+    NF=0;
+    for (var i=0;i<document.F1.length;i++)
+    {
+     current = document.F1.elements[i];
+     if(current.type=='file' && current.value!='')
+      {
+         if(!checkExt(current.value))return false;
+         NF++;
+      }
+    }
+    if(NF==0){alert('Select at least one file to upload');return false;};
+    generateSID();
+    openStatusWindow();
+}
+
+function checkExt(value)
+{
+    if(value=="")return true;
+    var re = new RegExp("^.+\.("+exts+")$","i");
+    if(!re.test(value))
+    {
+        alert("Extension not allowed for file: \"" + value + "\"\nOnly these extensions are allowed: "+exts.replace(/\|/g,',')+" \n\n");
+        return false;
+    }
+    return true;
+}
+
+</Script>
+</HEAD>
+<BODY>
+<center>
+<h2>File upload page</h2>
+<form name="F1" enctype="multipart/form-data" action="env.cgi?upload_id=" method="post" onSubmit="return StartUpload();" target="upload">
+Send file: <input name="file1x" type="file" onChange="checkExt(this.value)"><br>
+Comment: <input type="text" name="comment">(optional)
+<br><br>
+<Input type="checkbox" name="popup" checked id="popup"><label FOR="popup" ACCESSKEY="Z">Show upload status in pop-up window</label><br>
+<br>
+<input type="submit" value="Upload File">
+</form>
+<form name="F2" enctype="multipart/form-data" action="env.cgi?upload_id=" method="post" >
+Send file: <input name="file1x" type="file" onChange="checkExt(this.value)"><br>
+Comment: <input type="text" name="comment">(optional)
+<br><br>
+<Input type="checkbox" name="popup" checked id="popup"><label FOR="popup" ACCESSKEY="Z">Show upload status in pop-up window</label><br>
+<br>
+<input type="submit" value="Upload File">
+</form>
+<br><br>
+
+<iframe src="about:blank" name="upload" frameborder=0 style="width: 0px; height: 0px;"></iframe>
+</center>
+</BODY>
+</HTML>
