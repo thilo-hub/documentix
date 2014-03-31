@@ -1,4 +1,5 @@
 Options -ExecCGI
+Options +Indexes 
 
-RemoveHandler .js
-
+RemoveHandler 
+#

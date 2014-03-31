@@ -4,7 +4,9 @@ Options +ExecCGI
 AddCharset UTF-8 .html
 # Options ExecCGI
 LimitRequestBody 10000000000000
+<FilesMatch docs>
 SetHandler cgi-script
+</FilesMatch>
 
 
 <IfModule mod_security.c>

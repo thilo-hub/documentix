@@ -166,13 +166,15 @@ while( my $r=$stm1-> fetchrow_hashref )
     my $mod1_pdf="../pdf/t2/mod1_pdf.cgi?send=";
     my $qt="'";
     my $modf=$mod1_pdf."$md5&type=lowres";
-    my $s = $1 if $meta->{"pdfinfo"}->{"value"} =~ /File size\s*<\/td><td>(.*?)<\/td>/;
+    my $s = $1 if $meta->{"pdfinfo"}->{"value"} =~ /File size\s*<\/td><td>\s*(\d+)/;
     my $p = $1 if $meta->{"pdfinfo"}->{"value"} =~ /Pages\s*<\/td><td>\s*(\d+)\s*<\/td>/;
     my $d = $1 if $meta->{"pdfinfo"}->{"value"} =~ /CreationDate\s*<\/td><td>(.*?)<\/td>/;
     $d ="--" unless $d;
 
     my $short_name=$meta->{"Docname"}->{"value"};
     $short_name =~ s/^.*\///;
+    my $sshort_name = $short_name;
+    $short_name =~ s/#/%23/g;
     # build various URLS
     my $pdf="docs/pdf/$md5/$short_name";
     my $lowres="docs/lowres/$md5/$short_name";
@@ -194,7 +196,7 @@ while( my $r=$stm1-> fetchrow_hashref )
 		      -onmouseout=>"UnTip()"},$ico),
 	       $q->a({-href=>$meta->{PopFile}->{value}, -target=>"_popfile"},
 		       $meta->{Class}->{value}).$q->br.
-	        $q->a({-href=>$pdf},$short_name).
+	        $q->a({-href=>$pdf},$sshort_name).
 	       # $q->a({-href=>$pdf, -onmouseover=>"Tip($tip)", -onmouseout=>"UnTip()"},$short_name).
 	      #  ($r->{"snip"} ? "<br>$r->{snip}" :"").
       	      ((($s/$p)>500000)? "<br>".  $q->a({-href=>$lowres, -target=>"_pdf"},"&lt;Lowres&gt;"):"").
