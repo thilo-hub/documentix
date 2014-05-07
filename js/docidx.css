@@ -1,0 +1,13 @@
+
+div.top{padding:0px; width:100%;height:40px}
+div.left{position: fixed; padding:0px; width:20%; float:left}
+div.right{word-wrap: break-word; padding:0px; width:80%; float:right}
+
+div.header {border: thin inset blue; text-align:center; width:100%; height:100% }
+div.menu {border: thin inset blue; text-align:center; width:100%; height:100%; float:left}
+div.results {border: thin inset blue; width:100%; height:100%; float: right }
+a.doclink {border: green;color: green; text-decoration:line-through; word-wrap: break-word}
+table.rcell { border: magenta}
+input.tagbox_l { border:1px solid #CCC; background: #cccc00; padding:2px; width 30;auto; moz-border-radius: 10px; border-radius: 10px;} 
+unsel { background: #cccccc; }
+	
