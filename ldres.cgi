@@ -221,15 +221,15 @@ sub get_cell {
     my $editor = "edit.cgi?send=";
     my $qt     = "'";
     $editor .= "$md5&type=lowres";
-    my $s = $1
-      if $meta->{"pdfinfo"}->{"value"} =~ /File size\s*<\/td><td>\s*(\d+)/;
-    my $p = $1
-      if $meta->{"pdfinfo"}->{"value"} =~ /Pages\s*<\/td><td>\s*(\d+)\s*<\/td>/;
-    my $d = $1
-      if $meta->{"pdfinfo"}->{"value"} =~
-      /CreationDate\s*<\/td><td>(.*?)<\/td>/;
-    $d = "--" unless $d;
-    $p = 1    unless $p;
+    my $s = 0;
+    my $p = "1";
+    my $d = "--";
+    if ( my $mpdf=$meta->{"pdfinfo"}->{"value"} )
+    {
+	    $s = $1 if $mpdf =~ /File size\s*<\/td><td>\s*(\d+)/;
+	    $p = $1 if $mpdf =~ /Pages\s*<\/td><td>\s*(\d+)\s*<\/td>/;
+	    $d = $1 if $mpdf =~ /CreationDate\s*<\/td><td>(.*?)<\/td>/;
+    }
 
     my $tags =
 "select tagname from hash natural join tags natural join tagname where md5=\"$md5\"";
@@ -257,11 +257,11 @@ sub get_cell {
     my $lowres = "docs/lowres/$md5/$short_name";
     my $ico    = qq{<img width=150 heigth=212 src='docs/ico/$md5/$short_name'};
     my $tip    = qq{<table><tr><td>$meta->{Content}->{value}</td></tr></table>};
-    $tip = $r->{snippet} if $r->{"snippet"};
+    $tip = $r->{"snippet"} if $r->{"snippet"};
     $tip =~ s/'/&quot;/g;
     $tip =~ s/\n/<br>/g;
     $tip = qq{'$tip'};
-    print STDERR "TIP:$tip\n";
+    #print STDERR "TIP:$tip\n";
 
 # my @a=stat($pdf); my $e= strftime("%Y-%b-%d %a  %H:%M ($a[7]) $_",localtime($a[10]));
     $meta->{PopFile}->{value} =~ s|http://maggi|$q->url(-base=>'1')|e;
@@ -310,7 +310,7 @@ sub load_results {
     my @outrow;
     my @out;
     while ( my $r = $stmt_hdl->fetchrow_hashref ) {
-        if ( $t0 ne $r->{"date"} ) {
+        if ( $r->{"date"} && $t0 ne $r->{"date"} ) {
             push @out, join( "\n  ", splice(@outrow) );
 
             push @out, $q->th( { -colspan => $ncols }, $q->hr, $r->{"date"} );
