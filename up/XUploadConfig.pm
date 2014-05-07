@@ -4,6 +4,7 @@ my $base_uri=$ENV{"SCRIPT_URI"};
 $base_uri =~ s/\/[^\/]*$//;
 my $base_dir=$ENV{"SCRIPT_FILENAME"};
 $base_dir =~ s/\/[^\/]*$//;
+$base_uri=".";
 
 BEGIN
 {

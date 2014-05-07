@@ -66,7 +66,7 @@ sub setup_db {
 	q{CREATE TRIGGER if not exists intxt after insert on metadata when new.tag = "text" begin 
 			insert into text (docid,content) values (new.idx,new.value); 
 					end;},
-	q{ CREATE INDEX if not exists tags on metadata(tag)}
+	q{ CREATE INDEX if not exists mtags on metadata(tag)}
 
 );
 foreach(@slist)
@@ -382,7 +382,7 @@ sub join_pdfhtml
 
     my $pdf;
     eval { $pdf = PDF::API2->open($inpdf) };
-    if (!$pdf && $@ =~ /not a PDF file version/)
+    if (!$pdf && $@ =~ /not a PDF file version|cross-reference stream/)
     {
 	warn "Converting....\n";
 	system("/usr/pkg/bin/pdfopt '$inpdf' $tmpdir/x.pdf");
@@ -503,7 +503,7 @@ sub join_pdfhtml
 	    $text->translate( $x, $y );
 	    $text->text($el);
 
-	    #   print LOG "CH ($x $y $w $h):$el\n";
+	    # print STDERR "CH ($x $y $w $h):$el\n";
 
 	    # print Dumper($p->context);
 	}
@@ -585,7 +585,7 @@ sub ins_e
 	$self->{"new_e"}->bind_param( 1, $idx,SQL_INTEGER);
 	$self->{"new_e"}->bind_param( 2, $t);
 	$self->{"new_e"}->bind_param( 3, $c, $bin );
-	die "DBerror :$? ".$self->{"new_e"}->errstr unless
+	die "DBerror :$? $idx:$t:$c: ".$self->{"new_e"}->errstr unless
 	$self->{"new_e"}->execute;
 }
 

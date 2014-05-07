@@ -10,8 +10,8 @@ s/\?>(.*)$/put_o($1)/es;
 sub put_o
 {
 	my $s=shift;
-	$s =~ s/{/&gt;/g;
-	$s =~ s/}/&lt;/g;
+	# $s =~ s/{/&gt;/g;
+	# $s =~ s/}/&lt;/g;
 	return ";\nprint q{$s};\n"; #q{$s};\n";
 	return ";\nprint <<STRT;\n$s\nSTRT\n"; #q{$s};\n";
 }

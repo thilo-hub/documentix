@@ -8,6 +8,7 @@ use Cwd 'abs_path';
 use CGI;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
 
+my $__meta_sel;
 my $q = CGI->new;
 
 my $pdfidx=pdfidx->new();
@@ -36,11 +37,37 @@ print $q->header(-charset=>'utf-8' ), # , -cookie=> \@mycookies),
 			-type => 'text/javascript',
 			-src => "js/wz_tooltip.js"
 		},""), 
+	$q->Link({
+			-type => 'text/css',
+			-rel => 'stylesheet',
+			-href => "js/jquery.tagsinput.css"
+		},""), 
+	$q->script({
+			-type => 'text/javascript',
+			-src => "js/jquery/jquery.min.js"
+		},""), 
+	$q->script({
+			-type => 'text/javascript',
+			-src => "js/jquery.tagsinput.js"
+		},""), 
+	$q->script({
+			-type => 'text/javascript',
+			-src => "js/jquery/jquery-ui.min.js"
+		},""), 
+	$q->Link({
+			-type => 'text/css',
+			-rel => 'stylesheet',
+			-href => "js/jquery/jquery-ui.css"
+		},""), 
+$q->script({-type=>'text/javascript'}, q{$(function() { 
+		$('#tags_1').tagsInput()
+		$('#tags_2').tagsInput()
+		})}),
 	$q->h1("PDF Indexes DB:$dbs");
 
 	print $q->h2("SID: $sessid") if $sessid;
 # print pages
-my $p0=($q->param("page")||1)-1;
+my $p0=($q->param("page")||1);
 my $search=$q->param("search") || undef;
 undef $search if $search && $search =~ /^\s*$/;
 
@@ -77,7 +104,6 @@ my $ppage=18;
 #     4:   docid as idx,snippet(text) snip,value as class  from text join metadata on docid=idx where content match ? and tag="class" 
 #                                                                                                                         and value= ?
 #
-my $sel=$dh->prepare(q{select * from metadata where idx=?});
 
 my $l=undef;
 if ( $search and $class )
@@ -92,6 +118,8 @@ if ( $search and $class )
 }
 
 if ( $l ) {
+$class="?" unless $class;
+printf STDERR "class l:$l # $class # $search\n";
     my $stm_l=$dh->prepare("create temporary table l as select idx,class $l");
     $stm_l->bind_param(1,$class) if defined($class);
     $stm_l->bind_param(2,$search ) if defined ($search);
@@ -125,14 +153,14 @@ foreach (@$cl_found)
 unshift @$classes,[$ANY,$ndata];
 $classes=[map{ join(':',@$_)} @$classes];
 
-my $max_page=int($ndata/$ppage);
-$p0=$max_page if $p0>$max_page;
+my $max_page=int(($ndata-1)/$ppage);
+$max_page=0 if $max_page<0;
+$p0=$max_page+1 if $p0>$max_page;
 my $stm1=$dh->prepare($query);
 $stm1->bind_param(1,$uid);
-$stm1->bind_param(2,$p0*$ppage);
+$stm1->bind_param(2,($p0-1)*$ppage);
 $stm1->bind_param(3,$ppage);
 $stm1->execute();
-my $t0=0;
 
 
 print $q->start_form(-method=>'post');
@@ -143,73 +171,21 @@ print $q->start_form(-method=>'post');
 #print $q->hidden(-name=>'login', -default=>$q->cookie('login')) if $q->cookie('login');
 #print $q->hidden(-name=>'ticket', -default=>$q->cookie('ticket')) if $q->cookie('ticket');
 print $q->br,"Search:"; print $q->textfield('search');
+print $q->input({ -name=>"tags", -id=>"tags_1", -type =>"text",  -class=>"tags", -value=>$q->param('tags')});
+
 print $q->popup_menu(-name=>'class', -values=>$classes, -default=>$class);
 print $q->submit, $q->end_form;
 
 print pages($q,$p0,$max_page);
 print $q->a({-href=>'scanns.cgi'},"Refresh scanner data");
-my @out;
-my @outrow;
+print $q->br,$q->a({-href=>'up/upload_form.html'},"Upload new file");
+print $q->Dump();
 # fetch idx to display ( + extra )
-while( my $r=$stm1-> fetchrow_hashref )
-{
-    if ( $t0 ne $r->{"date"} )
-    {
-	push @out,join("\n  ",splice(@outrow));
 
-	push @out,$q->th({-colspan=>3},$q->hr,$r->{"date"});
-	$t0 = $r->{"date"};
-    }
-    $sel->execute($r->{"idx"});
-    my $meta=$sel->fetchall_hashref("tag");
-    my $md5=$meta->{"hash"}->{"value"};
-    my $mod1_pdf="../pdf/t2/mod1_pdf.cgi?send=";
-    my $qt="'";
-    my $modf=$mod1_pdf."$md5&type=lowres";
-    my $s = $1 if $meta->{"pdfinfo"}->{"value"} =~ /File size\s*<\/td><td>\s*(\d+)/;
-    my $p = $1 if $meta->{"pdfinfo"}->{"value"} =~ /Pages\s*<\/td><td>\s*(\d+)\s*<\/td>/;
-    my $d = $1 if $meta->{"pdfinfo"}->{"value"} =~ /CreationDate\s*<\/td><td>(.*?)<\/td>/;
-    $d ="--" unless $d;
-
-    my $short_name=$meta->{"Docname"}->{"value"};
-    $short_name =~ s/^.*\///;
-    my $sshort_name = $short_name;
-    $short_name =~ s/#/%23/g;
-    # build various URLS
-    my $pdf="docs/pdf/$md5/$short_name";
-    my $lowres="docs/lowres/$md5/$short_name";
-    my $ico=qq{<img width=150 heigth=212 src='docs/ico/$md5/$short_name'};
-    my $tip=qq{<object type=text/x-scriptlet width=475 height=300 data="docs/Content/$md5/$short_name"> </object>} ;
-    $tip=$r->{snip}  if $r->{"snip"};
-    $tip =~ s/'/&quot;/g;
-    $tip =~ s/\n/<br>/g;
-    $tip = qq{'$tip'};
-    print STDERR "TIP:$tip\n";
-    # my @a=stat($pdf); my $e= strftime("%Y-%b-%d %a  %H:%M ($a[7]) $_",localtime($a[10]));
-    $meta->{PopFile}->{value}=~ s|http://maggi|$q->url(-base=>'1')|e;
-    my $day=$d;
-      $day =~ s/\s+\d+:\d+:\d+\s+/ /;
-	$d=$&;
-       my @data=$q->td(
-	       [$q->a({-href=>$pdf,
-		      -onmouseover=>"Tip($tip)",
-		      -onmouseout=>"UnTip()"},$ico),
-	       $q->a({-href=>$meta->{PopFile}->{value}, -target=>"_popfile"},
-		       $meta->{Class}->{value}).$q->br.
-	        $q->a({-href=>$pdf},$sshort_name).
-	       # $q->a({-href=>$pdf, -onmouseover=>"Tip($tip)", -onmouseout=>"UnTip()"},$short_name).
-	      #  ($r->{"snip"} ? "<br>$r->{snip}" :"").
-      	      ((($s/$p)>500000)? "<br>".  $q->a({-href=>$lowres, -target=>"_pdf"},"&lt;Lowres&gt;"):"").
-      	      "<br>".  $q->a({-href=>$modf, -target=>"_edit"},"&lt;Edit&gt;").
-			 "<br> Pages: $p <br>$s"]);
-	
-       push @outrow, $q->td($q->table($q->Tr(@data)));
-	push @out,join("\n  ",splice(@outrow)) if scalar(@outrow)>=3;
-}
-push @out,join("\n  ",splice(@outrow));
+my $out=load_results($stm1);
 
 
-print $q->table({-border=>1,-frame=>1},$q->Tr(\@out)),
+print $q->table({-border=>1,-frame=>1},$q->Tr($out)),
 	pages($q,$p0,$max_page),
 	$q->end_html;
 
@@ -225,7 +201,7 @@ sub pages
 	$myself =~ s/&page=\d+//;
 	$myself =~ s/(&|$)/\?page=%d$1/;
 	push @pgurl, sprintf("<a href=$myself>&lt;&lt;</a>",1);
-	push @pgurl, sprintf("<a href=$myself>&lt;</a>",$p0>0 ? $p0-1:1);
+	push @pgurl, sprintf("<a href=$myself>&lt;</a>",$p0>1 ? $p0-1:1);
 	my $entries=6;
 	my $lo=$p0-$entries/2;
 	$maxpage++;
@@ -238,7 +214,7 @@ sub pages
 	{
 		push @pgurl,
 			sprintf("<a href=$myself>%s</a>",$_,
-				($_ == $p0 ? "<big>&lt;$_&gt;</big>" : $_ ));
+				($_ == $p0 ? "<big>&nbsp;$_&nbsp;</big>" : $_ ));
 	}
 	push @pgurl, sprintf("<a href=$myself>&gt;<a>",$p0+1);
 	push @pgurl, sprintf("<a href=$myself>&gt;&gt;<a>",$maxpage);
@@ -264,4 +240,87 @@ sub check_auth
 		exit 0;
 	}
 return ($user,$uid);
+}
+
+sub load_results
+{
+	my ($stmt_hdl)=@_;
+	my $t0=0;
+	my @outrow;
+	my @out;
+	while( my $r=$stmt_hdl-> fetchrow_hashref )
+	{
+	    if ( $t0 ne $r->{"date"} )
+	    {
+		push @out,join("\n  ",splice(@outrow));
+
+		push @out,$q->th({-colspan=>3},$q->hr,$r->{"date"});
+		$t0 = $r->{"date"};
+	    }
+	    my $meta=get_meta($r->{"idx"}); 
+	    my $md5=$meta->{"hash"}->{"value"};
+	    
+
+	    my $editor="edit.cgi?send=";
+	    my $qt="'";
+	    $editor.="$md5&type=lowres";
+	    my $s = $1 if $meta->{"pdfinfo"}->{"value"} =~ /File size\s*<\/td><td>\s*(\d+)/;
+	    my $p = $1 if $meta->{"pdfinfo"}->{"value"} =~ /Pages\s*<\/td><td>\s*(\d+)\s*<\/td>/;
+	    my $d = $1 if $meta->{"pdfinfo"}->{"value"} =~ /CreationDate\s*<\/td><td>(.*?)<\/td>/;
+	    $d ="--" unless $d;
+	    $p=1 unless $p;
+
+	    my $tags = $meta->{"tags"}->{"value"} || "";
+	    #$tags= $q->p({-class=>"tags"},"enney,money,mo");
+	    $tags= $q->p($q->input({ -name=>"tags1", -id=>"tags_2", -type =>"text",  -class=>"tags", -value=>$tags}));
+
+	    my $short_name=$meta->{"Docname"}->{"value"};
+	    $short_name =~ s/^.*\///;
+	    my $sshort_name = $short_name;
+	    $short_name =~ s/#/%23/g;
+	    # build various URLS
+	    my $pdf="docs/pdf/$md5/$short_name";
+	    my $lowres="docs/lowres/$md5/$short_name";
+	    my $ico=qq{<img width=150 heigth=212 src='docs/ico/$md5/$short_name'};
+	    my $tip=qq{<object type=text/x-scriptlet width=475 height=300 data="docs/Content/$md5/$short_name"> </object>} ;
+	    $tip=$r->{snip}  if $r->{"snip"};
+	    $tip =~ s/'/&quot;/g;
+	    $tip =~ s/\n/<br>/g;
+	    $tip = qq{'$tip'};
+	    print STDERR "TIP:$tip\n";
+	    # my @a=stat($pdf); my $e= strftime("%Y-%b-%d %a  %H:%M ($a[7]) $_",localtime($a[10]));
+	    $meta->{PopFile}->{value}=~ s|http://maggi|$q->url(-base=>'1')|e;
+	    my $day=$d;
+	      $day =~ s/\s+\d+:\d+:\d+\s+/ /;
+		$d=$&;
+	       my @data=$q->td(
+		       [$q->a({-href=>$pdf,
+			      -onmouseover=>"Tip($tip)",
+			      -onmouseout=>"UnTip()"},$ico),
+		       $q->a({-href=>$meta->{PopFile}->{value}, -target=>"_popfile"},
+			       $meta->{Class}->{value}).$q->br.
+			$q->a({-href=>$pdf},$sshort_name).
+			$q->a($tags),
+		       # $q->a({-href=>$pdf, -onmouseover=>"Tip($tip)", -onmouseout=>"UnTip()"},$short_name).
+		      #  ($r->{"snip"} ? "<br>$r->{snip}" :"").
+		      ((($s/$p)>500000)? "<br>".  $q->a({-href=>$lowres, -target=>"_pdf"},"&lt;Lowres&gt;"):"").
+		      "<br>".  $q->a({-href=>$editor, -target=>"results"},"&lt;Edit&gt;").
+				 "<br> Pages: $p <br>$s"
+			 ]);
+		
+	       push @outrow, $q->td($q->table($q->Tr(@data)));
+		push @out,join("\n  ",splice(@outrow)) if scalar(@outrow)>=3;
+	}
+	push @out,join("\n  ",splice(@outrow));
+	return \@out;
+}
+
+sub get_meta
+{
+  my $tag=shift;
+  $__meta_sel=$dh->prepare(q{select * from metadata where idx=?})
+	unless $__meta_sel;
+  $__meta_sel->execute($tag);
+  my $r=$__meta_sel->fetchall_hashref("tag");
+  return $r;
 }

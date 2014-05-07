@@ -43,6 +43,7 @@ function StartUpload()
     if(NF==0){alert('Select at least one file to upload');return false;};
     generateSID();
     openStatusWindow();
+    return true;
 }
 
 function checkExt(value)
@@ -62,7 +63,7 @@ function checkExt(value)
 <BODY>
 <center>
 <h2>File upload page</h2>
-<form name="F1" enctype="multipart/form-data" action="env.cgi?upload_id=" method="post" onSubmit="return StartUpload();" target="upload">
+<form name="F1" enctype="multipart/form-data" action="upload.cgi?upload_id=" method="post" onSubmit="return StartUpload();" target="upload">
 Send file: <input name="file1x" type="file" onChange="checkExt(this.value)"><br>
 Comment: <input type="text" name="comment">(optional)
 <br><br>

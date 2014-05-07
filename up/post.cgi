@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 use CGI qw/:standard *table/;
 use Socket;
+use Data::Dumper;
+use Digest::MD5;
+use File::Copy;
 
 my $cgi = CGI->new();
 my @param = $cgi->param();
@@ -24,12 +27,13 @@ my $fl=$cgi->param(file1x) || "*** FEHLER ***";
 my $cm=$cgi->param(comment);
 my $st=$cgi->param(file1x_status);
 
+my $file=undef;
 if ($st) {
 
 my $msg=<<EOF;
 Eine datei: $fl ist eingetroffen
 Status: $st
-Die datei is unter: https://maggi.nispuk.com/~thilo/pdf/up/uploads zu finden.
+Die datei is unter: https://jeremias.homeunix.net/up/uploads zu finden.
 Die Datei wurde von $who gesendet
 
 Commentar:
@@ -37,6 +41,7 @@ $cm
 
 EOF
 
+	$file=$cgi->param("target_dir")."/".$cgi->param("file1x");
 	notify("thilo@maggi",$cgi->param("target_dir")."/".$cgi->param("file1x"),$msg);
 }
 #print table(caption("Status:"),
@@ -45,8 +50,52 @@ EOF
 print table(caption("Status:"),
 	    Tr({-align=>LEFT,-valign=>TOP},
 	    \@tb));
-print "<a href=upload_form.html>Neuer upload</a>";
-print "</body></html>";
+if ( $file )
+{
+  print "<pre>\n";
+  my $ctx = Digest::MD5->new;
+  my $ui=$cgi->uploadInfo($cgi->param('file1x'));
+  open(F,"<",$file);
+  seek(F,0,0);
+  $ctx->addfile(F);
+  close(F);
+  my $digest = $ctx->hexdigest;
+  my $dst="uploads/$digest";
+  $ENV{"File_dst"}=$dst."/".$cgi->param('file1x');
+  if (! -d $dst )
+  {
+	  mkdir ( $dst );
+	  move($file,$ENV{"File_dst"}) or $ENV{"File_mv"}="FAILED $!";
+  }
+  else
+  {
+	  $ENV{"File_mv"}="Already Uploaded";
+  }
+
+
+ $ENV{"File_digest"}  = $digest;
+# $digest = $ctx->b64digest;
+
+# load into pdf
+   my $cmd="cd .. ; perl  index3_pdf.pl \'up/$ENV{File_dst}\' 2>&1";
+   $ENV{"File_cmd"} = $cmd;
+   #$ENV{"File_proc"} = qx{ $cmd };
+   system($cmd);
+   print "</PRE>\n";
+
+
+}
+
+print "<PRE>\n";
+print $msg;
+print "</PRE><hr><PRE>\n";
+print Dumper($cgi->Vars);
+print "</PRE><hr><PRE>\n";
+print Dumper(\%ENV);
+print "</PRE>\n";
+
+print "<a href=up/upload_form.html>Neuer upload</a>";
+print end_html;
 
 
 sub notify

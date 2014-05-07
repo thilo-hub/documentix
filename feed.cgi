@@ -107,14 +107,24 @@ if ( $sz && $t && $converter->{$t} )
     print $data;
 }else
 {
-	error_exit("Permission denied");
+	error_exit("Permission denied",$t);
 }
 exit(0);
 
 sub error_exit
 {
 	my $msg=shift || $! || "Some error happened";
+	my $type=shift || "txt";
 	$f = "??" unless $f;
+	if ( $type eq "ico" )
+	{
+	print $q->redirect("../../../t2/icon/Keys-icon.png"); exit 0;
+		open(FH,"t2/icon/Keys-icon.png");
+		local $/;
+		my $r=<FH>;
+		print $q->header(-type=> "image/png",-expire=>'+3d'),$r;
+		exit 0;
+	}
 	print $q->header(),
 		$q->start_html(),
 	    $q->h1($msg),
