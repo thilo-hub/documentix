@@ -269,17 +269,17 @@ sub get_cell {
     $day =~ s/\s+\d+:\d+:\d+\s+/ /;
     $d = $&;
 
-    my @data = $q->td(
-        [
+    my $data = 
             $q->a(
-                {
+                {   -class=>"thumb",
                     -href        => $pdf,
                     -onmouseover => "Tip($tip)",
                     -onmouseout  => "UnTip()"
                 },
                 $ico
-            ),
-            $q->a(
+            ).
+            $q->div({-class=>"descr"}, 
+		   $q->a(
                 { -href => $meta->{PopFile}->{value}, -target => "_popfile" },
                 $meta->{Class}->{value} )
               . $q->br
@@ -296,11 +296,9 @@ sub get_cell {
               . "<br>"
               . $q->a( { -href => $editor, -target => "results" },
                 "&lt;Edit&gt;" )
-              . "<br> Pages: $p <br>$s"
-        ]
-    );
+              . "<br> Pages: $p <br>$s");
 
-    return $q->td( $q->table( {-class=>"rcell"},$q->Tr(@data) ) );
+    return $q->td( $q->div({-class=>"rcell"},$data));
 
 }
 
