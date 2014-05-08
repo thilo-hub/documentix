@@ -255,7 +255,8 @@ sub get_cell {
     # build various URLS
     my $pdf    = "docs/pdf/$md5/$short_name";
     my $lowres = "docs/lowres/$md5/$short_name";
-    my $ico    = qq{<img src='docs/ico/$md5/$short_name'};
+    #my $ico    = qq{<img src='docs/ico/$md5/$short_name'};
+    my $ico    = $q->img({-class=>"thumb", -src=>"docs/ico/$md5/$short_name"});
     my $tip    = qq{<table><tr><td>$meta->{Content}->{value}</td></tr></table>};
     $tip = $r->{"snippet"} if $r->{"snippet"};
     $tip =~ s/'/&quot;/g;

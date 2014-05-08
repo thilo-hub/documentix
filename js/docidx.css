@@ -1,15 +1,19 @@
 
 div.top{padding:0px; width:100%;height:40px}
-div.left{position: fixed; padding:0px; width:20%; float:left}
-div.right{word-wrap: break-word; padding:0px; width:80%; float:right}
+div.left{position: fixed; padding:0px; width:20%; float:left;padding:0px}
+div.right{word-wrap: break-word; padding:0px;  width:78%; float:right}
 
 div.header {border: thin inset blue; text-align:center; width:100%; height:100% }
-div.menu {border: thin inset blue; text-align:center; width:100%; height:100%; float:left}
-div.results {border: thin inset blue; width:100%; height:100%; float: right }
-a.doclink {border: green;color: green; text-decoration:line-through; word-wrap: break-word}
-div.rcell { border: magenta}
-div.thumb { border: magenta}
-div.descr { border: magenta}
-input.tagbox_l { border:1px solid #CCC; background: #cccc00; padding:2px; width 30;auto; moz-border-radius: 10px; border-radius: 10px;} 
+div.menu {border: none; text-align:center; width:100%; height:100%; float:left}
+div.results {border: none; width:100%; height:100%; float: right }
+a.doclink {border: green;color: green; word-wrap: break-word}
+div.rcell { border: solid inset magenta; background-color: #f83}
+a.dtags { background-color:#333}
+input.tagbox{ background-color:#eee; border:none;font-style:italic; width:100%}
+img.thumb{width:100%;padding-right:10px}
+a.thumb { border: solid inset magenta; width:100%; float:left;}
+div.thumb { background-color:#ccc; border: solid inset magenta; float:left; width:30%}
+div.descr { border: solid inset magenta; background:transparent; width:68%; float: left;padding-left:4px}; 
+input.tagbox_l { border:1px solid #CCC; background: #cccc00; padding:2px; width 50%;auto; moz-border-radius: 10px; border-radius: 10px;} 
 unsel { background: #cccccc; }
 	
