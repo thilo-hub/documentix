@@ -1,9 +1,9 @@
-#!/usr/bin/perl -It2
+#!/usr/bin/perl
 use strict;
 use warnings;
 use Data::Dumper;
 use WWW::Authen::Simple;
-use pdfidx;
+use doclib::pdfidx;
 use Cwd 'abs_path';
 use CGI;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
@@ -35,7 +35,7 @@ my $sessid=$q->cookie('SessionID');
 print $q->header(-charset=>'utf-8' ), # , -cookie=> \@mycookies),
 	$q->start_html(-title=>'PDF Database'),
 	$q->script({ -type => 'text/javascript', -src => "js/wz_tooltip.js" },""), 
-	$q->Link({ -rel=>"stylesheet", -type=>"text/css", href=>"t2/style.css"}),
+	$q->Link({ -rel=>"stylesheet", -type=>"text/css", href=>"doclib/style.css"}),
 	$q->Link({ -rel=>"stylesheet", -type=>"text/css", href=>"js/jquery.tagsinput.css"}),
 	$q->script({ -type => 'text/javascript', -src => "js/jquery/jquery.min.js" },""), 
 	$q->script({ -type => 'text/javascript', -src => "js/jquery.tagsinput.js" },""), 

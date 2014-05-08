@@ -1,7 +1,7 @@
-#!/usr/bin/perl -It2
+#!/usr/bin/perl
 use strict;
 use warnings;
-use pdfidx;
+use doclib;;pdfidx;
 use WWW::Authen::Simple;
 
 use CGI;
@@ -118,11 +118,7 @@ sub error_exit
 	$f = "??" unless $f;
 	if ( $type eq "ico" )
 	{
-	print $q->redirect("../../../t2/icon/Keys-icon.png"); exit 0;
-		open(FH,"t2/icon/Keys-icon.png");
-		local $/;
-		my $r=<FH>;
-		print $q->header(-type=> "image/png",-expire=>'+3d'),$r;
+		print $q->redirect("../../../icon/Keys-icon.png"); 
 		exit 0;
 	}
 	print $q->header(),

@@ -5,7 +5,7 @@
 	<meta charset="utf-8">
 	<title> {Docname} </title>
 	<meta http-equiv="content-type" content="text/html; charset=utf-8"> 
-	<link rel="stylesheet" type="text/css" href="t2/style.css">
+	<link rel="stylesheet" type="text/css" href="js/style.css">
 	<link rel="stylesheet" type="text/css" href="js/jquery.tagsinput.css" />
 	<script type="text/javascript" src="js/jquery/jquery.min.js"></script>
 	<script type="text/javascript" src="js/jquery.tagsinput.js"></script>
@@ -61,7 +61,7 @@ function ntn(data)
 open(F,">>/tmp/f.log"); foreach(keys %ENV){ print F "$_ => $ENV{$_}\n" }; 
 $ENV{"PATH"}.=":/usr/pkg/bin";
 use Data::Dumper;
-use t2::pdfidx;
+use doclib::pdfidx;
 use Cwd 'abs_path';
 my $tmpdir="/tmp/data.out";
 my $hdl=pdfidx->new();
@@ -104,7 +104,7 @@ my $tags="select tagname from hash natural join tags natural join tagname where 
 my $tags=$db->selectall_hashref($tags,'tagname');
 $tags=join(",",sort keys %$tags);
 ?>
-<form id="tagupdate" action="t2/env.cgi?send=<?=print $md5?>"  method="post">
+<form id="tagupdate" action="doclib/env.cgi?send=<?=print $md5?>"  method="post">
 <input type="hidden" id="md5" name="send" value="<?=print $md5?>">
 <input type="text" id="tags_1" name="tags" class="tagbox unsel" value="<?=print $tags?>"/>
 </form>
@@ -137,7 +137,7 @@ foreach $i ( 1 .. $pages )
     if ( @out )
     { 
 	?>
-    <td valign="top"> <img src="feed.cgi?send=t2/data.out/out.pdf-<?=print $i?>"> </td>
+    <td valign="top"> <img src="feed.cgi?send=doclib/data.out/out.pdf-<?=print $i?>"> </td>
     <?= } ?>
 </tr>
 <?=}?>

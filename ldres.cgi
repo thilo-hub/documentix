@@ -1,9 +1,9 @@
-#!/usr/bin/perl -It2
+#!/usr/bin/perl
 use strict;
 use warnings;
 use Data::Dumper;
 use WWW::Authen::Simple;
-use t2::pdfidx;
+use doclib::pdfidx;
 use Cwd 'abs_path';
 use CGI;
 $ENV{"PATH"} .= ":/usr/pkg/bin";

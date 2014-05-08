@@ -1,9 +1,9 @@
-#!/usr/bin/perl -It2
+#!/usr/bin/perl
 use strict;
 use warnings;
 use Data::Dumper;
 use WWW::Authen::Simple;
-use pdfidx;
+use doclib::pdfidx;
 use Cwd 'abs_path';
 use CGI;
 use JSON::PP;

@@ -1,8 +1,8 @@
-#!/usr/bin/perl -It2
+#!/usr/bin/perl 
 use Digest::MD5 qw(md5_hex);
 use CGI;
 use WWW::Authen::Simple;
-use pdfidx;
+use doclib::pdfidx;
 
 my $q = CGI->new;
 if ($ENV{"DEBUG"} ) { $q->restore_parameters(STDIN);}

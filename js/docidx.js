@@ -23,7 +23,7 @@
               jeje = "class=" + $(loadres).val();
           }
           jeje += "&search=" + $('#search').val();
-          $.post("t2/env.cgi", jeje, function( data ) { $('#msg').html( data ); } );
+          $.post("doclib/env.cgi", jeje, function( data ) { $('#msg').html( data ); } );
           $.post("ldres.cgi", jeje,
               function (data) {
                   $('#result').html(data);
