@@ -30,39 +30,19 @@ my ( $user, $uid ) = check_auth($q);
 my $dh = $pdfidx->{"dh"};
 print $q->header( -charset => 'utf-8' )    # , -cookie=> \@mycookies),,
  ;
-  my $json_text = $q->param('json_string');
-if ($json_text) {
-    my $json        = JSON::PP->new->utf8;
-    my $perl_scalar = $json->decode($json_text);
-    my $op_add =
-"insert or ignore into tags (tagid,idx) select tagid,idx from tagname, hash  where tagname = ?  and md5  = ?";
-    my $op_del =
-"delete from tags where tagid = (select tagid from tagname where tagname = ? ) and idx = (select idx from hash where md5 = ?) ";
-    $dh->prepare(
-"delete from tagname where tagid in (select distinct(tagid) from tagname where tagid not in (select distinct(tagid) from tags))"
-    ) if ( $perl_scalar->{"op"} eq "rem" );
-    $dh->prepare("insert or ignore into tagname (tagname) values(?)")
-      ->execute( $perl_scalar->{"tag"} )
-      if ( $perl_scalar->{"op"} eq "add" );
-    my $op = ( $perl_scalar->{"op"} eq "rem" ) ? $op_del : $op_add;
-    $dh->prepare($op)->execute( $perl_scalar->{"tag"}, $perl_scalar->{"md5"} );
-      $q->start_html( -title => 'PDF Database' ),
-      $q->body( Dumper($perl_scalar) );
-    open( FH, ">/tmp/tags.log" ) && print FH Dumper($perl_scalar) && close FH;
 
-}
-else {
+print $q->start_html( -title =>'PDF Database' ),
+$q->Link( { -rel  => "stylesheet", 
+		-type => "text/css", -href  => "js/docidx.css" },""),
+$q->Link( { -rel  => "stylesheet", 
+		-type => "text/css", -href  => "js/jquery.tagsinput.css" },""),
+$q->script( { -type => 'text/javascript', -src => "js/jquery/jquery.min.js" }, ""),
+$q->script( { -type => 'text/javascript', -src => "js/jquery/jquery-ui.min.js" }, "" ),
+$q->script( { -type => 'text/javascript', -src => "js/wz_tooltip.js" }, ""),
+$q->script( { -type => 'text/javascript', -src => "js/docidx.js"}, "" )
+;
 
-    print $q->start_html( -title =>'PDF Database' ),
-      $q->Link( { -rel  => "stylesheet", -type => "text/css", -href  => "js/docidx.css" },""),
-      $q->Link( { -rel  => "stylesheet", -type => "text/css", -href  => "js/jquery.tagsinput.css" },""),
-      $q->script( { -type => 'text/javascript', -src => "js/jquery/jquery.min.js" }, ""),
-      $q->script( { -type => 'text/javascript', -src => "js/jquery/jquery-ui.min.js" }, "" ),
-      $q->script( { -type => 'text/javascript', -src => "js/wz_tooltip.js" }, ""),
-      $q->script( { -type => 'text/javascript', -src => "js/docidx.js"}, "" )
-	;
-
-    my $tags = $dh->selectall_hashref(
+my $tags = $dh->selectall_hashref(
 "select tagname,count(*) cnt from tags natural join tagname group by tagname",
         "tagname"
     );
@@ -120,38 +100,9 @@ else {
 	</div>
 </div>
 EOP
-}
 
 print $q->end_html;
 exit 0;
-
-sub pages {
-    my ( $q, $p0, $maxpage ) = @_;
-    my @pgurl;
-    my $myself = $q->url( -query => 1, -relative => 1 );
-    $myself =~ s/%/%%/g;
-    $myself =~ s/(;|\?)/\&/g;
-    $myself =~ s/&page=\d+//;
-    $myself =~ s/(&|$)/\?page=%d$1/;
-    push @pgurl, sprintf( "<a href=$myself>&lt;&lt;</a>", 1 );
-    push @pgurl, sprintf( "<a href=$myself>&lt;</a>", $p0 > 1 ? $p0 - 1 : 1 );
-    my $entries = 6;
-    my $lo      = $p0 - $entries / 2;
-    $maxpage++;
-    $lo = $maxpage - $entries if $lo > $maxpage - $entries;
-    $lo = 1 if $lo < 1;
-    my $hi = $lo + $entries;
-    $hi = $maxpage if $hi > $maxpage;
-
-    foreach ( $lo .. $hi ) {
-        push @pgurl,
-          sprintf( "<a href=$myself>%s</a>",
-            $_, ( $_ == $p0 ? "<big>&nbsp;$_&nbsp;</big>" : $_ ) );
-    }
-    push @pgurl, sprintf( "<a href=$myself>&gt;<a>",     $p0 + 1 );
-    push @pgurl, sprintf( "<a href=$myself>&gt;&gt;<a>", $maxpage );
-    return $q->table( $q->Tr( $q->td( \@pgurl ) ) );
-}
 
 sub check_auth {
     my $q = shift;

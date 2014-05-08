@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use doclib;;pdfidx;
+use doclib::pdfidx;
 use WWW::Authen::Simple;
 
 use CGI;

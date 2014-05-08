@@ -255,7 +255,7 @@ sub get_cell {
     # build various URLS
     my $pdf    = "docs/pdf/$md5/$short_name";
     my $lowres = "docs/lowres/$md5/$short_name";
-    my $ico    = qq{<img width=150 heigth=212 src='docs/ico/$md5/$short_name'};
+    my $ico    = qq{<img src='docs/ico/$md5/$short_name'};
     my $tip    = qq{<table><tr><td>$meta->{Content}->{value}</td></tr></table>};
     $tip = $r->{"snippet"} if $r->{"snippet"};
     $tip =~ s/'/&quot;/g;
@@ -270,14 +270,14 @@ sub get_cell {
     $d = $&;
 
     my $data = 
-            $q->a(
+            $q->div({-class=>"thumb"},$q->a(
                 {   -class=>"thumb",
                     -href        => $pdf,
                     -onmouseover => "Tip($tip)",
                     -onmouseout  => "UnTip()"
                 },
                 $ico
-            ).
+            )).
             $q->div({-class=>"descr"}, 
 		   $q->a(
                 { -href => $meta->{PopFile}->{value}, -target => "_popfile" },
@@ -285,15 +285,13 @@ sub get_cell {
               . $q->br
               . $q->a( { -class=>"doclink", -href => $pdf }, $sshort_name )
               . $q->br
-              . $q->a($tags).
+              . $q->a({-class=>"dtags"},$tags).
             (
                 ( ( $s / $p ) > 500000 )
-                ? "<br>"
-                  . $q->a( { -href => $lowres, -target => "_pdf" },
+                ? $q->a( { -href => $lowres, -target => "_pdf" },
                     "&lt;Lowres&gt;" )
                 : ""
               )
-              . "<br>"
               . $q->a( { -href => $editor, -target => "results" },
                 "&lt;Edit&gt;" )
               . "<br> Pages: $p <br>$s");
