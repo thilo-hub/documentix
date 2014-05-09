@@ -1,42 +1,41 @@
+var idx=1;
+var clname="";
   $(function () {
       $("#search").keypress(function (event) {
           if (event.keyCode == 13) {
-		  $("#search").blur();
-              update_res();
+		$("#search").blur();
+		idx=0;
+                update_res();
           }
       });
 
-      function load_res(loadres) {
-	      alert("TEXT:"+loadres);
-          // $.post(loadres, "", function( data ) { $('#result').html( data ); } );
-      }
-      function update_res(loadres) {
-          if (loadres) {
+      function update_res() {
               var jeje = "";
-              meme = {
-                  class: $(loadres).val(),
-                  md5: loadres.id
-              };
-              jeje = {
-                  json_string: JSON.stringify(meme)
-              };
-              jeje = "class=" + $(loadres).val();
-          }
-          jeje += "&search=" + $('#search').val();
+	      if ( idx > 0 ) { jeje += "idx=" + idx; };
+	      if ( $("#search").val()  )   { jeje += "&search=" + $("#search").val() ;};
+	      if ( clname )    { jeje += "&class="+clname;};
           $.post("doclib/env.cgi", jeje, function( data ) { $('#msg').html( data ); } );
           $.post("ldres.cgi", jeje,
-              function (data) {
-                  $('#result').html(data);
-                  $('#pagesel').html( $('#pages').html() );
-                  // $('#taglist').html( $('#classes').html() );
-              }
+	      function (data) {
+			  $('#result').html(data);
+			  $('#pagesel').html( $('#pages').html() );
+			  // $('#taglist').html( $('#classes').html() );
+			  $('.page_sel').each(function (i) {
+				  $(this).click(function () {
+				      idx=$(this).attr("id");
+				      update_res();
+				  })
+			  })
+
+		      }
           );
 
       }
 
       $('.tagbox_l').each(function (i) {
           $(this).click(function () {
-              update_res(this);
+		  clname=$(this).val();
+              update_res();
           })
       })
   })

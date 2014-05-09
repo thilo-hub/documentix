@@ -38,6 +38,8 @@ print $q->header( -charset => 'utf-8' ),    # , -cookie=> \@mycookies),
 #   $q->start_html( -title => 'results' ),;
 
 # print pages
+my $idx0 = ( $q->param("idx") || 1 );
+my $ppage = ( $q->param("count") || 18 );
 my $p0 = ( $q->param("page") || 1 );
 my $search = $q->param("search") || undef;
 undef $search if $search && $search =~ /^\s*$/;
@@ -62,16 +64,23 @@ my $dh = $pdfidx->{"dh"};
 
 $dh->do(
 q{ create table if not exists cache_lst ( qidx integer primary key autoincrement,
-		query text unique, last_used integer )}
+		query text unique, nresults integer, last_used integer )}
 );
 $dh->do(
 q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text, unique(qidx,idx))}
 );
 
+$dh->do(q{
+	CREATE TRIGGER if not exists cache_del before delete on cache_lst begin delete 
+		from cache_q where cache_q.qidx = old.qidx ; 
+	end;
+	});
 my $s1 = q{select qidx from cache_lst where query = ?};
 my $s2 = q{insert or abort into cache_lst (query) values(?)};
-my $s3 =
-q{insert into cache_q ( qidx,idx,snippet ) select ?, docid idx,snippet(text) snippet from text where text match ? };
+my $s3 = q{
+	insert into cache_q ( qidx,idx,snippet ) 
+		select ?, docid idx,snippet(text) snippet from text where text match ? 
+	};
 
 my $idx = $dh->selectrow_array( $s1, undef, $search );
 
@@ -80,7 +89,8 @@ unless ($idx) {
     # create cached results table
     $dh->do( $s2, undef, $search );
     $idx = $dh->last_insert_id( undef, undef, undef, undef );
-    $dh->do( $s3, undef, $idx, $search );
+    my $nres=$dh->do( $s3, undef, $idx, $search );
+    $dh->do("update cache_lst set nresults=? where qidx=?",undef,$nres,$idx);
 }
 
 my $subsel = "";
@@ -127,11 +137,7 @@ $classes = $dh->selectall_arrayref($classes);
 $ndata   = $dh->selectrow_array($ndata);
 $stm1    = $dh->prepare($stm1);
 
-my $ppage = 18;
-my $max_page = int( ( $ndata - 1 ) / $ppage );
-$max_page = 0             if $max_page < 0;
-$p0       = $max_page + 1 if $p0 > $max_page;
-$stm1->bind_param( 1, ( $p0 - 1 ) * $ppage );
+$stm1->bind_param( 1, $idx0 );
 $stm1->bind_param( 2, $ppage );
 $stm1->execute();
 
@@ -155,39 +161,42 @@ $classes = [
 my $out = load_results($stm1);
 
 print $q->div( { -id => "nresults" }, $ndata ),
-  $q->span( { -style => "display:none" },
-    $q->div( { -id => "pages" }, pages($q,$p0,$max_page) ) ,
-    $q->div( { -id => "classes" }, join( "", @$classes ) ) );
+	$q->div({ -id => "idx"},$idx0 ),
+	$q->div({ -id => "pageno"},int($idx0/$ppage) ),
+	$q->div({ -id => "query"},$search),
+    $q->div( { -id => "pages" }, pages($q,$idx0,$ndata,$ppage) ) ,
+    $q->div( { -id => "classes" }, join( "", @$classes ) ) ;
 
-print $q->table( { -border => 1, -frame => 1 }, $q->Tr($out) ), $q->end_html;
+print $q->table( {-style=>"width:100%", -border => 1, -frame => 1 }, $q->Tr($out) ), $q->end_html;
 
 exit(0);
 
 sub pages {
-    my ( $q, $p0, $maxpage ) = @_;
+    my ( $q, $idx0, $ndata, $ppage ) = @_;
     my @pgurl;
     my $myself = $q->url( -query => 1, -relative => 1 );
+    $idx0=1 if $idx0<1;
     $myself =~ s/%/%%/g;
     $myself =~ s/(;|\?)/\&/g;
-    $myself =~ s/&page=\d+//;
-    $myself =~ s/(&|$)/\?page=%d$1/;
-    push @pgurl, sprintf( "<a OnClick=load_res($myself)>&lt;&lt;</a>", 1 );
-    push @pgurl, sprintf( "<a OnClick=load_res($myself)>&lt;</a>", $p0 > 1 ? $p0 - 1 : 1 );
+    $myself =~ s/&idx0=\d+//;
+    $myself =~ s/(&|$)/\?idx0=%d$1/;
+    $myself = "'$myself'";
+    # << <   n-3 n-2 n-1 n n+1 n+2 n+3 > >>
+    push @pgurl, $q->a({-class=>"page_sel",-id=>1},"&lt;&lt;");
+    push @pgurl, $q->a({-class=>"page_sel",-id=>( $idx0>$ppage? $idx0-$ppage:1)},"&lt;");
     my $entries = 6;
-    my $lo      = $p0 - $entries / 2;
-    $maxpage++;
-    $lo = $maxpage - $entries if $lo > $maxpage - $entries;
+    my $lo      = int($idx0/$ppage) - int($entries / 2);
+    my $maxpage = int($ndata/$ppage)+1;
     $lo = 1 if $lo < 1;
     my $hi = $lo + $entries;
-    $hi = $maxpage if $hi > $maxpage;
+    $hi = $maxpage-1 if $maxpage < $hi;
 
     foreach ( $lo .. $hi ) {
-        push @pgurl,
-          sprintf( "<a OnClick=load_res($myself)>%s</a>",
-            $_, ( $_ == $p0 ? "<big>&nbsp;$_&nbsp;</big>" : $_ ) );
+	push @pgurl, $q->a({-class=>"page_sel",-id=>$_*$ppage},
+            $_ == $p0 ? "<big>&nbsp;$_&nbsp;</big>" : $_ );
     }
-    push @pgurl, sprintf( "<a OnClick=load_res($myself)>&gt;<a>",     $p0 + 1 );
-    push @pgurl, sprintf( "<a OnClick=load_res($myself)>&gt;&gt;<a>", $maxpage );
+    push @pgurl, $q->a({-class=>"page_sel",-id=>$p0+$ppage},"&gt;");
+    push @pgurl, $q->a({-class=>"page_sel",-id=>$ndata-$ppage+1},"&gt;&gt;");
     return $q->table( $q->Tr( $q->td( \@pgurl ) ) );
 }
 

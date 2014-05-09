@@ -13,7 +13,13 @@ input.tagbox{ background-color:#eee; border:none;font-style:italic; width:100%}
 img.thumb{width:100%;padding-right:10px}
 a.thumb { border: solid inset magenta; width:100%; float:left;}
 div.thumb { background-color:#ccc; border: solid inset magenta; float:left; width:30%}
-div.descr { border: solid inset magenta; background:transparent; width:68%; float: left;padding-left:4px}; 
+div.descr { border: solid inset magenta; background:transparent; width:68%; float: left;padding-left:4px}
+#nresults{float: left;padding-right:10px}
+#idx{ float: left}
+#pageno{ float: right}
+#query{ float: left; border: solid grey}
+#pages{ display:none; position:fixed; width:100% ; border: solid inset pink}
+#classes { display:none; border:blue }
 input.tagbox_l { border:1px solid #CCC; background: #cccc00; padding:2px; width 50%;auto; moz-border-radius: 10px; border-radius: 10px;} 
 unsel { background: #cccccc; }
 	

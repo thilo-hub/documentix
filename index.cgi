@@ -77,7 +77,7 @@ my $tags = $dh->selectall_hashref(
         );
 
     }
-    $left .= $q->div( { -id => 'pagesel' }, $tagl );
+    $left .= $q->div( { -id => 'pagesel' }, "" );
     $left .= $q->div( { -id => 'taglist' }, $tagl );
     $left .= "<p>" . $q->hr . $q->div( { -id => 'msg' }, "msg" ) . "</p>";
 
