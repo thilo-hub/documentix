@@ -32,12 +32,12 @@ print $q->header( -charset => 'utf-8' )    # , -cookie=> \@mycookies),,
  ;
 
 print $q->start_html( -title =>'PDF Database' ),
+# $q->Link( { -rel  => "stylesheet", -type => "text/css", -href  => "js/jquery.tagsinput.css" },""),
 $q->Link( { -rel  => "stylesheet", 
 		-type => "text/css", -href  => "js/docidx.css" },""),
-$q->Link( { -rel  => "stylesheet", 
-		-type => "text/css", -href  => "js/jquery.tagsinput.css" },""),
 $q->script( { -type => 'text/javascript', -src => "js/jquery/jquery.min.js" }, ""),
 $q->script( { -type => 'text/javascript', -src => "js/jquery/jquery-ui.min.js" }, "" ),
+# $q->script( { -type => 'text/javascript', -src => "js/jquery.tagsinput.js" }, ""),
 $q->script( { -type => 'text/javascript', -src => "js/wz_tooltip.js" }, ""),
 $q->script( { -type => 'text/javascript', -src => "js/docidx.js"}, "" )
 ;
@@ -46,13 +46,10 @@ my $tags = $dh->selectall_hashref(
 "select tagname,count(*) cnt from tags natural join tagname group by tagname",
         "tagname"
     );
-    my $left;
     my $sum = 0;
     foreach my $tv ( sort keys %$tags ) {
         $sum += $tags->{$tv}->{cnt};
     }
-    $left .=
-      $q->br . "Search:" . $q->textfield( { -id => "search" }, 'search' );
 
     $tags = $dh->selectall_hashref(
 "select tagname,count(*) cnt from tags natural join tagname group by tagname order by cnt desc limit 20",
@@ -77,9 +74,6 @@ my $tags = $dh->selectall_hashref(
         );
 
     }
-    $left .= $q->div( { -id => 'pagesel' }, "" );
-    $left .= $q->div( { -id => 'taglist' }, $tagl );
-    $left .= "<p>" . $q->hr . $q->div( { -id => 'msg' }, "msg" ) . "</p>";
 
     print <<EOP;
 <div class="top">
@@ -90,7 +84,12 @@ my $tags = $dh->selectall_hashref(
 <div>
 	<div class="left">
 		<div id="left" class="menu">
-			$left
+			<div id="pageno" class="pageno"></div>
+			Search: <input id="search">
+			<div id="set_page"></div>
+			<div id="taglist">$tagl</div>
+			<hr>
+			<div id="msg"></div>
 		</div>
 	</div>
 	<div class="right">

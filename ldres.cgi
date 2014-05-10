@@ -40,7 +40,6 @@ print $q->header( -charset => 'utf-8' ),    # , -cookie=> \@mycookies),
 # print pages
 my $idx0 = ( $q->param("idx") || 1 );
 my $ppage = ( $q->param("count") || 18 );
-my $p0 = ( $q->param("page") || 1 );
 my $search = $q->param("search") || undef;
 undef $search if $search && $search =~ /^\s*$/;
 
@@ -160,11 +159,11 @@ $classes = [
 
 my $out = load_results($stm1);
 
-print $q->div( { -id => "nresults" }, $ndata ),
-	$q->div({ -id => "idx"},$idx0 ),
-	$q->div({ -id => "pageno"},int($idx0/$ppage) ),
-	$q->div({ -id => "query"},$search),
-    $q->div( { -id => "pages" }, pages($q,$idx0,$ndata,$ppage) ) ,
+print $q->div( { -class => "tick", -id => "nresults" }, $ndata ),
+	$q->div({ -class => "tick", -id => "idx"},$idx0 ),
+	$q->div({ -class => "tick", -id => "pageno"},int($idx0/$ppage) ),
+	$q->div({ -class => "tick", -id => "query"},$search),
+    $q->div( { -class => "tick", -id => "pages" }, pages($q,$idx0,$ndata,$ppage) ) ,
     $q->div( { -id => "classes" }, join( "", @$classes ) ) ;
 
 print $q->table( {-style=>"width:100%", -border => 1, -frame => 1 }, $q->Tr($out) ), $q->end_html;
@@ -174,29 +173,25 @@ exit(0);
 sub pages {
     my ( $q, $idx0, $ndata, $ppage ) = @_;
     my @pgurl;
-    my $myself = $q->url( -query => 1, -relative => 1 );
-    $idx0=1 if $idx0<1;
-    $myself =~ s/%/%%/g;
-    $myself =~ s/(;|\?)/\&/g;
-    $myself =~ s/&idx0=\d+//;
-    $myself =~ s/(&|$)/\?idx0=%d$1/;
-    $myself = "'$myself'";
+    $idx0=1 unless $idx0 > 1;
     # << <   n-3 n-2 n-1 n n+1 n+2 n+3 > >>
-    push @pgurl, $q->a({-class=>"page_sel",-id=>1},"&lt;&lt;");
-    push @pgurl, $q->a({-class=>"page_sel",-id=>( $idx0>$ppage? $idx0-$ppage:1)},"&lt;");
     my $entries = 6;
-    my $lo      = int($idx0/$ppage) - int($entries / 2);
+    push @pgurl, $q->button( -class => 'pageno', -value => "<<", -id => 1) if $idx0 >= ( 2*$ppage);
+    push @pgurl, $q->button( -class => 'pageno', -value =>  "<", -id => $idx0-$ppage) if ($idx0 >= $ppage);
+    my $lo      = int(($idx0-1)/$ppage) - int($entries/2);
+    $lo = 0 if $lo < 0;
+
     my $maxpage = int($ndata/$ppage)+1;
-    $lo = 1 if $lo < 1;
     my $hi = $lo + $entries;
     $hi = $maxpage-1 if $maxpage < $hi;
 
     foreach ( $lo .. $hi ) {
-	push @pgurl, $q->a({-class=>"page_sel",-id=>$_*$ppage},
-            $_ == $p0 ? "<big>&nbsp;$_&nbsp;</big>" : $_ );
+        my $i=($_)*$ppage+1;
+        push @pgurl, $q->button( -class =>( ($i==$idx0) ? 'this_page' : 'pageno'), -value => $_+1 , -id => $i);
     }
-    push @pgurl, $q->a({-class=>"page_sel",-id=>$p0+$ppage},"&gt;");
-    push @pgurl, $q->a({-class=>"page_sel",-id=>$ndata-$ppage+1},"&gt;&gt;");
+    push @pgurl, $q->button( -class => 'pageno', -value => ">", -id => $idx0+$ppage) if ( $idx0 < ($ndata-$ppage) );
+    push @pgurl, $q->button( -class => 'pageno', -value => ">>", -id => $maxpage-$ppage) if (( $hi*$ppage) >= $idx0);
+    return join("",@pgurl);
     return $q->table( $q->Tr( $q->td( \@pgurl ) ) );
 }
 
