@@ -18,12 +18,12 @@ a.thumb { border: none; width:100%; float:left;}
 div.thumb { background-color:#ccc; border: none; float:left; width:30%}
 div.descr { border: none; background:transparent; width:68%; float: left;padding-left:4px}
 .pageno {padding: 0px; border:none}
-.this_page {padding: 0px; border:inset blue}
+.this_page {padding: 0px; border:inset blue; background:magenta}
 #set_page {padding: 0px; border:inset thin magenta;height:20px;width:100%}
-
+.p_content { display:hidden}
 #nresults{float: left;padding-right:10px}
 #idx{ float: left}
-#pageno{ float: right; height:20px;position:fixed }
+#pageno{ float: right; height:20px;}
 #query{ float: left; border: solid grey}
 #pages{ display:none; position:fixed; width:100% ; border:  inset red}
 #classes { display:none; border:blue }

@@ -161,7 +161,7 @@ my $out = load_results($stm1);
 
 print $q->div( { -class => "tick", -id => "nresults" }, $ndata ),
 	$q->div({ -class => "tick", -id => "idx"},$idx0 ),
-	$q->div({ -class => "tick", -id => "pageno"},int($idx0/$ppage) ),
+	$q->div({ -class => "tick", -id => "pageno"},int($idx0/$ppage)+1 ),
 	$q->div({ -class => "tick", -id => "query"},$search),
     $q->div( { -class => "tick", -id => "pages" }, pages($q,$idx0,$ndata,$ppage) ) ,
     $q->div( { -id => "classes" }, join( "", @$classes ) ) ;
