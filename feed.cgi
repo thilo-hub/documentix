@@ -55,7 +55,7 @@ if ( $pi && $pi =~ m|^/(([^/]*)/)?([0-9a-f]{32})/([^/]+.(pdf))|)
 }
 
 my($s,$user,$uid)=$auth->login($username,$passwd);
-if ( $s != 1 )
+if ( 0&& $s != 1 )
 {
 	do "login.cgi";
 	exit 0;
