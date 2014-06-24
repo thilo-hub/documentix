@@ -11,6 +11,7 @@ $ENV{"PATH"} .= ":/usr/pkg/bin";
 my $__meta_sel;
 my $q     = CGI->new;
 my $ncols = 2;
+my $entries=6;
 
 my $pdfidx = pdfidx->new();
 
@@ -83,7 +84,7 @@ my $s3 = q{
 
 my $idx = $dh->selectrow_array( $s1, undef, $search );
 
-unless ($idx) {
+if ( $search && ! $idx ) {
 
     # create cached results table
     $dh->do( $s2, undef, $search );
@@ -102,7 +103,7 @@ if ($class) {
         $sth->execute($_);
     }
     $dh->do(q{drop table if exists docids});
-    $dh->do(q{create table docids as select idx  from cls natural join tags});
+    $dh->do(q{create table docids as select distinct(idx) idx  from cls natural join tags});
     $subsel = "docids natural join ";
 }
 my ( $classes, $ndata, $stm1 );
@@ -122,21 +123,22 @@ q{select tagname,count(*) from tags natural join tagname where idx in ( select i
     $ndata = qq{select count(*) from resl};
 
     # get display list
-    $stm1 = qq{ select * from resl limit ?,?};
+    $stm1 = qq{ select * from resl join metadata m using (idx) order by cast(m.value as integer) desc limit ?,?};
 }
 else {
     $classes =
 qq{ select tagname,count(*) from $subsel tags natural join tagname group by 1};
     $ndata = qq{ select count(*) from $subsel hash };
+    # qq{ select idx,value snippet from $subsel metadata where tag="Content" limit ?,?  };
     $stm1 =
-qq{ select idx,value snippet from $subsel metadata where tag="Content" limit ?,?  };
+	qq{ select s.idx,s.value snippet from $subsel metadata s join metadata m using (idx) where s.tag="Content" and m.tag="mtime" order by cast(m.value as integer)  desc limit ?,?  };
 }
 
 $classes = $dh->selectall_arrayref($classes);
 $ndata   = $dh->selectrow_array($ndata);
 $stm1    = $dh->prepare($stm1);
 
-$stm1->bind_param( 1, $idx0 );
+$stm1->bind_param( 1, $idx0-1 );
 $stm1->bind_param( 2, $ppage );
 $stm1->execute();
 
@@ -145,12 +147,13 @@ $stm1->execute();
 $classes = [
     map {
         my $ts = $$_[1] / "$ndata.0";
-        my $bg = ( $ts < 0.02 ) ? "background: #bbb" : "";
-        $ts = 0.2 if $ts < 0.1;
-        $ts = int( $ts * 60 );
+        my $bg = "";#( $ts < 0.02 ) ? "background: #bbb" : "";
+        $ts = int( $ts * 40 );
+	$ts=19 if $ts>19;
+	$ts=9  if $ts <9;
         $_  = $q->button(
             -name  => 'button_name',
-            -class => 'tagbox_l',
+            -class => 'tagbox',
             -style => "font-size: ${ts}px; $bg ",
             -value => $$_[0]
           )
@@ -166,31 +169,39 @@ print $q->div( { -class => "tick", -id => "nresults" }, $ndata ),
     $q->div( { -class => "tick", -id => "pages" }, pages($q,$idx0,$ndata,$ppage) ) ,
     $q->div( { -id => "classes" }, join( "", @$classes ) ) ;
 
-print $q->table( {-style=>"width:100%", -border => 1, -frame => 1 }, $q->Tr($out) ), $q->end_html;
+print "<br>";
+# print $q->table( {-style=>"width:100%", -border => 1, -frame => 1 }, $q->Tr($out) ), $q->end_html;
+#print "<hr>";
+print $q->div($q->ul({-id =>"X_results"},$q->li({-class=>"rbox"},$out)));
+print $q->end_html;
 
 exit(0);
 
 sub pages {
     my ( $q, $idx0, $ndata, $ppage ) = @_;
     my @pgurl;
-    $idx0=1 unless $idx0 > 1;
-    # << <   n-3 n-2 n-1 n n+1 n+2 n+3 > >>
-    my $entries = 6;
-    push @pgurl, $q->button( -class => 'pageno', -value => "<<", -id => 1) if $idx0 >= ( 2*$ppage);
-    push @pgurl, $q->button( -class => 'pageno', -value =>  "<", -id => $idx0-$ppage) if ($idx0 >= $ppage);
-    my $lo      = int(($idx0-1)/$ppage) - int($entries/2);
-    $lo = 0 if $lo < 0;
+    my $p0 =1;
+    my $pi   = int(($idx0-1)/$ppage) +$p0;
+    my $prev_p=$pi-1;
+    $prev_p=1 if $prev_p<1;
+    my $last_p = int($ndata/$ppage)+$p0;
+    my $next_p =$pi+1;
+    $next_p=$last_p if $next_p > $last_p;
 
-    my $maxpage = int($ndata/$ppage)+1;
+    my $lo = $pi - int($entries/2);
+    $lo = $p0 if $lo < 1;
     my $hi = $lo + $entries;
-    $hi = $maxpage-1 if $maxpage < $hi;
+    $hi = $last_p if $hi > $last_p;
+
+    push @pgurl, $q->button( -class => 'pageno', -value => "<<", -id => 1);
+    push @pgurl, $q->button( -class => 'pageno', -value =>  "<", -id => ($prev_p-1)*$ppage+1);
 
     foreach ( $lo .. $hi ) {
-        my $i=($_)*$ppage+1;
-        push @pgurl, $q->button( -class =>( ($i==$idx0) ? 'this_page' : 'pageno'), -value => $_+1 , -id => $i);
+        my $i=($_-1)*$ppage+1;
+        push @pgurl, $q->button( -class =>( $_==$pi ? 'this_page' : 'pageno'), -value => $_ , -id => $i);
     }
-    push @pgurl, $q->button( -class => 'pageno', -value => ">", -id => $idx0+$ppage) if ( $idx0 < ($ndata-$ppage) );
-    push @pgurl, $q->button( -class => 'pageno', -value => ">>", -id => $maxpage-$ppage) if (( $hi*$ppage) >= $idx0);
+    push @pgurl, $q->button( -class => 'pageno', -value => ">", -id => ($next_p-1)*$ppage+1);
+    push @pgurl, $q->button( -class => 'pageno', -value => ">>", -id =>($last_p-1)*$ppage+1);
     return join("",@pgurl);
     return $q->table( $q->Tr( $q->td( \@pgurl ) ) );
 }
@@ -227,14 +238,14 @@ sub get_cell {
     $editor .= "$md5&type=lowres";
     my $s = 0;
     my $p = "1";
-    my $d = "--";
+    my $d = $r->{"date"} || "--";
     if ( my $mpdf=$meta->{"pdfinfo"}->{"value"} )
     {
 	    $s = $1 if $mpdf =~ /File size\s*<\/td><td>\s*(\d+)/;
 	    $p = $1 if $mpdf =~ /Pages\s*<\/td><td>\s*(\d+)\s*<\/td>/;
 	    $d = $1 if $mpdf =~ /CreationDate\s*<\/td><td>(.*?)<\/td>/;
     }
-
+     $p=1 unless $p;
     my $tags =
 "select tagname from hash natural join tags natural join tagname where md5=\"$md5\"";
     $tags = $dh->selectall_hashref( $tags, 'tagname' );
@@ -261,8 +272,9 @@ sub get_cell {
     my $lowres = "docs/lowres/$md5/$short_name";
     #my $ico    = qq{<img src='docs/ico/$md5/$short_name'};
     my $ico    = $q->img({-class=>"thumb", -src=>"docs/ico/$md5/$short_name"});
-    my $tip    = qq{<table><tr><td>$meta->{Content}->{value}</td></tr></table>};
-    $tip = $r->{"snippet"} if $r->{"snippet"};
+    my $tip = $r->{"snippet"} || "";
+    #$tip =~ s/(.{1024}) .*/$1/;
+    #$tip =~ s/(([^\n]*\n){10}).*/$1/;
     $tip =~ s/'/&quot;/g;
     $tip =~ s/\n/<br>/g;
     $tip = qq{'$tip'};
@@ -272,12 +284,15 @@ sub get_cell {
     $meta->{PopFile}->{value} =~ s|http://maggi|$q->url(-base=>'1')|e;
     my $day = $d;
     $day =~ s/\s+\d+:\d+:\d+\s+/ /;
-    $d = $&;
+    # $d = $&;
+    $d =~ s/^\s*\S*\s+//;
+    $d =~ s/\s+\d+:\d+:\d+\s+/ /;
 
     my $data = 
             $q->div({-class=>"thumb"},$q->a(
                 {   -class=>"thumb",
                     -href        => $pdf,
+		    -target     => "docpage",
                     -onmouseover => "Tip($tip)",
                     -onmouseout  => "UnTip()"
                 },
@@ -288,17 +303,18 @@ sub get_cell {
                 { -href => $meta->{PopFile}->{value}, -target => "_popfile" },
                 $meta->{Class}->{value} )
               . $q->br
-              . $q->a( { -class=>"doclink", -href => $pdf }, $sshort_name )
+              . $q->a( { -class=>"doclink", -href => $pdf ,-target => "docpage" }, $sshort_name )
               . $q->br
               . $q->a({-class=>"dtags"},$tags).
             (
                 ( ( $s / $p ) > 500000 )
-                ? $q->a( { -href => $lowres, -target => "_pdf" },
+                ? $q->a( { -href => $lowres, -target => "docpage" },
                     "&lt;Lowres&gt;" )
                 : ""
               )
-              . $q->a( { -href => $editor, -target => "results" },
+              . $q->a( { -href => $editor, -target => "docpage" },
                 "&lt;Edit&gt;" )
+	      . "<br>$d"
               . "<br> Pages: $p <br>$s");
 
     return $q->td( $q->div({-class=>"rcell"},$data));
@@ -311,6 +327,7 @@ sub load_results {
     my @outrow;
     my @out;
     while ( my $r = $stmt_hdl->fetchrow_hashref ) {
+	    if ( 0) {
         if ( $r->{"date"} && $t0 ne $r->{"date"} ) {
             push @out, join( "\n  ", splice(@outrow) );
 
@@ -319,8 +336,11 @@ sub load_results {
         }
         push @outrow, get_cell($r);
         push @out, join( "\n  ", splice(@outrow) ) if scalar(@outrow) >= $ncols;
+	}else{
+		push @out, get_cell($r);
+	}
     }
-    push @out, join( "\n  ", splice(@outrow) );
+    # push @out, join( "\n  ", splice(@outrow) );
     return \@out;
 }
 

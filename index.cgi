@@ -37,43 +37,10 @@ $q->Link( { -rel  => "stylesheet",
 		-type => "text/css", -href  => "js/docidx.css" },""),
 $q->script( { -type => 'text/javascript', -src => "js/jquery/jquery.min.js" }, ""),
 $q->script( { -type => 'text/javascript', -src => "js/jquery/jquery-ui.min.js" }, "" ),
-# $q->script( { -type => 'text/javascript', -src => "js/jquery.tagsinput.js" }, ""),
+$q->script( { -type => 'text/javascript', -src => "js/jquery.tagsinput.js" }, ""),
 $q->script( { -type => 'text/javascript', -src => "js/wz_tooltip.js" }, ""),
 $q->script( { -type => 'text/javascript', -src => "js/docidx.js"}, "" )
 ;
-
-my $tags = $dh->selectall_hashref(
-"select tagname,count(*) cnt from tags natural join tagname group by tagname",
-        "tagname"
-    );
-    my $sum = 0;
-    foreach my $tv ( sort keys %$tags ) {
-        $sum += $tags->{$tv}->{cnt};
-    }
-
-    $tags = $dh->selectall_hashref(
-"select tagname,count(*) cnt from tags natural join tagname group by tagname order by cnt desc limit 20",
-        "tagname"
-    );
-    my $limit = 20;
-    my $tagl;
-    foreach my $tv ( sort keys %$tags ) {
-
-        last if $limit-- eq 0;
-
-        #print "$tv : $tags->{$tv}->{cnt}\n";
-        my $ts = $tags->{$tv}->{"cnt"} / $sum;
-        my $bg = ( $ts < 0.02 ) ? "background: #bbb" : "";
-        $ts = 0.2 if $ts < 0.1;
-        $ts = int( $ts * 30 );
-        $tagl .= $q->button(
-            -name  => 'button_name',
-            -class => 'tagbox_l',
-            -style => "font-size: ${ts}px; $bg ",
-            -value => $tv
-        );
-
-    }
 
     print <<EOP;
 <div class="top">
@@ -87,9 +54,13 @@ my $tags = $dh->selectall_hashref(
 			<div id="pageno" class="pageno"></div>
 			Search: <input id="search">
 			<div id="set_page"></div>
-			<div id="taglist">$tagl</div>
+			<div id="taglist"></div>
+			<div id="tagedit">
+			<input id="tags"/>
+			</div>
 			<hr>
 			<div id="msg"></div>
+			<div id="scan"><a href="scanns.cgi" target="scanner">Load scanned data</a></div>
 		</div>
 	</div>
 	<div class="right">

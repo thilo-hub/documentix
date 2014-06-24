@@ -1,7 +1,7 @@
 
 div.top{padding:0px; width:100%;height:40px}
 div.left{position: fixed; padding:0px; width:20%; float:left;padding:0px}
-div.right{word-wrap: break-word; padding:0px;  width:78%; float:right}
+div.right{word-wrap: break-word; padding:0px;  width:78%; float:right; background: #eee}
 
 div.header {border: thin inset blue; text-align:center; width:100%; height:100% }
 div.menu {border: none; text-align:center; width:100%; height:100%; float:left}
@@ -12,7 +12,7 @@ div.results {border: none; width:100%; height:100%; float: right }
 a.doclink {border: green;color: green; word-wrap: break-word}
 div.rcell { border: none; background-color: #f83}
 a.dtags { background-color:#333}
-input.tagbox{ background-color:#eee; border:none;font-style:italic; width:100%}
+.tagbox{ background-color:transparent; border:none;font-style:italic; padding:1px}
 img.thumb{width:100%;padding-right:10px}
 a.thumb { border: none; width:100%; float:left;}
 div.thumb { background-color:#ccc; border: none; float:left; width:30%}
@@ -30,4 +30,19 @@ div.descr { border: none; background:transparent; width:68%; float: left;padding
 
 input.tagbox_l { border:1px solid #CCC; background: #cccc00; padding:2px; border-radius: 10px;} 
 unsel { background: #cccccc; }
+.X_results { width:100%; list-style-type: none }
+.rbox { border:inset #CCC; width:300px;height:200px; float:left;list-style-type:none}
 	
+div.tagsinput { border:1px solid #CCC; background: #FFF; padding:5px; width:300px; height:50px; overflow-y: auto;}
+div.tagsinput span.tag a { font-weight: bold; color: #82ad2b; text-decoration:none; font-size: 11px;  } 
+div.tagsinput input { width:80px; margin:0px; font-family: helvetica; font-size: 13px; border:1px solid transparent; padding:5px; background: transparent; color: #000; outline:0px;  margin-right:5px; margin-bottom:5px; }
+div.tagsinput div { display:block; float: left; } 
+.tags_clear { clear: both; width: 100%; height: 0px; }
+.not_valid {background: #FBD8DB !important; color: #90111A !important;}
+#tagedit {display: none; postion:absolute}
+div.tagsinput span.tag { 
+	border: 1px solid #ddd; -moz-border-radius:2px; -webkit-border-radius:2px; 
+	display: block; float: left; padding: 2px; text-decoration:none; 
+	background: transparent; color: #333; margin-right: 2px; margin-bottom:1px;
+	font-family: helvetica;  font-size:13px;font-style:italic}
+

@@ -2,6 +2,8 @@ var idx = 1;
 var clname = "";
 var nsrch = "";
 $(function () {
+  $.get("ldres.cgi",function(data) {
+	load_result( idx,"<div class='p_content' id='page_"+idx.toString()+"'>"+data+"</div>")});
   $("#search").keypress(function (event) {
     if (event.keyCode == 13) {
       $("#search").blur();
@@ -49,9 +51,10 @@ $(function () {
   }
 
   $('#taglist').click(function (e) {
-    if ($(e.target).hasClass("tagbox_l")) {
+    if ($(e.target).hasClass("tagbox")) {
       var ncl = $(e.target).val();
       if (ncl != clname) {
+        $("#result").html("");
         $("#result").removeData();
       }
       clname = ncl;
@@ -80,41 +83,55 @@ $(function () {
         update_res();
       }
     }
-  })
-  $('.tagbox_int').each(function (i) {
-    $(this).tagsInput({
-      onAddTag: function (elem, elem_tags) {
-        $.post("tags.cgi", {
-            json_string: JSON.stringify({
-              tag: elem,
-              op: "add",
-              md5: this.id
-            })
-          },
-          function (data) {
-            $('#msg').html(data);
-          })
-      },
-      onRemoveTag: function (elem, elem_tags) {
-        $.post("tags.cgi", {
-            json_string: JSON.stringify({
-              tag: elem,
-              op: "rem",
-              md5: this.id
-            })
-          },
-          function (data) {
-            $('#msg').html(data);
-          })
-      }
+  });
+  $('#tags').tagsInput({
+	  onAddTag: function (elem, elem_tags) {
+	    $('#msg').html($.post("tags.cgi", {
+	      json_string: JSON.stringify({
+		tag: elem,
+		op: "add",
+		md5: foc_id
+	      })
+	    },
+	    function (data) { $('#msg').html(data); }))
+	  },
+	  onRemoveTag: function (elem, elem_tags) {
+	    $.post("tags.cgi", {
+	      json_string: JSON.stringify({
+		tag: elem,
+		op: "rem",
+		md5: foc_id
+	      })
+	    },
+	    function (data) { $('#msg').html(data); })
+	  }
+	});
+  $('input#tags_tag').keypress(function(event){
+      if ( event.keyCode == 27 ) {
+	     event.preventDefault();
+	     //$(event.target).blur();
+	     // $( document.activeElement ).blur();
+	          $(foc_el).val($('#tags').val());
+		  $('#tagedit').blur();
+		  $('#tagedit').hide('slow')
+     }
+});
+  $('#tags_tag_').focusout(function(){
+	          $(foc_el).val($('#tags').val());
+		  $('#tagedit').hide('slow')
+  });
+  $('.right').click(function(e){
+    foc_el= e.target;
+    if ($(foc_el).hasClass("tagbox")){
+	    foc_id=foc_el.id;
+	        $('#tags').importTags($(foc_el).val());
+		$('#tagedit').show('slow', function () {
+			            $('#tags_tag').focus();
 
-    })
-  }),
-  $('#msg').click(function() { 
-	  var i='#page_'+idx.toString();
-	  $('.p_content:visible').toggle("Fold"); 
-	  $('.p_content'+i).toggle("Fold"); 
+				    	})
+      }
   })
 })
+
 
 
