@@ -521,27 +521,30 @@ sub index_pdf {
 
     my $md5_f = file_md5_hex($fn);
 
-    $dh->prepare("insert or replace into file (md5,file) values(?,?)")
-      ->execute( $md5_f, $fn );
-
     my ($idx) =
       $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
 
     return $idx if $idx;   # already indexed -- TODO:potentially check timestamp
-    print STDERR "Loading: $fn\n";
+
+
 
     # $dh->do("begin exclusive transaction");
-    $dh->prepare("insert into hash(md5) values(?)")->execute($md5_f);
+    $dh->prepare("insert into file (md5,file) values(?,?)")
+      ->execute( $md5_f, $fn );
 
     $idx = $dh->last_insert_id( "", "", "", "" );
+    print STDERR "Loading: ($idx) $fn\n";
+    # my ($idx) = $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
 
     my $thumb = $self->pdf_thumb($fn);
     my $ico   = $self->pdf_icon($fn);
+if(0){
     my $ins_d = $dh->prepare("insert into data (idx,thumb,ico) values(?,?,?)");
     $ins_d->bind_param( 1, $idx,   SQL_INTEGER );
     $ins_d->bind_param( 2, $thumb, SQL_BLOB );
     $ins_d->bind_param( 3, $ico,   SQL_BLOB );
     $ins_d->execute();
+}
     my %meta;
     $meta{"Docname"} = $fn;
     $meta{"Docname"} =~ s/^.*\///s;
@@ -552,13 +555,13 @@ sub index_pdf {
     $meta{"hash"}    = $md5_f;
     $meta{"pdfinfo"} = $self->pdf_info($fn);
     $meta{"Image"}   = '<img src="?type=thumb&send=#hash#">';
-    ($meta{"PopFile"},$meta{"Class"})   = ($self->pdf_class( $fn, substr($meta{"Text"},0,50000), $meta{"hash"} ));
+    ($meta{"PopFile"},$meta{"Class"})   = ($self->pdf_class( $fn, \$meta{"Text"}, $meta{"hash"} ));
 
     $meta{"keys"} = join( ' ', keys(%meta) );
     foreach ( keys %meta ) {
 	$self->ins_e($idx, $_, $meta{$_} );
     }
-
+if(0){
     # load and fill file-template
     my $tpl = slurp("/home/thilo/public_html/fl/t2/templ_doc.html");
 
@@ -569,11 +572,11 @@ sub index_pdf {
       "Content-Type: text/html; charset=utf-8\nContent-Length: %d\n\n%s",
       length($tpl), $tpl;
     $dh->prepare(q{update data set html=? where idx=? })->execute( $tpl, $idx );
-
+}
     # $dh->do("commit");
     $meta{"thumb"} = \$thumb;
     $meta{"ico"}   = \$ico;
-    return $idx, \$meta;
+    return $idx, \%meta;
 }
 sub ins_e
 {
@@ -608,7 +611,7 @@ sub pdf_text {
     return $txt if $txt;
     #$fn=~ s/\$/\\\$/g;
     # $txt = qx{pdftotext "$fn" -};
-    $txt = qx{pdfopt "$fn" /tmp/$$.pdf >/dev/null; pdftotext /tmp/$$.pdf -; rm /tmp/$$.pdf};
+    $txt = qx{/usr/pkg/bin/pdfopt "$fn" /tmp/$$.pdf >/dev/null; /usr/pkg/bin/pdftotext /tmp/$$.pdf -; rm /tmp/$$.pdf};
     undef $txt  if length($txt) < 100;
     return $txt if $txt;
     # next ressort to ocr 
