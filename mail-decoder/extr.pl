@@ -10,6 +10,10 @@ $pdfidx=pdfidx->new();
 
 foreach(@ARGV)
 {
+	next unless -f $_;
+	 chomp(my $type=qx{file  -b --mime-type "$_" });
+	next unless ($type =~ m|message/rfc822|);
+	print "$_: $type\n";
 # my $td=File::Temp->newdir("./out/mpdf_XXXXXX",{CLEANUP=>0});
 my $td=tempdir(CLEANUP=>0,TEMPLATE=> "./out/mpdf_XXXXXX");
 use Cwd 'abs_path';
