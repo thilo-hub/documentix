@@ -24,7 +24,7 @@ push @state,$auth->login(undef,undef);
 	
 if ( $auth->logged_in() )
 {
-	my $dst=$ENV{"HTTP_REFERER"} || "main.cgi";
+	my $dst=$ENV{"HTTP_REFERER"} || "index.cgi";
 	$dst="main.cgi" if $dst=~ /\/login.cgi$/;
 	#$dst="env.cgi";
 	#print $q->redirect($dst); exit 0;
