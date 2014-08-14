@@ -42,6 +42,7 @@ print $q->header( -charset => 'utf-8' ),    # , -cookie=> \@mycookies),
 my $idx0 = ( $q->param("idx") || 1 );
 my $ppage = ( $q->param("count") || 18 );
 my $search = $q->param("search") || undef;
+my $ppage = $q->param("ppage")|| 18;
 undef $search if $search && $search =~ /^\s*$/;
 
 my $ANY       = "*ANY*";
@@ -79,7 +80,7 @@ my $s1 = q{select qidx from cache_lst where query = ?};
 my $s2 = q{insert or abort into cache_lst (query) values(?)};
 my $s3 = q{
 	insert into cache_q ( qidx,idx,snippet ) 
-		select ?, docid idx,snippet(text) snippet from text where text match ? 
+		select ?, docid idx,snippet(text) snippet from text where text match ?
 	};
 
 my $idx = $dh->selectrow_array( $s1, undef, $search );
@@ -95,6 +96,7 @@ if ( $search && ! $idx ) {
 
 my $subsel = "";
 if ($class) {
+#TODO this shoud be a temporary table - debugging aid now
     $dh->do(q{drop table if exists cls});
     $dh->do(q{create table cls ( tagid integer primary key unique )});
     my $sth = $dh->prepare(
@@ -102,6 +104,7 @@ if ($class) {
     foreach ( split( /\s*,\s*/, $class ) ) {
         $sth->execute($_);
     }
+#TODO this shoud be a temporary table - debugging aid now
     $dh->do(q{drop table if exists docids});
     $dh->do(q{create table docids as select distinct(idx) idx  from cls natural join tags});
     $subsel = "docids natural join ";
@@ -110,6 +113,7 @@ my ( $classes, $ndata, $stm1 );
 if ($search) {
 
     # get final reslist
+#TODO this shoud be a temporary table - debugging aid now
     $dh->do(q{drop table if exists resl});
     my $rest =
       qq{create table resl as select * from $subsel cache_q where qidx = ?};
@@ -123,7 +127,7 @@ q{select tagname,count(*) from tags natural join tagname where idx in ( select i
     $ndata = qq{select count(*) from resl};
 
     # get display list
-    $stm1 = qq{ select * from resl join metadata m using (idx) order by cast(m.value as integer) desc limit ?,?};
+    $stm1 = qq{ select * from resl join metadata m using (idx) where m.tag = "mtime" order by cast(m.value as integer) desc limit ?,?};
 }
 else {
     $classes =
@@ -177,6 +181,7 @@ print $q->end_html;
 
 exit(0);
 
+# print page jumper  bar
 sub pages {
     my ( $q, $idx0, $ndata, $ppage ) = @_;
     my @pgurl;
@@ -278,7 +283,7 @@ sub get_cell {
     $tip =~ s/'/&quot;/g;
     $tip =~ s/\n/<br>/g;
     $tip = qq{'$tip'};
-    #print STDERR "TIP:$tip\n";
+    # print STDERR "TIP:$tip\n";
 
 # my @a=stat($pdf); my $e= strftime("%Y-%b-%d %a  %H:%M ($a[7]) $_",localtime($a[10]));
     $meta->{PopFile}->{value} =~ s|http://maggi|$q->url(-base=>'1')|e;
