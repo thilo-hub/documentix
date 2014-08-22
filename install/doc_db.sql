@@ -33,7 +33,7 @@ CREATE TABLE class2 (idx integer primary key,gid integer);
 CREATE TABLE hash ( idx integer primary key autoincrement, md5 text unique, refcnt integer );
 CREATE TABLE file ( md5 text, file text unique);
 CREATE INDEX file_md5 on file(md5);
-CREATE INDEX tags on metadata(tag);
+CREATE INDEX tagsi on metadata(tag);
 CREATE INDEX class_i on class(class);
 CREATE INDEX mtime_i on mtime(mtime);
 CREATE TRIGGER hash_delete after delete on hash begin 
