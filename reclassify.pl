@@ -5,9 +5,9 @@ use Data::Dumper;
 use doclib::pdfidx;
 my $pdfidx=pdfidx->new();
 
+my $dh   = $pdfidx->{"dh"};
 unless ($ARGV[0])
 {
-    my $dh   = $pdfidx->{"dh"};
     $dh->do("delete from metadata where tag='Class'");
 }
 
@@ -15,7 +15,8 @@ my $maxcnt=$ARGV[0] || 999999;
 classify($pdfidx,$maxcnt);
 
 {
-my $dh   = $pdfidx->{"dh"};
+$dh->do(q{create table if not exists tagname ( tagid integer primary key unique,tagname unique)});
+$dh->do(q{CREATE TABLE if not exists tags (tagid integer references tagname,idx integer references hash, unique (tagid,idx))});
 $dh->do(q{insert or ignore into tagname (tagname) select distinct(value) from metadata where tag="Class" });
 $dh->do(q{insert or ignore into tags (idx,tagid)  select idx,tagid  from metadata join tagname on (tagname=value)  where tag="Class" });
 }
