@@ -612,7 +612,7 @@ sub pdf_text {
     return $txt if $txt;
     #$fn=~ s/\$/\\\$/g;
     # $txt = qx{pdftotext "$fn" -};
-    $txt = qx{$tools/pdfopt "$fn" /tmp/$$.pdf >/dev/null; $tools/pdftotext /tmp/$$.pdf -; rm /tmp/$$.pdf};
+    $txt = qx{$tools/pdfopt "$fn" /tmp/$$.pdf >/dev/null || cp "$fn" /tmp/$$.pdf; $tools/pdftotext /tmp/$$.pdf -; rm /tmp/$$.pdf};
     undef $txt  if length($txt) < 100;
     return $txt if $txt;
     # next ressort to ocr 
