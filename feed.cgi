@@ -5,7 +5,7 @@ use doclib::pdfidx;
 use WWW::Authen::Simple;
 
 use CGI;
-$ENV{"PATH"} .= ":/usr/pkg/bin";
+$ENV{"PATH"} .= ":/usr/bin:/usr/pkg/bin";
 
 
 my $q = CGI->new;
@@ -16,8 +16,11 @@ if ( $ENV{"DEBUG_ME"} )
 	open($debugf,"/tmp/feed.call.param") and
 		$q=CGI->new($debugf);
 }
-open( $debugf,">/tmp/feed.call.param") &&
-$q->save($debugf);
+else
+{
+	open( $debugf,">/tmp/feed.call.param") &&
+	$q->save($debugf);
+}
 
 # Process an HTTP request
 my @values  = $q->param('send');
@@ -32,7 +35,7 @@ my $auth=WWW::Authen::Simple->new(
 	cookie_domain => $ENV{"SERVER_NAME"}
 );
 my ($f,$ext);
-# open(F,">>/tmp/f.log"); foreach(keys %ENV){ print F "$_ => $ENV{$_}\n" }; 
+open(F,">>/tmp/f.log"); foreach(keys %ENV){ print F "$_ => $ENV{$_}\n" }; 
 
 my $pi=$ENV{'PATH_INFO'};
 my($username,$passwd)=($q->param('user'),$q->param('passwd'));

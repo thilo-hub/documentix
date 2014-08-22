@@ -7,6 +7,7 @@ use DBI qw(:sql_types);
 use File::Temp qw/tempfile tempdir/;
 $File::Temp::KEEP_ALL = 1;
 my $mth=1;
+my $tools="/usr/bin";
  
 # use threads;
 # use threads::shared;
@@ -161,7 +162,7 @@ sub get_cont {
 sub pdf_info($$) {
     my $self = shift;
     my $fn  = shift;
-    my $res = qx{/usr/pkg/bin/pdfinfo \"$fn\"};
+    my $res = qx{$tools/pdfinfo \"$fn\"};
     $res =~ s|:\s|</td><td>|mg;
     $res =~ s|\n|</td></tr>\n<tr><td>|gs;
     $res =~ s|^(.*)$|<table><tr><td>$1</td></tr></table>|s;
@@ -242,10 +243,10 @@ sub pdftohtml {
 
     # extract all pages first
     die "$inpdf" unless -r $inpdf;
-    system( "/usr/pkg/bin/pdfimages", $inpdf, "-j", "-p","$tmpdir/page" );
+    system( "$tools/pdfimages", $inpdf, "-j", "-p","$tmpdir/page" );
     return undef if $?;
     my @rot;
-    foreach $p (qx{/usr/pkg/bin/pdfinfo -l 9999 "$inpdf"})
+    foreach $p (qx{$tools/pdfinfo -l 9999 "$inpdf"})
     {
 	next unless $p =~ m/Page\s+(\d+)\s+rot:\s+(\d+)/;
 	$rot[$1]=$2;
@@ -258,7 +259,7 @@ sub pdftohtml {
 	    # try conversion differently
 	    # using pdftoppm
 	    print STDERR "Using pdftoppm\n";
-	    qx{/usr/pkg/bin/pdftoppm -r 300 '$inpdf' '$tmpdir/ppage'};
+	    qx{$tools/pdftoppm -r 300 '$inpdf' '$tmpdir/ppage'};
 	    die "Ups: pdftoppm $? " if $?;
 	    @images=glob("$tmpdir/ppage-*");
 	    $_=0 
@@ -283,22 +284,22 @@ sub pdftohtml {
             my $fail = 0;
             unless ( -f "$base.html" ) {
 
-		# $fail += (system("/usr/pkg/bin/convert", $_,"-trim","+repage", 
+		# $fail += (system("$tools/convert", $_,"-trim","+repage", 
 		# "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
 		my @opt=qw{-normalize -gamma 2.0};
 		push @opt,("-rotate", $rot[$page]) if $rot[$page] != 0;
-		print STDERR join(" ",( "/usr/pkg/bin/convert", $_, @opt, $o,"\n" ));
+		print STDERR join(" ",( "$tools/convert", $_, @opt, $o,"\n" ));
                 $fail += (
-                    system( "/usr/pkg/bin/convert", $_, @opt, $o )
+                    system( "$tools/convert", $_, @opt, $o )
                     ? 1
                     : 0 )
                   unless -f $o;
 
-# $fail += (system("/usr/pkg/bin/convert", $_, "-gravity","north","-background","red","-splice","0x1","-trim","-chop","0x1", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
+# $fail += (system("$tools/convert", $_, "-gravity","north","-background","red","-splice","0x1","-trim","-chop","0x1", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
                 unlink $_ if $cleanup;
                 $fail += (
                     system(
-                        "/usr/pkg/bin/tesseract",   $o,     $base, "-l",
+                        "$tools/tesseract",   $o,     $base, "-l",
                         "deu+eng+equ", "hocr", "thilo"
                     ) ? 1 : 0
                 );
@@ -333,7 +334,7 @@ sub ocrpdf {
 	    my $o;
 	    foreach (@htmls) {
 		$o .= slurp($_);
-		$txt .= qx{/usr/pkg/bin/lynx -display_charset=utf-8  -dump "$_"};
+		$txt .= qx{$tools/lynx -display_charset=utf-8  -dump "$_"};
 	    }
 	    open HTM,">$outhtml";
 	    print HTM $o;
@@ -385,7 +386,7 @@ sub join_pdfhtml
     if (!$pdf && $@ =~ /not a PDF file version|cross-reference stream/)
     {
 	warn "Converting....\n";
-	system("/usr/pkg/bin/pdfopt '$inpdf' $tmpdir/x.pdf");
+	system("$tools/pdfopt '$inpdf' $tmpdir/x.pdf");
 	$inpdf="$tmpdir/x.pdf";
         eval { $pdf = PDF::API2->open($inpdf) };
     }
@@ -611,7 +612,7 @@ sub pdf_text {
     return $txt if $txt;
     #$fn=~ s/\$/\\\$/g;
     # $txt = qx{pdftotext "$fn" -};
-    $txt = qx{/usr/pkg/bin/pdfopt "$fn" /tmp/$$.pdf >/dev/null; /usr/pkg/bin/pdftotext /tmp/$$.pdf -; rm /tmp/$$.pdf};
+    $txt = qx{$tools/pdfopt "$fn" /tmp/$$.pdf >/dev/null; $tools/pdftotext /tmp/$$.pdf -; rm /tmp/$$.pdf};
     undef $txt  if length($txt) < 100;
     return $txt if $txt;
     # next ressort to ocr 
@@ -626,7 +627,7 @@ sub pdf_thumb {
     my $pn = (shift || 1) - 1;
     $fn .= "[$pn]";
     my @cmd =
-      ( qw{/usr/pkg/bin/convert}, $fn, qw{-trim -normalize -thumbnail 400 png:-} );
+      ( qw{$tools/convert}, $fn, qw{-trim -normalize -thumbnail 400 png:-} );
     print STDERR "X:".join(" ",@cmd)."\n";
     my $png = qx{@cmd};
     return undef unless length($png);
@@ -640,7 +641,7 @@ sub pdf_icon {
     my $pn = (shift || 1) - 1;
     my $rot = shift;
     $fn .= "[$pn]";
-    my @cmd = ( qw{/usr/pkg/bin/convert}, $fn, qw{-trim -normalize -thumbnail 100});
+    my @cmd = ( "$tools/convert", $fn, qw{-trim -normalize -thumbnail 100});
     push @cmd,"-rotate",$rot if $rot;
     push @cmd, "png:-";
     print STDERR "X:".join(" ",@cmd)."\n";
