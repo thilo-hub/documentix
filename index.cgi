@@ -52,7 +52,7 @@ $q->script( { -type => 'text/javascript', -src => "js/docidx.js"}, "" )
 	<div class="left">
 		<div id="left" class="menu">
 			<div id="pageno" class="pageno"></div>
-			Search: <input id="search">
+			Search: <input id="search"/>
 			<div id="set_page"></div>
 			<div id="taglist"></div>
 			<div id="tagedit">

@@ -1,4 +1,4 @@
-#!/usr/bin/perl -It2
+#!/usr/bin/perl
 
 ########################################################################
 # This is a very simple addusers script. Tweak to your needs
@@ -13,7 +13,7 @@
 use strict;
 use DBI;
 use Digest::MD5 ();
-use pdfidx;
+use doclib::pdfidx;
 my $pdfidx=pdfidx->new();
 my $dbh=$pdfidx->{"dh"};
 use XMLRPC::Lite;
