@@ -22,7 +22,7 @@ my $tesseract="$tools/tesseract";
 # use threads;
 # use threads::shared;
 
-my $cleanup = 1;
+my $cleanup = 0;
 
 sub new {
     my $dbn    = "SQLite";
