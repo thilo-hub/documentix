@@ -483,7 +483,8 @@ sub join_pdfhtml
 		return;
 	    }
 	    return unless ( $el eq 'span' );
-	    return unless $atts{'class'} eq 'ocrx_word';
+	    return unless $atts{'class'} eq 'ocrx_word'
+		    ||  $atts{'class'} eq 'ocr_word';
 	    $p->setHandlers( 'Char' => \&ch )
 	      if ( $el eq 'span' );
 	    $bbox = $atts{'title'};
