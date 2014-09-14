@@ -24,6 +24,20 @@ my $auth = WWW::Authen::Simple->new(
     cookie_domain  => $ENV{"SERVER_NAME"}
 );
 my ( $user, $uid ) = check_auth($q);
+sub check_auth {
+    my $q = shift;
+    $auth->logout() if $q->param('Logout');
+
+    my ( $s, $user, $uid ) =
+      $auth->login( $q->param('user'), $q->param('passwd') );
+    if ( $s != 1 ) {
+        do "login.cgi";
+        exit 0;
+    }
+    return ( $user, $uid );
+}
+
+
 
 #===== AUTHENTICATED BELOW ===========
 
@@ -73,18 +87,4 @@ EOP
 
 print $q->end_html;
 exit 0;
-
-sub check_auth {
-    my $q = shift;
-    $auth->logout() if $q->param('Logout');
-
-    my ( $s, $user, $uid ) =
-      $auth->login( $q->param('user'), $q->param('passwd') );
-    if ( $s != 1 ) {
-        do "login.cgi";
-        exit 0;
-    }
-    return ( $user, $uid );
-}
-
 
