@@ -7,7 +7,7 @@ INSTGROUP=www-data
 case $1 in
  install)
 	# cehck requirements:
-	egrep -rh '^use'  . | sort -u  | perl -It2 -c - || exit 99
+	egrep -rh '^use\W.*;\s*$'  . | sort -u  | perl -Idoclib -c - || exit 99
 	sudo mkdir -p  $INSTDIR
 	sudo useradd  -d $INSTDIR $INSTUSER 
 	sudo chsh -s /bin/false $INSTUSER

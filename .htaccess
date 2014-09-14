@@ -4,9 +4,15 @@ Options +ExecCGI
 AddCharset UTF-8 .html
 # Options ExecCGI
 LimitRequestBody 10000000000000
-<FilesMatch docs>
-SetHandler cgi-script
-</FilesMatch>
+<FilesMatch docs> 
+  SetHandler cgi-script 
+</FilesMatch> 
+AddHandler cgi-script .cgi
+
+# AddType application/x-httpd-php .php
+# AddType application/x-httpd-php-source .phps
+
+DirectoryIndex index.html index.php
 
 
 <IfModule mod_security.c>

@@ -7,7 +7,7 @@ use DBI qw(:sql_types);
 use File::Temp qw/tempfile tempdir/;
 $File::Temp::KEEP_ALL = 1;
 my $mth=1;
-my $tools="/usr/bin";
+my $tools="/usr/local/bin";
 
 # Used tools
 my $convert="$tools/convert";
@@ -253,7 +253,7 @@ sub pdftohtml {
 
     # extract all pages first
     die "$inpdf" unless -r $inpdf;
-    system( "$pdfimages", $inpdf, "-j", "-p","$tmpdir/page" );
+    system( "$pdfimages", $inpdf, "-j", "$tmpdir/page" );
     return undef if $?;
     my @rot;
     foreach $p (qx{$pdfinfo -l 9999 "$inpdf"})
