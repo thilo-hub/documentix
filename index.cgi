@@ -56,33 +56,40 @@ $q->script( { -type => 'text/javascript', -src => "js/wz_tooltip.js" }, ""),
 $q->script( { -type => 'text/javascript', -src => "js/docidx.js"}, "" )
 ;
 
-    print <<EOP;
-<div class="top">
+print <<EOP;
+    <div class="top">
 	<div class="header">
-		Title line
+	    Title line
 	</div>
-</div>
-<div>
+    </div>
+    <div>
 	<div class="left">
-		<div id="left" class="menu">
-			<div id="pageno" class="pageno"></div>
-			Search: <input id="search"/>
-			<div id="set_page"></div>
-			<div id="taglist"></div>
-			<div id="tagedit">
-			<input id="tags"/>
-			</div>
-			<hr>
-			<div id="msg"></div>
-			<div id="scan"><a href="scanns.cgi" target="scanner">Load scanned data</a></div>
+	    <div id="left" class="menu">
+		<div id="pageno" class="pageno"></div>
+		Search: <input id="search" size="15%" />
+		<div id="set_page"></div>
+		<div id="taglist"></div>
+		<div id="tagedit" size="15%" >
+		    <input id="tags" />
 		</div>
+		<hr>
+		<div id="msg"></div>
+		<div id="scan">
+		    <a href="scanns.cgi" target="scanner">
+			Load scanned data
+		   </a>
+	        </div>
+		<div id="pref">
+			<input id="ppage" value="10" size="10%" />
+		</div>
+	    </div>
 	</div>
 	<div class="right">
-		<div id="result" class="results" > 
-			Results
-		</div>
+	    <div id="result" class="results" > 
+		Results
+	    </div>
 	</div>
-</div>
+    </div>
 EOP
 
 print $q->end_html;
