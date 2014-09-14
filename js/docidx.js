@@ -5,7 +5,7 @@ $(function () {
   $.get("ldres.cgi",function(data) {
 	load_result( idx,"<div class='p_content' id='page_"+idx.toString()+"'>"+data+"</div>")});
   $("#search").keypress(function (event) {
-    if (event.keyCode == 13) {
+    if (event.keyCode == 13) { // return in search box
       $("#search").blur();
       idx = 1;
       clname = "";
@@ -13,6 +13,7 @@ $(function () {
     }
   });
 
+//  callback when new data arrive
   function load_result(idx,data) {
     $('.p_content:visible').slideUp("slow");
     $('#result').append(data);
@@ -22,10 +23,12 @@ $(function () {
     $('#taglist').html($(el).find('#classes').html());
   }
 
+// request/save/cache pages to the same result set
+// remove cache if search is different
   function update_res() {
-    var jeje = "";
+    var params = "";
     if (idx > 0) {
-      jeje += "idx=" + idx;
+      params += "idx=" + idx;
     };
     var sv = $("#search").val();
     if (nsrch != sv) {
@@ -33,14 +36,15 @@ $(function () {
       $("#result").removeData();
       nsrch = sv;
     }
-    jeje += "&search=" + sv;
+    params += "&search=" + sv;
     if (clname) {
-      jeje += "&class=" + clname;
+      params += "&class=" + clname;
     };
-    $.post("doclib/env.cgi", jeje, function (data) {
+    // debug
+    $.post("doclib/env.cgi", params, function (data) {
       $('#msg').html(data);
     });
-    $.post("ldres.cgi", jeje,
+    $.post("ldres.cgi", params,
       function (data) {
         load_result( idx,"<div class='p_content' id='page_"+idx.toString()+"'>"+data+"</div>");
       	// $("#result").data(idx.toString(), $('#set_page').html());
@@ -64,27 +68,31 @@ $(function () {
   })
   $('#set_page').click(function (e) {
     if ($(e.target).hasClass("pageno")) {
-      var opage=('.p_content#page_'+idx.toString());
-      var r;
-      if ( ! $("#result").data(idx.toString()) )
+      var oidxs=idx.toString();
+      var opage=$('.p_content#page_'+oidxs);
+      if ( ! $("#result").data(oidxs) )
 	{
-		$("#result").data(idx.toString(), $('#set_page').html());
+	    $("#result").data(oidxs, $('#set_page').html());
 	 }
+
+      // new index
       idx = e.target.id;
-      r = $("#result").data(idx.toString());
+      var idxs=idx.toString();
+      var r = $("#result").data(idxs);
       if (r) {
-	  var npagei=$('.p_content#page_'+idx.toString());
+	  var npage=$('.p_content#page_'+idxs);
+	  $('.p_content#page_'+oidxs).slideUp("slow");
+	  $('.p_content#page_'+idxs).slideDown("slow");
 	  $('#set_page').html(r);
-	  // $('.p_content:visible').slideUp("slow");
-	  // $('.p_content'+i).slideDown("slow");
-	  opage.slideUp("slow");
-	  npage.slideUp("slow");
+	  // opage.slideUp("slow");
+	  // npage.slideUp("slow");
       } else {
         update_res();
       }
     }
   });
   $('#tags').tagsInput({
+	width:"180px",
 	  onAddTag: function (elem, elem_tags) {
 	    $('#msg').html($.post("tags.cgi", {
 	      json_string: JSON.stringify({
