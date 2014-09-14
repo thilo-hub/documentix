@@ -42,7 +42,7 @@ print $q->header( -charset => 'utf-8' ),    # , -cookie=> \@mycookies),
 my $idx0 = ( $q->param("idx") || 1 );
 # my $ppage = ( $q->param("count") || 18 );
 my $search = $q->param("search") || undef;
-my $ppage = $q->param("ppage")|| 18;
+my $ppage = $q->param("ppage")|| 6;
 undef $search if $search && $search =~ /^\s*$/;
 
 my $ANY       = "*ANY*";
