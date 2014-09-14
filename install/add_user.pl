@@ -28,16 +28,16 @@ my @users = (
 	[2,'test','testpw','0'], # readonly account
 	);
 my @groups = (
-	[1,'other'], # admin group
-	[2,'unclassified'], # some other group
+	[1,'admins'], # admin group
+	[2,'users'], # some other group
 	);
 my %user_groups = (
 	'admin' => [ 
-	    	     ['other',3],
-		     ['unclassified',3],
+	    	     ['admins',3],
+		     ['users',3],
 		   ],
 	'test' => [ 
-		     ['unclassified',3],
+		     ['users',3],
 		   ],
 	);
 
