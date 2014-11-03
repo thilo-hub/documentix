@@ -51,7 +51,7 @@ if ($json_text) {
 
 }
 
-print $q->start_html,"OK";
+print $q->start_html,"Tag added";
 print $q->end_html;
 exit 0;
 
