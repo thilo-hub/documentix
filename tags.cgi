@@ -28,8 +28,8 @@ my ( $user, $uid ) = check_auth($q);
 #===== AUTHENTICATED BELOW ===========
 my $dh = $pdfidx->{"dh"};
 print $q->header( -charset => 'utf-8' )    # , -cookie=> \@mycookies),,
- ;
-  my $json_text = $q->param('json_string');
+  ;
+my $json_text = $q->param('json_string');
 if ($json_text) {
     my $json        = JSON::PP->new->utf8;
     my $perl_scalar = $json->decode($json_text);
@@ -45,13 +45,13 @@ if ($json_text) {
       if ( $perl_scalar->{"op"} eq "add" );
     my $op = ( $perl_scalar->{"op"} eq "rem" ) ? $op_del : $op_add;
     $dh->prepare($op)->execute( $perl_scalar->{"tag"}, $perl_scalar->{"md5"} );
-      $q->start_html( -title => 'PDF Database' ),
+    $q->start_html( -title => 'PDF Database' ),
       $q->body( Dumper($perl_scalar) );
     open( FH, ">/tmp/tags.log" ) && print FH Dumper($perl_scalar) && close FH;
 
 }
 
-print $q->start_html,"Tag added";
+print $q->start_html, "Tag added";
 print $q->end_html;
 exit 0;
 
@@ -67,5 +67,4 @@ sub check_auth {
     }
     return ( $user, $uid );
 }
-
 
