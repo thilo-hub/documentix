@@ -11,6 +11,7 @@ $ENV{"PATH"} .= ":/usr/pkg/bin";
 my $__meta_sel;
 my $q = CGI->new;
 my $ncols=2;
+my $entries=9;
 
 my $pdfidx=pdfidx->new();
 #if we have the authetication cookies in the parameters
@@ -181,7 +182,6 @@ sub pages
 	$myself =~ s/(&|$)/\?page=%d$1/;
 	push @pgurl, sprintf("<a href=$myself>&lt;&lt;</a>",1);
 	push @pgurl, sprintf("<a href=$myself>&lt;</a>",$p0>1 ? $p0-1:1);
-	my $entries=6;
 	my $lo=$p0-$entries/2;
 	$maxpage++;
 	$lo = $maxpage-$entries if $lo >$maxpage-$entries;
