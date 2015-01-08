@@ -7,7 +7,9 @@ use DBI qw(:sql_types);
 use File::Temp qw/tempfile tempdir/;
 $File::Temp::KEEP_ALL = 1;
 my $mth=1;
-my $tools="/usr/local/bin";
+my $tools="/usr/pkg/bin";
+
+$tools="/usr/local/bin" unless -d $tools;
 
 # Used tools
 my $convert="$tools/convert";
@@ -253,7 +255,7 @@ sub pdftohtml {
 
     # extract all pages first
     die "$inpdf" unless -r $inpdf;
-    system( "$pdfimages", $inpdf, "-j", "$tmpdir/page" );
+    system( "$pdfimages", $inpdf, "-all", "$tmpdir/page" );
     return undef if $?;
     my @rot;
     foreach $p (qx{$pdfinfo -l 9999 "$inpdf"})
@@ -291,12 +293,13 @@ sub pdftohtml {
 	    $dh->disconnect  if  $mth;
             print STDERR "Conv $_\n";
 	    my $o="$base.prc.$ext";
+	    my $o="$base.prc.tiff";
             my $fail = 0;
             unless ( -f "$base.html" ) {
 
 		# $fail += (system("$convert", $_,"-trim","+repage", 
 		# "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
-		my @opt=qw{-normalize -gamma 2.0};
+		my @opt=qw{-normalize}; #  -gamma 2.0};
 		push @opt,("-rotate", $rot[$page]) if $rot[$page] != 0;
 		print STDERR join(" ",( "$convert", $_, @opt, $o,"\n" ));
                 $fail += (
@@ -310,7 +313,7 @@ sub pdftohtml {
                 $fail += (
                     system(
                         "$tesseract",   $o,     $base, "-l",
-                        "deu+eng+equ", "hocr", "thilo"
+                        "deu+eng+equ", "-psm", "1", "hocr"
                     ) ? 1 : 0
                 );
                 unlink $o if $cleanup;
@@ -345,6 +348,7 @@ sub ocrpdf {
 	    foreach (@htmls) {
 		$o .= slurp($_);
 		$txt .= qx{$lynx -display_charset=utf-8  -dump "$_"};
+		$txt .= '\f';
 	    }
 	    open HTM,">$outhtml";
 	    print HTM $o;
@@ -638,7 +642,7 @@ sub pdf_thumb {
     my $pn = (shift || 1) - 1;
     $fn .= "[$pn]";
     my @cmd =
-      ( qw{$convert}, $fn, qw{-trim -normalize -thumbnail 400 png:-} );
+      ( $convert, $fn, qw{-trim -normalize -thumbnail 400 png:-} );
     print STDERR "X:".join(" ",@cmd)."\n";
     my $png = qx{@cmd};
     return undef unless length($png);
@@ -652,7 +656,7 @@ sub pdf_icon {
     my $pn = (shift || 1) - 1;
     my $rot = shift;
     $fn .= "[$pn]";
-    my @cmd = ( "$convert", $fn, qw{-trim -normalize -thumbnail 100});
+    my @cmd = ( $convert, $fn, qw{-trim -normalize -thumbnail 100});
     push @cmd,"-rotate",$rot if $rot;
     push @cmd, "png:-";
     print STDERR "X:".join(" ",@cmd)."\n";

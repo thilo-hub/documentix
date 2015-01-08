@@ -39,7 +39,7 @@ open(F,">>/tmp/f.log"); foreach(keys %ENV){ print F "$_ => $ENV{$_}\n" };
 
 my $pi=$ENV{'PATH_INFO'};
 my($username,$passwd)=($q->param('user'),$q->param('passwd'));
-if ( $pi && $pi =~ m|^/(([^/]*)/)?([0-9a-f]{32})/([^/]+.(pdf))|)
+if ( $pi && $pi =~ m|^/(([^/]*)/)?([0-9a-f]{32})/([^/]+.(pdf)?)|)
 {
 	$md5=$3;
 	$t=$2 || $5;

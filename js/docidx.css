@@ -1,4 +1,5 @@
 
+div.snippet{background: yello; display:none}
 div.top{padding:0px; width:100%;height:40px}
 div.left{position: fixed; padding:0px; width:20%; float:left;padding:0px}
 div.right{word-wrap: break-word; padding:0px;  width:78%; float:right; background: #eee}
