@@ -55,10 +55,10 @@ sub extr_date
 {
 	sub todate
 	{
-		my ($y,$m,$d)=@_;
+		my ($y,$m,$day)=@_;
 		$m=$mth{lc($m)} || $m;
 		$y += 2000 if $y < 50;
-		return sprintf("%04d-%02d-%02d",$y,$m,$d);
+		return sprintf("%04d-%02d-%02d",$y,$m,$day);
 	}
 	my $in=shift;
 	# return:
@@ -66,8 +66,8 @@ sub extr_date
 	$in =~ s/\b\d\d? +\d\d? +\d\d?\b//sg;
 	if ($in =~ s/\b($m\/$d\/$y|$d$s$m$s$y|$M$s$y)\b//si)
 	{
-		$d=todate($+{Y},$+{M},$+{D});
-		return ( $`,$d,$&,$');
+		my $dy=todate($+{Y},$+{M},$+{D});
+		return ( $`,$dy,$&,$');
 	}
 	# ( $pre, $norm-date, $match, $taiL )
 	return ($in,undef,undef,undef);
