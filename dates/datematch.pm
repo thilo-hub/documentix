@@ -58,13 +58,15 @@ sub extr_date
 		my ($y,$m,$day)=@_;
 		$m=$mth{lc($m)} || $m;
 		$y += 2000 if $y < 50;
+		$y += 1900 if $y < 100;
+		$day=1 unless $day;
 		return sprintf("%04d-%02d-%02d",$y,$m,$day);
 	}
 	my $in=shift;
 	# return:
 	# 
 	$in =~ s/\b\d\d? +\d\d? +\d\d?\b//sg;
-	if ($in =~ s/\b($m\/$d\/$y|$d$s$m$s$y|$M$s$y)\b//si)
+	if ($in =~ s/\b($d($s)$m\g{-2}$Y|$m($s)$d\g{-2}$Y|$M$s$y)\b//si)
 	{
 		my $dy=todate($+{Y},$+{M},$+{D});
 		return ( $`,$dy,$&,$');

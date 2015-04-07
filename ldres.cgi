@@ -68,7 +68,7 @@ q{ create table if not exists cache_lst ( qidx integer primary key autoincrement
 		query text unique, nresults integer, last_used integer )}
 );
 $dh->do(
-q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text, unique(qidx,idx))}
+q{ create table if not exists cache_q ( qidx integer, idx integer, id integer, snippet text, unique(qidx,idx))}
 );
 
 $dh->do(q{
@@ -79,8 +79,11 @@ $dh->do(q{
 my $s1 = q{select qidx from cache_lst where query = ?};
 my $s2 = q{insert or abort into cache_lst (query) values(?)};
 my $s3 = q{
-	insert into cache_q ( qidx,idx,snippet ) 
-		select ?, docid idx,snippet(text) snippet from text where text match ?
+	create temporary table cache_q_tmp as  
+		select ? qidx, docid idx,snippet(text) snippet from text where text match ?
+	};
+my $s3_fin = q{
+	insert into cache_q ( qidx,idx,id,snippet ) select qidx,idx,rowid,snippet from cache_q_tmp
 	};
 
 my $idx = $dh->selectrow_array( $s1, undef, $search );
@@ -91,6 +94,7 @@ if ( $search && ! $idx ) {
     $dh->do( $s2, undef, $search );
     $idx = $dh->last_insert_id( undef, undef, undef, undef );
     my $nres=$dh->do( $s3, undef, $idx, $search );
+    $dh->do($s3_fin);
     $dh->do("update cache_lst set nresults=? where qidx=?",undef,$nres,$idx);
 }
 
@@ -116,9 +120,10 @@ if ($search) {
 #TODO this shoud be a temporary table - debugging aid now
     $dh->do(q{drop table if exists resl});
     my $rest =
-      qq{create table resl as select * from $subsel cache_q where qidx = ?};
+      qq{create temporary table resl as select * from $subsel cache_q where qidx = ?};
     $dh->do( $rest, undef, $idx );
 
+    $dh->do(qq{ create temporary table drange as select min(date) min,max(date) max from dates natural join cache_q where qidx = ?},undef,$idx);
     # get list of classes
     $classes =
 q{select tagname,count(*) from tags natural join tagname where idx in ( select idx from resl) group by 1 order by 1};
@@ -136,8 +141,10 @@ qq{ select tagname,count(*) from $subsel tags natural join tagname group by 1};
     # qq{ select idx,value snippet from $subsel metadata where tag="Content" limit ?,?  };
     $stm1 =
 	qq{ select s.idx,s.value snippet from $subsel metadata s join metadata m using (idx) where s.tag="Content" and m.tag="mtime" order by cast(m.value as integer)  desc limit ?,?  };
+    $dh->do(qq{ create temporary table drange as select min(date),max(date) from dates });
 }
 
+my $dater = join( " ... ",$dh->selectrow_array ("select * from drange"));
 $classes = $dh->selectall_arrayref($classes);
 $ndata   = $dh->selectrow_array($ndata);
 $stm1    = $dh->prepare($stm1);
@@ -167,7 +174,8 @@ $classes = [
 my $out = load_results($stm1);
 
 print $q->div( { -class => "tick", -id => "nresults" }, $ndata ),
-	$q->div({ -class => "tick", -id => "idx"},$idx0 ),
+	$q->div({ -class => "tick", -id => "idx"},$idx0 ),"&nbsp;",
+	$q->div({ -class => "tick", -id => "dates"},$dater ),
 	$q->div({ -class => "tick", -id => "pageno"},int($idx0/$ppage)+1 ),
 	$q->div({ -class => "tick", -id => "query"},$search),
     $q->div( { -class => "tick", -id => "pages" }, pages($q,$idx0,$ndata,$ppage) ) ,

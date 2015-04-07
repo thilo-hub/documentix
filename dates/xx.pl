@@ -12,8 +12,9 @@ $dh->do("create table if not exists dates (date text,mtext text, idx integer, un
 $dh->do("attach \"$d_name\" as docs");
 
 my $gt_tags=$dh->prepare('select idx,value from metadata where tag="Text"');
-my $add_dt=$dh->prepare("insert or ignore into dates (date,idx,mtext) values(?,?,?)");
+my $add_dt=$dh->prepare("insert or ignore into dates (idx,mtext,date) values(?,?,?)");
 
+my $maxdate="2030-00-00";
 
 $gt_tags->execute();
 
@@ -25,7 +26,7 @@ while ( $r=$gt_tags->fetchrow_arrayref )
 	my $i=undef;
 	do {
 		my ($un,$tm,$m,$l)=datematch::extr_date($t);
-		if($tm && $m)
+		if($tm && $m && $m < $maxdate)
 		{
 			print "$tm\t>$m<\n";
 			$l =~ s/$m//gs;

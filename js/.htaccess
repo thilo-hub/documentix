@@ -1,5 +1,5 @@
 Options -ExecCGI
 Options +Indexes 
 
-RemoveHandler 
+# RemoveHandler 
 #
