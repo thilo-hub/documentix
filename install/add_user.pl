@@ -25,13 +25,19 @@ my $popsession  = XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
 
 my @users = (
 	[1,'admin','adminpw','0'], # admin account
-	[2,'test','testpw','0'], # readonly account
+	[2,'test','teXXXXXXstpw','0'], # readonly account
+	[6,'thilo work','testpw','0'], # readonly account
 	);
 my @groups = (
 	[1,'admins'], # admin group
 	[2,'users'], # some other group
+	[6,'admins'], # some other group
 	);
 my %user_groups = (
+	'thilo work' => [ 
+	    	     ['admins',3],
+		     ['users',3],
+		   ],
 	'admin' => [ 
 	    	     ['admins',3],
 		     ['users',3],
