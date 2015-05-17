@@ -202,7 +202,7 @@ sub expand_templ {
             );
             $$db->{$md5}->{$_} = $res->{$_}->{"value"} foreach ( keys %$res );
             $$db->{$md5}->{"KEYS"} =
-              join( ' ', keys( $$db->{$md5} ) );
+              join( ' ', keys( %{$$db->{$md5}} ) );
         }
         warn "R:$res: M:$md5:" . ref($res);
         my $res = $$db->{$md5};

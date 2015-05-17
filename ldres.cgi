@@ -63,6 +63,16 @@ use POSIX;
 
 my $dh = $pdfidx->{"dh"};
 
+open(TRC,">>/tmp/db.trace");
+sub trace_it
+{
+  my $r=shift;
+
+   print TRC "DB: $r\n";
+}
+
+$dh->sqlite_trace( \&trace_it);
+
 $dh->do(
 q{ create table if not exists cache_lst ( qidx integer primary key autoincrement,
 		query text unique, nresults integer, last_used integer )}
@@ -87,6 +97,15 @@ my $s3_fin = q{
 	};
 
 my $idx = $dh->selectrow_array( $s1, undef, $search );
+my ($dmin,$dmax);
+
+if ( $search =~ s/\s*daterange:\s*(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d\s*)//i )
+{
+    # Search restrict to date-range
+    $dmin=$1;
+    $dmax=$2;
+
+}
 
 if ( $search && ! $idx ) {
 
@@ -100,28 +119,37 @@ if ( $search && ! $idx ) {
 
 my $subsel = "";
 if ($class) {
-#TODO this shoud be a temporary table - debugging aid now
     $dh->do(q{drop table if exists cls});
-    $dh->do(q{create table cls ( tagid integer primary key unique )});
+    $dh->do(q{create temporary table cls ( tagid integer primary key unique )});
     my $sth = $dh->prepare(
         q{insert into cls (tagid) select tagid from tagname where tagname=?});
     foreach ( split( /\s*,\s*/, $class ) ) {
         $sth->execute($_);
     }
-#TODO this shoud be a temporary table - debugging aid now
     $dh->do(q{drop table if exists docids});
-    $dh->do(q{create table docids as select distinct(idx) idx  from cls natural join tags});
+    $dh->do(q{create temporary table docids as select distinct(idx) idx  from cls natural join tags});
     $subsel = "docids natural join ";
 }
 my ( $classes, $ndata, $stm1 );
 if ($search) {
 
     # get final reslist
-#TODO this shoud be a temporary table - debugging aid now
     $dh->do(q{drop table if exists resl});
     my $rest =
       qq{create temporary table resl as select * from $subsel cache_q where qidx = ?};
+
     $dh->do( $rest, undef, $idx );
+	print TRC "Tm: $dmin ... $dmax\n";
+    if ( $dmin )
+    {
+       my $drest =
+	
+
+	print TRC "Delete timerangs\n";
+	$dh->do(qq{create temporary table subd as select distinct(idx) idx  from dates where date between ? and ?},undef,$dmin,$dmax);
+	$dh->do( qq{ delete from resl where idx not in ( select idx from subd ) });
+    }
+
 
     $dh->do(qq{ create temporary table drange as select min(date) min,max(date) max from dates natural join cache_q where qidx = ?},undef,$idx);
     # get list of classes
