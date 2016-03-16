@@ -91,6 +91,17 @@ if ( $sz && $t && $converter->{$t} )
 {
 	my $out=$pdfidx->get_cache($f,"$ext-$t",$converter->{$t});
 	print $out;
+}elsif ( (!$t || $t eq "text" ) && $sz)
+{
+	#$f = $1.".ocr.pdf" if ( $f =~ /^(.*)\.pdf$/ && -r $1.".ocr.pdf" && ($sz=(stat(_))[7])>0);
+	#open(F,"<$f");
+	my $message=$pdfidx->get_cont("Text",$md5);
+	$sz=length($message);
+	print $q->header( -type=> 'text/plain', -charset=>"",
+			  -expires => '+3d',
+			  -Content_Length => $sz);
+	#print $_ while ( sysread F , $_ , 8192 ); 
+	print $message;
 }elsif ( (!$t || $t eq "pdf" ) && $sz)
 {
 	$f = $1.".ocr.pdf" if ( $f =~ /^(.*)\.pdf$/ && -r $1.".ocr.pdf" && ($sz=(stat(_))[7])>0);
