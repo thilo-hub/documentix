@@ -8,6 +8,7 @@ use File::Temp qw/tempfile tempdir/;
 $File::Temp::KEEP_ALL = 1;
 my $mth=1;
 my $tools="/usr/pkg/bin";
+$tools="/home/thilo/documentix/tools" unless -d $tools;
 
 $tools="/usr/local/bin" unless -d $tools;
 
@@ -285,7 +286,8 @@ sub pdftohtml {
 	my $base=$1;
 	my $ext=$5;
 
-        push @pages, "$base.html";
+        # push @pages, "$base.html";
+        push @pages, "$base.hocr";
 
         my $pid=0;
 	if ( !$mth ||  ( $pid = fork() ) == 0 ) 
@@ -347,7 +349,7 @@ sub ocrpdf {
 	    my $o;
 	    foreach (@htmls) {
 		$o .= slurp($_);
-		$txt .= qx{$lynx -display_charset=utf-8  -dump "$_"};
+		$txt .= qx{$lynx -force_html -display_charset=utf-8  -dump "$_"};
 		$txt .= '\f';
 	    }
 	    open HTM,">$outhtml";

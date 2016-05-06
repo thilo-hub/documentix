@@ -6,8 +6,9 @@ INSTGROUP=www-data
 
 case $1 in
  install)
+        ( cd tools || exit 99; find . -type l | while read F ; do ln $(which "$F") ./"$F.new" && rm $F && mv "$F.new" "$F" || exit 98;done) || exit 99
 	# cehck requirements:
-	egrep -rh '^use\W.*;\s*$'  . | sort -u  | perl -Idoclib -c - || exit 99
+	egrep -rah '^use\W.*;\s*$'  . | sort -u  | perl -Idoclib -c - || exit 99
 	sudo mkdir -p  $INSTDIR
 	sudo useradd  -d $INSTDIR $INSTUSER 
 	sudo chsh -s /bin/false $INSTUSER

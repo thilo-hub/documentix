@@ -1,13 +1,13 @@
 Options +Indexes +FollowSymLinks
-SSLRenegBufferSize 40000000
+# SSLRenegBufferSize 40000000
 Options +ExecCGI
 AddCharset UTF-8 .html
 # Options ExecCGI
 LimitRequestBody 10000000000000
+AddHandler cgi-script .cgi
 <FilesMatch docs> 
   SetHandler cgi-script 
 </FilesMatch> 
-AddHandler cgi-script .cgi
 
 # AddType application/x-httpd-php .php
 # AddType application/x-httpd-php-source .phps
