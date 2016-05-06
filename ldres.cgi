@@ -309,7 +309,8 @@ sub get_cell {
     $short_name =~ s/#/%23/g;
 
     # build various URLS
-    my $pdf    = "docs/pdf/$md5/$short_name";
+    #my $pdf    = "docs/pdf/$md5/$short_name";
+    my $pdf    = "web/viewer.html?file=../docs/pdf/$md5/$short_name";
     my $lowres = "docs/lowres/$md5/$short_name";
     #my $ico    = qq{<img src='docs/ico/$md5/$short_name'};
     my $ico    = $q->img({-class=>"thumb", -src=>"docs/ico/$md5/$short_name"});
