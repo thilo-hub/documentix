@@ -7,12 +7,11 @@ use doclib::pdfidx;
 use Cwd 'abs_path';
 use CGI;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
-my $docsrv="ts2.nispuk.com";
 
 my $__meta_sel;
 my $q     = CGI->new;
 my $ncols = 2;
-my $entries=9;
+my $entries=6;
 
 my $pdfidx = pdfidx->new();
 
@@ -41,9 +40,8 @@ print $q->header( -charset => 'utf-8' ),    # , -cookie=> \@mycookies),
 
 # print pages
 my $idx0 = ( $q->param("idx") || 1 );
-# my $ppage = ( $q->param("count") || 18 );
 my $search = $q->param("search") || undef;
-my $ppage = $q->param("ppage")|| $entries;
+my $ppage = $q->param("ppage")|| 18;
 undef $search if $search && $search =~ /^\s*$/;
 
 my $ANY       = "*ANY*";
@@ -64,22 +62,12 @@ use POSIX;
 
 my $dh = $pdfidx->{"dh"};
 
-open(TRC,">>/tmp/db.trace");
-sub trace_it
-{
-  my $r=shift;
-
-   print TRC "DB: $r\n";
-}
-
-$dh->sqlite_trace( \&trace_it);
-
 $dh->do(
 q{ create table if not exists cache_lst ( qidx integer primary key autoincrement,
 		query text unique, nresults integer, last_used integer )}
 );
 $dh->do(
-q{ create table if not exists cache_q ( qidx integer, idx integer, id integer, snippet text, unique(qidx,idx))}
+q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text, unique(qidx,idx))}
 );
 
 $dh->do(q{
@@ -90,23 +78,11 @@ $dh->do(q{
 my $s1 = q{select qidx from cache_lst where query = ?};
 my $s2 = q{insert or abort into cache_lst (query) values(?)};
 my $s3 = q{
-	create temporary table cache_q_tmp as  
-		select ? qidx, docid idx,snippet(text) snippet from text where text match ?
-	};
-my $s3_fin = q{
-	insert into cache_q ( qidx,idx,id,snippet ) select qidx,idx,rowid,snippet from cache_q_tmp
+	insert into cache_q ( qidx,idx,snippet ) 
+		select ?, docid idx,snippet(text) snippet from text where text match ?
 	};
 
 my $idx = $dh->selectrow_array( $s1, undef, $search );
-my ($dmin,$dmax);
-
-if ( $search && $search =~ s/\s*daterange:\s*(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d\s*)//i )
-{
-    # Search restrict to date-range
-    $dmin=$1;
-    $dmax=$2;
-
-}
 
 if ( $search && ! $idx ) {
 
@@ -114,45 +90,34 @@ if ( $search && ! $idx ) {
     $dh->do( $s2, undef, $search );
     $idx = $dh->last_insert_id( undef, undef, undef, undef );
     my $nres=$dh->do( $s3, undef, $idx, $search );
-    $dh->do($s3_fin);
     $dh->do("update cache_lst set nresults=? where qidx=?",undef,$nres,$idx);
 }
 
 my $subsel = "";
 if ($class) {
+#TODO this shoud be a temporary table - debugging aid now
     $dh->do(q{drop table if exists cls});
-    $dh->do(q{create temporary table cls ( tagid integer primary key unique )});
+    $dh->do(q{create table cls ( tagid integer primary key unique )});
     my $sth = $dh->prepare(
         q{insert into cls (tagid) select tagid from tagname where tagname=?});
     foreach ( split( /\s*,\s*/, $class ) ) {
         $sth->execute($_);
     }
+#TODO this shoud be a temporary table - debugging aid now
     $dh->do(q{drop table if exists docids});
-    $dh->do(q{create temporary table docids as select distinct(idx) idx  from cls natural join tags});
+    $dh->do(q{create table docids as select distinct(idx) idx  from cls natural join tags});
     $subsel = "docids natural join ";
 }
 my ( $classes, $ndata, $stm1 );
 if ($search) {
 
     # get final reslist
+#TODO this shoud be a temporary table - debugging aid now
     $dh->do(q{drop table if exists resl});
     my $rest =
-      qq{create temporary table resl as select * from $subsel cache_q where qidx = ?};
-
+      qq{create table resl as select * from $subsel cache_q where qidx = ?};
     $dh->do( $rest, undef, $idx );
-	print TRC "Tm: $dmin ... $dmax\n";
-    if ( $dmin )
-    {
-       my $drest =
-	
 
-	print TRC "Delete timerangs\n";
-	$dh->do(qq{create temporary table subd as select distinct(idx) idx  from dates where date between ? and ?},undef,$dmin,$dmax);
-	$dh->do( qq{ delete from resl where idx not in ( select idx from subd ) });
-    }
-
-
-    $dh->do(qq{ create temporary table drange as select min(date) min,max(date) max from dates natural join cache_q where qidx = ?},undef,$idx);
     # get list of classes
     $classes =
 q{select tagname,count(*) from tags natural join tagname where idx in ( select idx from resl) group by 1 order by 1};
@@ -161,7 +126,7 @@ q{select tagname,count(*) from tags natural join tagname where idx in ( select i
     $ndata = qq{select count(*) from resl};
 
     # get display list
-    $stm1 = qq{ select * from resl join metadata m using (idx) where m.tag = "mtime" order by cast(m.value as integer) desc limit ?,?};
+    $stm1 = qq{ select * from resl join metadata m using (idx) order by cast(m.value as integer) desc limit ?,?};
 }
 else {
     $classes =
@@ -170,10 +135,8 @@ qq{ select tagname,count(*) from $subsel tags natural join tagname group by 1};
     # qq{ select idx,value snippet from $subsel metadata where tag="Content" limit ?,?  };
     $stm1 =
 	qq{ select s.idx,s.value snippet from $subsel metadata s join metadata m using (idx) where s.tag="Content" and m.tag="mtime" order by cast(m.value as integer)  desc limit ?,?  };
-    $dh->do(qq{ create temporary table drange as select min(date),max(date) from dates });
 }
 
-my $dater = join( " ... ",$dh->selectrow_array ("select * from drange"));
 $classes = $dh->selectall_arrayref($classes);
 $ndata   = $dh->selectrow_array($ndata);
 $stm1    = $dh->prepare($stm1);
@@ -203,8 +166,7 @@ $classes = [
 my $out = load_results($stm1);
 
 print $q->div( { -class => "tick", -id => "nresults" }, $ndata ),
-	$q->div({ -class => "tick", -id => "idx"},$idx0 ),"&nbsp;",
-	$q->div({ -class => "tick", -id => "dates"},$dater ),
+	$q->div({ -class => "tick", -id => "idx"},$idx0 ),
 	$q->div({ -class => "tick", -id => "pageno"},int($idx0/$ppage)+1 ),
 	$q->div({ -class => "tick", -id => "query"},$search),
     $q->div( { -class => "tick", -id => "pages" }, pages($q,$idx0,$ndata,$ppage) ) ,
@@ -253,7 +215,7 @@ sub check_auth {
     $auth->logout() if $q->param('Logout');
 
     my ( $s, $user, $uid ) =
-      $auth->login( scalar $q->param('user'), scalar $q->param('passwd') );
+      $auth->login( $q->param('user'), $q->param('passwd') );
     if ( $s != 1 ) {
         do "login.cgi";
         exit 0;
@@ -310,22 +272,18 @@ sub get_cell {
     $short_name =~ s/#/%23/g;
 
     # build various URLS
-    #my $pdf    = "docs/pdf/$md5/$short_name";
-    my $pdf    = "web/viewer.html?file=../docs/pdf/$md5/$short_name";
+    my $pdf    = "docs/pdf/$md5/$short_name";
     my $lowres = "docs/lowres/$md5/$short_name";
     #my $ico    = qq{<img src='docs/ico/$md5/$short_name'};
     my $ico    = $q->img({-class=>"thumb", -src=>"docs/ico/$md5/$short_name"});
     my $tip = $r->{"snippet"} || "";
-    #$tip =~ s/(.{1024}) .*/$1/;
-    #$tip =~ s/(([^\n]*\n){10}).*/$1/;
     $tip =~ s/'/&quot;/g;
     $tip =~ s/\n/<br>/g;
     $tip = qq{'$tip'};
     # print STDERR "TIP:$tip\n";
 
 # my @a=stat($pdf); my $e= strftime("%Y-%b-%d %a  %H:%M ($a[7]) $_",localtime($a[10]));
-    $meta->{PopFile}->{value} =~ s|http://$docsrv|$q->url(-base=>'1')|e
-	if $meta->{PopFile};;
+    $meta->{PopFile}->{value} =~ s|http://maggi|$q->url(-base=>'1')|e;
     my $day = $d;
     $day =~ s/\s+\d+:\d+:\d+\s+/ /;
     # $d = $&;
@@ -333,35 +291,21 @@ sub get_cell {
     $d =~ s/\s+\d+:\d+:\d+\s+/ /;
 
     my $data = 
-            $q->div({-class=>"thumb"},$q->a(
-                {   -class=>"thumb",
-                    -href        => $pdf,
-		    -target     => "docpage",
-                    -onmouseover => "Tip($tip)",
-                    -onmouseout  => "UnTip()"
-                },
-                $ico
-            )).
-            $q->div({-class=>"descr"}, 
-		   $q->a(
-                { -href => $meta->{PopFile}->{value}, -target => "_popfile" },
-                $meta->{Class}->{value} )
-              . $q->br
-              . $q->a( { -class=>"doclink", -href => $pdf ,-target => "docpage" }, $sshort_name )
-              . $q->br
-              . $q->a({-class=>"dtags"},$tags).
-            (
-                ( ( $s / $p ) > 500000 )
-                ? $q->a( { -href => $lowres, -target => "docpage" },
-                    "&lt;Lowres&gt;" )
-                : ""
-              )
-              . $q->a( { -href => $editor, -target => "docpage" },
-                "&lt;Edit&gt;" )
-	      . "<br>$d"
-              . "<br> Pages: $p <br>$s");
+            $q->a( {   -class=>"thumb", -href        => $pdf,
+				    -target     => "docpage", }, $ico ).
+	    $q->a( { -class=>"doclink", -href => $pdf ,
+						-target => "docpage" }, $sshort_name ).
+	    $q->div({-class=>"snip"},$r->{"snippet"}).
+	    $q->div({-class=>"sinfo"},"$p&nbsp;Pages $s&nbsp;Bytes"),
+	    $q->a({-class=>"lowr"},$lowres),
+            $q->a({-class=>"popf", -href => $meta->{PopFile}->{value}, 
+						-target => "_popfile" },
+						$meta->{Class}->{value} ).
+            $q->div({-class=>"dtags"},$tags).
+             $q->a( { -class=>"edit", -href => $editor, -target => "docpage" }, "&lt;Edit&gt;" )
+	;
 
-    return $q->td( $q->div({-class=>"rcell"},$data));
+    return $q->div({-class=>"rcell"},$q->li({-class=>"rcell"},$data))."\n";
 
 }
 
@@ -385,6 +329,7 @@ sub load_results {
 	}
     }
     # push @out, join( "\n  ", splice(@outrow) );
+    return join("",@out);
     return \@out;
 }
 

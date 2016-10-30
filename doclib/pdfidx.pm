@@ -661,6 +661,20 @@ sub pdf_icon {
     my @cmd = ( $convert, $fn, qw{-trim -normalize -thumbnail 100});
     push @cmd,"-rotate",$rot if $rot;
     push @cmd, "png:-";
+{
+    # HACK
+    my $tmp="/tmp/$$.tmp";
+    $cmd[1] = "\$(eval $tmp.*)";
+    $fn =~ s/\[$pn\]$//;
+    my @c1 = ( $pdfimages ,"-all","-f",$pn+1,"-l",$pn+1,$fn,$tmp);
+    print STDERR "X1:".join(" ",@c1)."\n";
+    #unshift @cmd,@c1,"&&";
+    qx {@c1};
+    my @l=glob("'${tmp}*'");
+    print STDERR "  R:".join(":",@l,"\n");
+    $cmd[1]=$l[0];
+    #unlink glob("$tmp.*");
+}
     print STDERR "X:".join(" ",@cmd)."\n";
     my $png = qx{@cmd};
     return undef unless length($png);
