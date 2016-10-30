@@ -23,11 +23,11 @@ else
 }
 
 # Process an HTTP request
-my @values  = $q->param('send');
+my $values  = scalar $q->param('send');
 
-my $md5=$values[0];
+my $md5=$values;
 my $pdfidx=pdfidx->new();
-my $t=$q->param('type');
+my $t=scalar $q->param('type');
 my $dh= $pdfidx->{"dh"};
 
 my $auth=WWW::Authen::Simple->new(
@@ -38,7 +38,7 @@ my ($f,$ext);
 open(F,">>/tmp/f.log"); foreach(keys %ENV){ print F "$_ => $ENV{$_}\n" }; 
 
 my $pi=$ENV{'PATH_INFO'};
-my($username,$passwd)=($q->param('user'),$q->param('passwd'));
+my($username,$passwd)=(scalar $q->param('user'),scalar $q->param('passwd'));
 if ( $pi && $pi =~ m|^/(([^/]*)/)?([0-9a-f]{32})/([^/]+.(pdf)?)|)
 {
 	$md5=$3;

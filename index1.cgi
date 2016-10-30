@@ -24,20 +24,6 @@ my $auth = WWW::Authen::Simple->new(
     cookie_domain  => $ENV{"SERVER_NAME"}
 );
 my ( $user, $uid ) = check_auth($q);
-sub check_auth {
-    my $q = shift;
-    $auth->logout() if $q->param('Logout');
-
-    my ( $s, $user, $uid ) =
-      $auth->login( scalar $q->param('user'), scalar $q->param('passwd') );
-    if ( $s != 1 ) {
-        do "login.cgi";
-        exit 0;
-    }
-    return ( $user, $uid );
-}
-
-
 
 #===== AUTHENTICATED BELOW ===========
 
@@ -48,50 +34,57 @@ print $q->header( -charset => 'utf-8' )    # , -cookie=> \@mycookies),,
 print $q->start_html( -title =>'PDF Database' ),
 # $q->Link( { -rel  => "stylesheet", -type => "text/css", -href  => "js/jquery.tagsinput.css" },""),
 $q->Link( { -rel  => "stylesheet", 
-		-type => "text/css", -href  => "js/docidx.css" },""),
+		-type => "text/css", -href  => "js/docidx1.css" },""),
 $q->script( { -type => 'text/javascript', -src => "js/jquery/jquery.min.js" }, ""),
 $q->script( { -type => 'text/javascript', -src => "js/jquery/jquery-ui.min.js" }, "" ),
 $q->script( { -type => 'text/javascript', -src => "js/jquery.tagsinput.js" }, ""),
 $q->script( { -type => 'text/javascript', -src => "js/wz_tooltip.js" }, ""),
-$q->script( { -type => 'text/javascript', -src => "js/docidx.js"}, "" )
+$q->script( { -type => 'text/javascript', -src => "js/docidx1.js"}, "" )
 ;
 
-print <<EOP;
-    <div class="top">
+    print <<EOP;
+<div class="top">
 	<div class="header">
-	    Title line
+		Title line
 	</div>
-    </div>
-    <div>
+</div>
+<div>
 	<div class="left">
-	    <div id="left" class="menu">
-		<div id="pageno" class="pageno"></div>
-		Search: <input id="search" size="15%" />
-		<div id="set_page"></div>
-		<div id="taglist"></div>
-		<div id="tagedit" size="15%" >
-		    <input id="tags" />
+		<div id="left" class="menu">
+			<div id="pageno" class="pageno"></div>
+			Search: <input id="search">
+			<div id="set_page"></div>
+			<div id="taglist"></div>
+			<div id="tagedit">
+			<input id="tags"/>
+			</div>
+			<hr>
+			<div id="msg"></div>
+			<div id="scan"><a href="scanns.cgi" target="scanner">Load scanned data</a></div>
 		</div>
-		<hr>
-		<div id="msg"></div>
-		<div id="scan">
-		    <a href="scanns.cgi" target="scanner">
-			Load scanned data
-		   </a>
-	        </div>
-		<div id="pref">
-			<input id="ppage" value="10" size="10%" />
-		</div>
-	    </div>
 	</div>
 	<div class="right">
-	    <div id="result" class="results" > 
-		Results
-	    </div>
+		<div id="result" class="results" > 
+			Results
+		</div>
 	</div>
-    </div>
+</div>
 EOP
 
 print $q->end_html;
 exit 0;
+
+sub check_auth {
+    my $q = shift;
+    $auth->logout() if $q->param('Logout');
+
+    my ( $s, $user, $uid ) =
+      $auth->login( $q->param('user'), $q->param('passwd') );
+    if ( $s != 1 ) {
+        do "login.cgi";
+        exit 0;
+    }
+    return ( $user, $uid );
+}
+
 
