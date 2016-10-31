@@ -152,8 +152,9 @@ while ( my $r = $get_idx->fetchrow_hashref ) {
     next unless -r $r->{"file"};
     my $fn    = $r->{"file"};
     my $idx   = $r->{"idx"};
-    my $thumb = $pdfidx->pdf_thumb($fn);
-    my $ico   = $pdfidx->pdf_icon($fn);
+    my ($th_typ,$thumb) = $pdfidx->pdf_thumb($fn);
+    my ($ic_typ,$ico)   = $pdfidx->pdf_icon($fn);
+die " Changed return to return type extra, but what is in the DB?";
     $ins_d->bind_param( 1, $idx,   SQL_INTEGER );
     $ins_d->bind_param( 2, $thumb, SQL_BLOB );
     $ins_d->bind_param( 3, $ico,   SQL_BLOB );
