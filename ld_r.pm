@@ -2,12 +2,12 @@
 use strict;
 use warnings;
 use Data::Dumper;
-use WWW::Authen::Simple;
 use doclib::pdfidx;
 use Cwd 'abs_path';
 use CGI;
 use POSIX;
 
+print STDERR ">>> ld_r.pm\n";
 $ENV{"PATH"} .= ":/usr/pkg/bin";
 my $docsrv="ts2.nispuk.com";
 
@@ -18,7 +18,7 @@ my $entries=9;
 
 my $pdfidx = pdfidx->new();
 
-my $dbs    = ( stat("/var/db/pdf/doc_db.db") )[7] / 1e6 . " Mb";
+my $dbs    = ( stat($pdfidx->dbname) )[7] / 1e6 . " Mb";
 
 # print pages
 my $ANY       = "*ANY*";

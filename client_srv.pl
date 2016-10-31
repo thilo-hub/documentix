@@ -10,13 +10,11 @@ use HTTP::Daemon;
 use HTTP::Response;
 use HTTP::Status;
 use POSIX qw/ WNOHANG /;
-use ld_r; 
-
 use constant HOSTNAME => qx{hostname};
 
 my %O = (
-    'listen-host' => '192.168.0.11',
-    # 'listen-host' => '127.0.0.1',
+    # 'listen-host' => '192.168.0.11',
+    'listen-host' => '127.0.0.1',
     'listen-port' => 8080,
     'listen-clients' => 30,
     'listen-max-req-per-child' => 100,
@@ -30,7 +28,7 @@ my $d = HTTP::Daemon->new(
 
 print "Started HTTP listener at " . $d->url . "\n";
 
-# system("open http://localhost:8080/res/index.html");
+system("open http://$O{'listen-host'}:$O{'listen-port'}/");
 my %chld;
 
 if ($O{'listen-clients'}) {
@@ -73,6 +71,10 @@ while (1) {
 sub http_child {
     my $d = shift;
 
+use ld_r; 
+use feed;
+
+
     my $i;
     my $css = <<CSS;
         form { display: inline; }
@@ -82,7 +84,16 @@ CSS
         my $c = $d->accept or last;
         my $r = $c->get_request() or last;
         $c->autoflush(1);
+               # ($port, $myaddr) = sockaddr_in($mysockaddr);
+               # printf "Connect to %s [%s]\n",
+                  # scalar gethostbyaddr($myaddr, AF_INET),
+                  # inet_ntoa($myaddr);
+  	my $kk=$c->sockname;
+        my ($port, $myaddr) = sockaddr_in($kk);
+        my $host= scalar gethostbyaddr($myaddr, AF_INET);
 
+
+	$ENV{"SERVER_ADDR"}="http://$host:$port";
         print sprintf("[%s] %s %s\n", $c->peerhost, $r->method, $r->uri->as_string);
 
 	my $matches=0;
@@ -157,8 +168,9 @@ sub get_pg
 	sub { 
 		my $c=shift; 
 		print "feed.cgi $1\n"; 
-		my $r0=qx{perl feed.cgi "$1"};
-		my $r=HTTP::Message->parse( $r0 );
+		# my $r0=qx{perl feed.cgi "$1"};
+		#my $r=HTTP::Message->parse( $r0 );
+		my $r=HTTP::Message->new(feed_m(undef,undef,$1));
 		print "L:".length($r->content)."\n";
 		my $rp=HTTP::Response->new(RC_OK,undef,$r->headers,$r->content);
 		$c->{"c"}->send_response( $rp );
@@ -169,12 +181,11 @@ sub get_pg
 		my $c=shift; 
 		my $r=shift;
 		my $a=$c->{"args"};
-		print Dumper($c); # ->get_request(1));
+		# print Dumper($c); # ->get_request(1));
 		return ldres($a->{"class"},$a->{"idx"},$a->{"ppages"},$a->{"search"});
 		return qx(perl ldres.cgi); 
 		return undef; 
 	}},
- #{ p => '/res/ldres.cgi(.*)', cb => sub { return Dumper(@_); }},
  { p => '/(.*)', cb => sub { my $c=shift;
 	return "Failed" unless ( -f $1 );
  	$c->{"c"}->send_file_response($1);

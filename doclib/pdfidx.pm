@@ -27,19 +27,26 @@ my $tesseract="$tools/tesseract";
 
 my $cleanup = 0;
 
+my $db_con;
 sub new {
     my $dbn    = "SQLite";
-    my $d_name = "/var/db/pdf/doc_db.db";
+    my $d_name = "db/doc_db.db";
     my $user   = "";
     my $pass   = "";
     my $class  = shift;
+    return $db_con if $db_con;
     my $dh     = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
 
     $dh->{"setup_db"} = \&setup_db;
-    my $self = bless { dh => $dh }, $class;
+    my $self = bless { dh => $dh,dbname => $d_name }, $class;
     setup_db($self);
+    $db_con=$self;
     return $self;
+}
+sub dbname {
+    my $self = shift;
+    return $self->{"dbname"};
 }
 
 sub setup_db {
@@ -53,7 +60,7 @@ sub setup_db {
 	q{create table if not exists data ( idx integer primary key , thumb text, ico text, html text) } ,
 	q{create table if not exists ocr ( idx integer, text text)},
 	q{create table if not exists metadata ( idx integer, tag text, value text, unique ( idx,tag) )} ,
-	q{create table if not exists cache (item text,idx integer,data blob,date integer, unique (item,idx))},
+	q{create table if not exists cache (type text,item text,idx integer,data blob,date integer, unique (item,idx))},
 	q{CREATE VIRTUAL TABLE if not exists text USING fts4(tokenize=porter);},
 	q{CREATE TABLE if not exists mtime ( idx integer primary key, mtime integer)},
 	q{CREATE INDEX if not exists mtime_i on mtime(mtime)},
@@ -126,10 +133,13 @@ sub get_file {
     my $dh    = $self->{"dh"};
     my ($md5) = @_;
     return $md5 unless $md5 =~ m/^[0-9a-f]{32}$/;
+    my $q="select file from file where md5=?"; 
+    print STDERR "$q : $md5\n";
     my $fn =
-      $dh->selectcol_arrayref( "select file from file where md5=?", undef, $md5 );
+      $dh->selectcol_arrayref( $q, undef, $md5 );
     foreach(@$fn)
     {
+	    # return the first readable
 	    return $_ if -r $_;
     }
     return $$fn[0];
@@ -585,10 +595,7 @@ if(0){
 
     #my $tpl=slurp("template_pdf.html");
     $tpl = expand_templ( $dh, $tpl, \%meta );
-    $tpl =
-      sprintf
-      "Content-Type: text/html; charset=utf-8\nContent-Length: %d\n\n%s",
-      length($tpl), $tpl;
+    #BADBAD $tpl = sprintf "Content-Type: text/html; charset=utf-8\nContent-Length: %d\n\n%s", length($tpl), $tpl;
     $dh->prepare(q{update data set html=? where idx=? })->execute( $tpl, $idx );
 }
     # $dh->do("commit");
@@ -648,8 +655,8 @@ sub pdf_thumb {
     print STDERR "X:".join(" ",@cmd)."\n";
     my $png = qx{@cmd};
     return undef unless length($png);
-    return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",
-      length($png), $png;
+    return ("image/png",$png);
+    # return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s", length($png), $png;
 }
 
 sub pdf_icon {
@@ -678,8 +685,8 @@ sub pdf_icon {
     print STDERR "X:".join(" ",@cmd)."\n";
     my $png = qx{@cmd};
     return undef unless length($png);
-    return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s",
-      length($png), $png;
+    return ("image/png",$png);
+    # return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s", length($png), $png;
 }
 sub classify_all
 {
@@ -861,22 +868,23 @@ sub get_cache {
     my ( $self, $item, $idx, $callback ) = @_;
     my $dh = $self->{"dh"};
     my $q  = $dh->selectrow_arrayref(
-	"select data,date from cache where item=? and idx=?",
+	"select data,date,type from cache where item=? and idx=?",
 	undef, $item, $idx );
 
-    my $data = $callback->( $item, $idx, @$q[1] );
-    return @$q[0] if @$q[0] && !$data;
-    return "Content-Type: text/text\n\nERROR\n" unless $data;
+    my ($type,$data) = $callback->( $item, $idx, @$q[1] );
+    return (@$q[2],@$q[0]) if @$q[0] && !$data;
+    return ("text/text","ERROR") unless $data;
 
     my $ins_d = $dh->prepare(
-	q{insert or replace into cache (date,item,idx,data) values(?,?,?,?)});
+	q{insert or replace into cache (date,item,idx,data,type) values(?,?,?,?,?)});
     my $date = time();
     $ins_d->bind_param( 1, $date, SQL_INTEGER );
     $ins_d->bind_param( 2, $item );
     $ins_d->bind_param( 3, $idx);
     $ins_d->bind_param( 4, $data, SQL_BLOB );
+    $ins_d->bind_param( 5, $type);
     $ins_d->execute;
-    return $data;
+    return ($type,$data);
 }
 
 1;
