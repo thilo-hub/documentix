@@ -39,10 +39,12 @@ sub new {
     return $db_con if $db_con;
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
-
+    #DBI->trace(1, "/tmp/n.trace");
+    #trace_db($dh);
+    $dh->do('attach "/tmp/cache.db" as cache');
     print STDERR "New db conn: $dh\n";
-    $dh->{"setup_db"} = \&setup_db;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
+    $dh->{"setup_db"} = \&setup_db;
     setup_db($self);
     $db_con = $self;
     return $self;
@@ -52,6 +54,20 @@ sub dbname {
     my $self = shift;
     return $self->{"dbname"};
 }
+sub trace_db {
+    my $dh=shift;
+    open( TRC, ">>/tmp/db.trace" );
+
+    sub trace_it {
+        my $r = shift;
+
+        print TRC "DB: $r\n";
+    }
+
+    $dh->sqlite_trace( \&trace_it );
+}
+
+
 
 sub setup_db {
     my $self = shift;
@@ -64,7 +80,7 @@ q{create table if not exists file ( md5 text primary key, file text unique)},
 q{create table if not exists data ( idx integer primary key , thumb text, ico text, html text) },
         q{create table if not exists ocr ( idx integer, text text)},
 q{create table if not exists metadata ( idx integer, tag text, value text, unique ( idx,tag) )},
-q{create table if not exists cache (type text,item text,idx integer,data blob,date integer, unique (item,idx))},
+q{create table if not exists cache.cache (type text,item text,idx integer,data blob,date integer, unique (item,idx))},
         q{CREATE VIRTUAL TABLE if not exists text USING fts4(tokenize=porter);},
 q{CREATE TABLE if not exists mtime ( idx integer primary key, mtime integer)},
         q{CREATE INDEX if not exists mtime_i on mtime(mtime)},
@@ -136,11 +152,13 @@ sub get_file {
     my $dh    = $self->{"dh"};
     my ($md5) = @_;
     return $md5 unless $md5 =~ m/^[0-9a-f]{32}$/;
-    my $q = "select file from file where md5=?";
-    print STDERR "$q : $md5\n";
-    my $fn = $dh->selectcol_arrayref( $q, undef, $md5 );
-    foreach (@$fn) {
 
+    my $q = "select file from file where md5=?";
+    # print STDERR "$q : $md5\n";
+    # $dh->do("begin exclusive transaction");
+    my $fn = $dh->selectcol_arrayref( $q, undef, $md5 );
+    # $dh->do("commit");
+    foreach (@$fn) {
         # return the first readable
         return $_ if -r $_;
     }
@@ -166,21 +184,6 @@ sub get_meta {
         undef, $fn, $typ
     );
     return $idx;
-}
-
-sub get_cont {
-    my $self = shift;
-    my $dh   = $self->{"dh"};
-    my ( $typ, $fn ) = @_;
-    my $idx =
-      $dh->selectrow_array( "select idx from hash where md5=?", undef, $fn );
-    return unless $idx;
-    my $q   = "select value from metadata where idx=? and tag=\"$typ\"";
-    my $gt  = $dh->prepare($q);
-    my $res = $dh->selectrow_array( $gt, undef, $idx );
-
-    return $res;
-
 }
 
 sub pdf_info($$) {
@@ -909,15 +912,15 @@ sub get_cache {
     my ( $self, $item, $idx, $callback ) = @_;
     my $dh = $self->{"dh"};
     my $q  = $dh->selectrow_arrayref(
-        "select data,date,type from cache where item=? and idx=?",
+        "select data,date,type from cache.cache where item=? and idx=?",
         undef, $item, $idx );
 
     my ( $type, $data ) = $callback->( $item, $idx, @$q[1] );
     return ( @$q[2], @$q[0] ) if @$q[0] && !$data;
     return ( "text/text", "ERROR" ) unless $data;
-
+    $dh->do("begin exclusive transaction");
     my $ins_d = $dh->prepare(
-q{insert or replace into cache (date,item,idx,data,type) values(?,?,?,?,?)}
+q{insert or replace into cache.cache (date,item,idx,data,type) values(?,?,?,?,?)}
     );
     my $date = time();
     $ins_d->bind_param( 1, $date, SQL_INTEGER );
@@ -926,6 +929,7 @@ q{insert or replace into cache (date,item,idx,data,type) values(?,?,?,?,?)}
     $ins_d->bind_param( 4, $data, SQL_BLOB );
     $ins_d->bind_param( 5, $type );
     $ins_d->execute;
+    $dh->do("commit");
     return ( $type, $data );
 }
 

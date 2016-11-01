@@ -10,14 +10,29 @@ use HTTP::Daemon;
 use HTTP::Response;
 use HTTP::Status;
 use POSIX qw/ WNOHANG /;
+use ld_r;
+use feed;
+use Fcntl qw(:flock SEEK_END);
+
 use constant HOSTNAME => qx{hostname};
+
+open(my $fh,"/tmp/xx.lock");
+
+sub lock {
+	flock($fh, LOCK_EX) or die "Cannot lock mailbox - $!\n";
+}
+
+sub unlock {
+	flock($fh, LOCK_UN) or die "Cannot unlock mailbox - $!\n";
+}
+
 
 my %O = (
 
     # 'listen-host' => '192.168.0.11',
     'listen-host'              => '127.0.0.1',
     'listen-port'              => 8080,
-    'listen-clients'           => 30,
+    'listen-clients'           => 20,
     'listen-max-req-per-child' => 100,
 );
 
@@ -73,9 +88,8 @@ while (1) {
 
 sub http_child {
     my $d = shift;
-
-    use ld_r;
-    use feed;
+    my $ld_r=ld_r->new();
+    my $feed=feed->new();
 
     my $i;
     my $css = <<CSS;
@@ -87,10 +101,6 @@ CSS
         my $r = $c->get_request() or last;
         $c->autoflush(1);
 
-        # ($port, $myaddr) = sockaddr_in($mysockaddr);
-        # printf "Connect to %s [%s]\n",
-        # scalar gethostbyaddr($myaddr, AF_INET),
-        # inet_ntoa($myaddr);
         my $kk = $c->sockname;
         my ( $port, $myaddr ) = sockaddr_in($kk);
         my $host = scalar gethostbyaddr( $myaddr, AF_INET );
@@ -135,7 +145,6 @@ CSS
         $c->close();
         undef $c;
     }
-}
 
 sub _http_error {
     my ( $c, $code, $msg ) = @_;
@@ -183,10 +192,9 @@ sub get_pg {
                 my $c = shift;
                 print "feed.cgi $1\n";
 
-                # my $r0=qx{perl feed.cgi "$1"};
-                #my $r=HTTP::Message->parse( $r0 );
-                my $r = HTTP::Message->new( feed_m( undef, undef, $1 ) );
-                print "L:" . length( $r->content ) . "\n";
+		lock();
+                my $r = HTTP::Message->new( $feed->feed_m( undef, undef, $1 ) );
+		unlock();
                 my $rp =
                   HTTP::Response->new( RC_OK, undef, $r->headers, $r->content );
                 $c->{"c"}->send_response($rp);
@@ -200,13 +208,13 @@ sub get_pg {
                 my $r = shift;
                 my $a = $c->{"args"};
 
-                # print Dumper($c); # ->get_request(1));
-                return ldres(
+		lock();
+                my $m= $ld_r->ldres(
                     $a->{"class"},  $a->{"idx"},
                     $a->{"ppages"}, $a->{"search"}
                 );
-                return qx(perl ldres.cgi);
-                return undef;
+		unlock();
+		return $m;
             }
         },
         {
@@ -220,4 +228,5 @@ sub get_pg {
         }
 
     );
+}
 }

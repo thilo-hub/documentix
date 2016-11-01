@@ -1,3 +1,4 @@
+package ld_r;
 #!/usr/bin/perl
 use strict;
 use warnings;
@@ -16,24 +17,28 @@ my $q       = CGI->new;
 my $ncols   = 2;
 my $entries = 9;
 
-my $pdfidx = pdfidx->new();
+# my $pdfidx = pdfidx->new();
 
-my $dbs = ( stat( $pdfidx->dbname ) )[7] / 1e6 . " Mb";
 
 # print pages
 my $ANY = "*ANY*";
 
-# my $json_text = $q->param('json_string');
-# my $perl_scalar;
-# if ($json_text) {
-# my $json = JSON::PP->new->utf8;
-# $perl_scalar = $json->decode($json_text);
-# }
-# my $class = $q->param("class") || $perl_scalar->{"class"} || undef;
+# my $dh = $pdfidx->{"dh"};
 
-my $dh = $pdfidx->{"dh"};
+sub new {
+	my $class = shift;
 
-if (1) {
+	my $self = {};
+        $self->{pd}= pdfidx->new();
+        $self->{dh}= $self->{pd}->{dh};
+
+	return bless $self, $class;
+}
+
+  
+
+sub trace_db {
+    my $dh=shift;
     open( TRC, ">>/tmp/db.trace" );
 
     sub trace_it {
@@ -45,21 +50,24 @@ if (1) {
     $dh->sqlite_trace( \&trace_it );
 }
 
-$dh->do(
-q{ create table if not exists cache_lst ( qidx integer primary key autoincrement,
-		query text unique, nresults integer, last_used integer )}
-);
-$dh->do(
-q{ create table if not exists cache_q ( qidx integer, idx integer, id integer, snippet text, unique(qidx,idx))}
-);
+sub setup_db {
+    my $dh=shift;
+	$dh->do(
+	q{ create table if not exists cache_lst ( qidx integer primary key autoincrement,
+			query text unique, nresults integer, last_used integer )}
+	);
+	$dh->do(
+	q{ create table if not exists cache_q ( qidx integer, idx integer, id integer, snippet text, unique(qidx,idx))}
+	);
 
-$dh->do(
-    q{
-	CREATE TRIGGER if not exists cache_del before delete on cache_lst begin delete 
-		from cache_q where cache_q.qidx = old.qidx ; 
-	end;
-	}
-);
+	$dh->do(
+	    q{
+		CREATE TRIGGER if not exists cache_del before delete on cache_lst begin delete 
+			from cache_q where cache_q.qidx = old.qidx ; 
+		end;
+		}
+	);
+}
 
 my $s1 = q{select qidx from cache_lst where query = ?};
 my $s2 = q{insert or abort into cache_lst (query) values(?)};
@@ -71,10 +79,9 @@ my $s3_fin = q{
 	insert into cache_q ( qidx,idx,id,snippet ) select qidx,idx,rowid,snippet from cache_q_tmp
 	};
 
-# ldres();
-# exit(0);
-
 sub ldres {
+    my $self=shift;
+    my $dh = $self->{"dh"};
 
     my ( $class, $idx0, $ppage, $search ) = @_;
 
@@ -215,7 +222,7 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
         } @$classes
     ];
 
-    my $out = load_results($stm1);
+    my $out = load_results($dh,$stm1);
 
     $res =
         $q->div( { -class => "tick", -id => "nresults" }, $ndata )
@@ -291,6 +298,7 @@ sub pages {
 }
 
 sub get_meta {
+    my $dh = shift;
     my $tag = shift;
     $__meta_sel = $dh->prepare(q{select * from metadata where idx=?})
       unless $__meta_sel;
@@ -300,8 +308,9 @@ sub get_meta {
 }
 
 sub get_cell {
+    my $dh = shift;
     my ($r)  = @_;
-    my $meta = get_meta( $r->{"idx"} );
+    my $meta = get_meta($dh, $r->{"idx"} );
     my $md5  = $meta->{"hash"}->{"value"};
 
     my $editor = "edit.cgi?send=";
@@ -403,6 +412,7 @@ sub get_cell {
 }
 
 sub load_results {
+    my $dh=shift;
     my ($stmt_hdl) = @_;
     my $t0 = 0;
     my @outrow;
@@ -416,12 +426,12 @@ sub load_results {
                   $q->th( { -colspan => $ncols }, $q->hr, $r->{"date"} );
                 $t0 = $r->{"date"};
             }
-            push @outrow, get_cell($r);
+            push @outrow, get_cell($dh,$r);
             push @out, join( "\n  ", splice(@outrow) )
               if scalar(@outrow) >= $ncols;
         }
         else {
-            push @out, get_cell($r);
+            push @out, get_cell($dh,$r);
         }
     }
 

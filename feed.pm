@@ -1,3 +1,4 @@
+package feed;
 #!/usr/bin/perl
 use strict;
 use warnings;
@@ -20,14 +21,24 @@ my $pi = $ENV{'PATH_INFO'};
 
 # feed($md5,$t,$pi);
 
+sub new {
+    my $class=shift;
+    my $f={};
+    $f->{pdfidx} = pdfidx->new();
+    $f->{dh}     = $f->{pdfidx}->{dh};
+    return bless $f,$class;
+}
+
 sub feed_m {
-    my ( $t, $m ) = feed(@_);
+    my $self = shift;
+    my ( $t, $m ) = $self->feed(@_);
     my $h = HTTP::Headers->new;
     $h->content_type($t);
     return ( $h, $m );
 }
 
 sub feed {
+    my $self = shift;
     my ( $md5, $t, $pi ) = @_;
     my ($res);
     if ( $pi && $pi =~ m|^/(([^/]*)/)?([0-9a-f]{32})/([^/]+.(pdf)?)| ) {
@@ -91,7 +102,7 @@ sub feed {
     elsif ( ( !$t || $t eq "text" ) && $sz ) {
 
         # file exists and converter 'text' or no converter
-        $res  = $pdfidx->get_cont( "Text", $md5 );
+        $res  = $pdfidx->get_meta( "Text", $md5 );
         $sz   = length($res);
         $type = "text/plain";
     }
@@ -105,7 +116,7 @@ sub feed {
         $res  = slurp($f);
         $type = "application/pdf";
     }
-    elsif ( $t && ( my $data = $pdfidx->get_cont( $t, $md5 ) ) ) {
+    elsif ( $t && ( my $data = $pdfidx->get_meta( $t, $md5 ) ) ) {
 
         # meta data given and found
         # print $q->header(-expire => '+4d');
@@ -118,7 +129,6 @@ sub feed {
         return error_exit( "Permission denied", $t );
     }
     return ( $type, $res );
-}
 
 sub error_exit {
     my $msg = shift || $! || "Some error happened";
@@ -154,7 +164,7 @@ sub mk_lowres {
     my $htm = $item;
     $htm =~ s/\.pdf$/.ocr.html/;
     my $rv = $pdfidx->mk_pdf( undef, $item, $htm );
-    print STDERR "mk_lowres...\n";
+    # print STDERR "mk_lowres...\n";
     return ( 'application/pdf', $rv );
 }
 
@@ -215,6 +225,7 @@ sub mk_thumb {
     return undef unless $out;
     print STDERR "     ...new cache\n";
     return ( $typ,, $out );
+}
 }
 
 1;
