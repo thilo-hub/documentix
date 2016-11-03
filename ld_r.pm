@@ -31,7 +31,7 @@ sub new {
 	my $self = {};
         $self->{pd}= pdfidx->new();
         $self->{dh}= $self->{pd}->{dh};
-
+	setup_db($self->{dh});
 	return bless $self, $class;
 }
 
@@ -57,7 +57,7 @@ sub setup_db {
 			query text unique, nresults integer, last_used integer )}
 	);
 	$dh->do(
-	q{ create table if not exists cache_q ( qidx integer, idx integer, id integer, snippet text, unique(qidx,idx))}
+	q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text, unique(qidx,idx))}
 	);
 
 	$dh->do(
@@ -71,13 +71,11 @@ sub setup_db {
 
 my $s1 = q{select qidx from cache_lst where query = ?};
 my $s2 = q{insert or abort into cache_lst (query) values(?)};
-my $s3 = q{
-	create temporary table cache_q_tmp as  
-		select ? qidx, docid idx,snippet(text) snippet from text where text match ?
+my $s3 = q{insert into cache_q ( qidx,idx,snippet ) select 
+		qidx,docid,snippet(text) 
+		from cache_lst, text  where qidx = ? and text match query
 	};
-my $s3_fin = q{
-	insert into cache_q ( qidx,idx,id,snippet ) select qidx,idx,rowid,snippet from cache_q_tmp
-	};
+# qidx,idx,rowid,snippet from cache_q_tmp
 
 sub ldres {
     my $self=shift;
@@ -113,15 +111,15 @@ s/\s*daterange:\s*(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d\s*)//i
         $dmax = $2;
 
     }
-
     if ( $search && !$idx ) {
 
         # create cached results table
         $dh->do( $s2, undef, $search );
-        $idx = $dh->last_insert_id( undef, undef, undef, undef );
-        my $nres = $dh->do( $s3, undef, $idx, $search );
-        $dh->do($s3_fin);
-        $dh->do( "update cache_lst set nresults=? where qidx=?",
+        $idx=$dh->last_insert_id( undef, undef, undef, undef );
+        my $nres = $dh->do( $s3, undef, $idx );
+        print STDERR "nres: $nres\n";
+        #$dh->do($s3_fin,undef,);
+        $dh->do( 'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?',
             undef, $nres, $idx );
     }
 
