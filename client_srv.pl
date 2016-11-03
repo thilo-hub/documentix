@@ -26,13 +26,14 @@ sub unlock {
 	flock($fh, LOCK_UN) or die "Cannot unlock mailbox - $!\n";
 }
 
+my ($i,$p)=split(/:/,$ARGV[0] || "127.0.0.1:8080");
 
 my %O = (
 
-    # 'listen-host' => '192.168.0.11',
-    'listen-host'              => '127.0.0.1',
-    'listen-port'              => 8080,
-    'listen-clients'           => 20,
+    'listen-host' => $i,
+    # 'listen-host'              => '127.0.0.1',
+    'listen-port'              => $p,
+    #'listen-clients'           => 20,
     'listen-max-req-per-child' => 100,
 );
 
@@ -44,7 +45,7 @@ my $d = HTTP::Daemon->new(
 
 print "Started HTTP listener at " . $d->url . "\n";
 
-system("open http://$O{'listen-host'}:$O{'listen-port'}/");
+# system("open http://$O{'listen-host'}:$O{'listen-port'}/");
 my %chld;
 
 if ( $O{'listen-clients'} ) {
@@ -57,7 +58,6 @@ if ( $O{'listen-clients'} ) {
     };
 }
 
-my @pages = get_pg();
 while (1) {
     if ( $O{'listen-clients'} ) {
 
@@ -90,12 +90,9 @@ sub http_child {
     my $d = shift;
     my $ld_r=ld_r->new();
     my $feed=feed->new();
+    my @pages = get_pg();
 
     my $i;
-    my $css = <<CSS;
-        form { display: inline; }
-CSS
-
     while ( ++$i < $O{'listen-max-req-per-child'} ) {
         my $c = $d->accept        or last;
         my $r = $c->get_request() or last;
