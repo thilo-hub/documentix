@@ -55,6 +55,7 @@ $it_idx->execute();
 use Data::Dumper;
 my @list;
 while ( my $r = $it_idx->fetchrow_hashref ) {
+	next unless -f $r->{"file"};
 	push @list,$r;
 }
 printf STDERR "Process: %d files\n",scalar(@list);
@@ -101,7 +102,7 @@ while(@list)
     }
     unless ( $dt->{"Text"} ) {
 	print STDERR "$m" ; $m="";
-        print STDERR "Text\n";
+        print STDERR "Text";
         $dh->do("commit");
 	chomp(my $type=qx|file -b --mime-type "$r->{file}"|);
 	my %handler=(
@@ -112,6 +113,7 @@ while(@list)
 	$type = $handler{$type}($r,$dt)
 		while $handler{$type};
 
+        print STDERR " -> $type\n";
         $dh->do("begin transaction");
     }
     unless ( $dt->{"Class"} || !defined $dt->{"Text"} ) {
@@ -202,6 +204,7 @@ my $dt=shift;
 	    $dt->{"Text"}->{"value"}    = $t;
 	    $dt->{"Content"}->{"value"} = $c;
 	}
-  return "FINISH";
+  my $l=length($t);
+  return "FINISH ($l)";
 }
 
