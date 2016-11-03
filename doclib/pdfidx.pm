@@ -297,49 +297,55 @@ sub pdftohtml {
         my $base = $1;
         my $ext  = $5;
 
-        # push @pages, "$base.html";
-        push @pages, "$base.hocr";
+        push @pages, "$base.html";
+        # push @pages, "$base.hocr";
+        # push @pages, "$base.hoc.html";
 
-        my $pid = 0;
+        my $pid = 1;
+	print STDERR "P: $base ($mth)\n";
         if ( !$mth || ( $pid = fork() ) == 0 ) {
-            $dh->disconnect if $mth;
             print STDERR "Conv $_\n";
+            $dh->disconnect if $mth;
             my $o    = "$base.prc.$ext";
             my $o    = "$base.prc.tiff";
             my $fail = 0;
+            print "No input $base.html" unless ( -f "$base.html" ) ;
             unless ( -f "$base.html" ) {
 
                 # $fail += (system("$convert", $_,"-trim","+repage",
                 # "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
                 my @opt = qw{-normalize};    #  -gamma 2.0};
                 push @opt, ( "-rotate", $rot[$page] ) if $rot[$page] != 0;
-                print STDERR join( " ", ( "$convert", $_, @opt, $o, "\n" ) );
-                $fail += (
-                    system( "$convert", $_, @opt, $o )
-                    ? 1
-                    : 0
-                ) unless -f $o;
+
+		my @cmd=( "$convert", $_, @opt, $o );
+                print STDERR "EXE: ".join( " ", @cmd)."\n";
+                $fail += ( system( @cmd) ? 1 : 0) unless -f $o;
 
 # $fail += (system("$convert", $_, "-gravity","north","-background","red","-splice","0x1","-trim","-chop","0x1", "-normalize", "-gamma", "2.0", $o) ? 1 : 0) unless -f $o;
                 unlink $_ if $cleanup;
-                $fail += (
-                    system(
+		my @cmd=(
                         "$tesseract",  $o,     $base, "-l",
-                        "deu+eng+equ", "-psm", "1",   "hocr"
-                    ) ? 1 : 0
-                );
+                        "deu+eng+equ", "-psm", "1",   "hocr");
+		print join(" ",@cmd)."\n";
+                $fail += ( system( @cmd) ? 1 : 0);
                 unlink $o if $cleanup;
             }
             print STDERR "$base - done($fail)\n";
             exit($fail) if $mth;
             $errs += $fail;
         }
+print STDERR "PID: $pid\n";
         $childs{$pid}++;
         $errs += w_load(5);
     }
     print STDERR "Wait..\n";
     $errs += w_load(0) if $mth;
     print STDERR "Done Errs:$errs\n";
+    foreach ( @pages )
+    {
+	next if -f $_;
+        die "Ups: $_";
+    }
     return @pages;
 }
 
