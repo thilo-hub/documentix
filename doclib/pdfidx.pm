@@ -41,10 +41,9 @@ sub new {
       || die "Err database connection $!";
     #DBI->trace(1, "/tmp/n.trace");
     #trace_db($dh);
-    $dh->do('attach "/tmp/cache.db" as cache');
     print STDERR "New db conn: $dh\n";
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
-    $dh->{"setup_db"} = \&setup_db;
+    $self->{"dh1"} = $dh;
     setup_db($self);
     $db_con = $self;
     return $self;
@@ -80,7 +79,6 @@ q{create table if not exists file ( md5 text primary key, file text unique)},
 q{create table if not exists data ( idx integer primary key , thumb text, ico text, html text) },
         q{create table if not exists ocr ( idx integer, text text)},
 q{create table if not exists metadata ( idx integer, tag text, value text, unique ( idx,tag) )},
-q{create table if not exists cache.cache (type text,item text,idx integer,data blob,date integer, unique (item,idx))},
         q{CREATE VIRTUAL TABLE if not exists text USING fts4(tokenize=porter);},
 q{CREATE TABLE if not exists mtime ( idx integer primary key, mtime integer)},
         q{CREATE INDEX if not exists mtime_i on mtime(mtime)},
@@ -91,7 +89,6 @@ q{CREATE TABLE if not exists class ( idx integer primary key, class text )},
 					delete from file where file.md5 = old.md5; 
 					delete from data where data.idx = old.idx; 
 					delete from metadata where metadata.idx=old.idx; 
-					delete from cache where cache.idx=old.idx; 
 					delete from text where docid=old.idx; 
 					delete from mtime where mtime.idx=old.idx; 
 					delete from class where class.idx=old.idx; 
@@ -908,29 +905,5 @@ sub pdf_process {
     $pdf->saveas("$tmpdir/out.pdf");
 }
 
-sub get_cache {
-    my ( $self, $item, $idx, $callback ) = @_;
-    my $dh = $self->{"dh"};
-    my $q  = $dh->selectrow_arrayref(
-        "select data,date,type from cache.cache where item=? and idx=?",
-        undef, $item, $idx );
-
-    my ( $type, $data ) = $callback->( $item, $idx, @$q[1] );
-    return ( @$q[2], @$q[0] ) if @$q[0] && !$data;
-    return ( "text/text", "ERROR" ) unless $data;
-    $dh->do("begin exclusive transaction");
-    my $ins_d = $dh->prepare(
-q{insert or replace into cache.cache (date,item,idx,data,type) values(?,?,?,?,?)}
-    );
-    my $date = time();
-    $ins_d->bind_param( 1, $date, SQL_INTEGER );
-    $ins_d->bind_param( 2, $item );
-    $ins_d->bind_param( 3, $idx );
-    $ins_d->bind_param( 4, $data, SQL_BLOB );
-    $ins_d->bind_param( 5, $type );
-    $ins_d->execute;
-    $dh->do("commit");
-    return ( $type, $data );
-}
 
 1;

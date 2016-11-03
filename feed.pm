@@ -3,6 +3,7 @@ package feed;
 use strict;
 use warnings;
 use doclib::pdfidx;
+use doclib::cache;
 use HTTP::Message;
 
 use CGI;
@@ -26,6 +27,7 @@ sub new {
     my $f={};
     $f->{pdfidx} = pdfidx->new();
     $f->{dh}     = $f->{pdfidx}->{dh};
+    $f->{cache}  = cache->new();
     return bless $f,$class;
 }
 
@@ -97,7 +99,7 @@ sub feed {
     if ( $sz && $t && $converter->{$t} ) {
 
         # file exists and we have a converter given
-        ( $type, $res ) = $pdfidx->get_cache( $f, "$ext-$t", $converter->{$t} );
+        ( $type, $res ) = $self->{cache}->get_cache( $f, "$ext-$t", $converter->{$t} );
     }
     elsif ( ( !$t || $t eq "text" ) && $sz ) {
 
