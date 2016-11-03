@@ -43,6 +43,7 @@ sub new {
     #trace_db($dh);
     print STDERR "New db conn: $dh\n";
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
+    $self->{"setup_db"} = \&setup_db;
     $self->{"dh1"} = $dh;
     setup_db($self);
     $db_con = $self;
@@ -677,14 +678,55 @@ sub pdf_icon {
     my $fn   = '"' . shift . '"';
     my $pn   = ( shift || 1 ) - 1;
     my $rot  = shift;
-    $fn .= "[$pn]";
+    my $tmp = POSIX::tmpnam();
+    my @l;
+
+    my @cmd = ( $convert, $fn."[$pn]", qw{-trim -normalize -thumbnail 100} );
+    push @cmd, "-rotate", $rot if $rot;
+    push @cmd, "png:-";
+    if(0){
+        # HACK
+        #my $tmp = "/tmp/$$.tmp";
+    #    $cmd[1] = "\$(eval $tmp.*)";
+        my @c1 =
+          ( $pdfimages, "-all", "-f", $pn + 1, "-l", $pn + 1, $fn, $tmp );
+        print STDERR "X1:" . join( " ", @c1 ) . "\n";
+
+        #unshift @cmd,@c1,"&&";
+        qx {@c1};
+        @l = glob("'${tmp}*'");
+        print STDERR "  R:" . join( ":", @l, "\n" );
+        $cmd[1] = $l[0];
+
+    }
+    print STDERR "X:" . join( " ", @cmd ) . "\n";
+    my $png = qx{@cmd};
+    print STDERR "L:" .length($png) . "\n";
+    unlink @l if @l;
+    if ( length($png) <= 900 ) {
+	print STDERR "FAILURE:\n";
+	return pdf_icon2($self,$fn,$pn+1,$rot);
+    }
+    return undef unless length($png);
+    return ( "image/png", $png );
+
+# return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s", length($png), $png;
+}
+sub pdf_icon2 {
+    my $self = shift;
+    my $fn   = shift; # '"' . shift . '"';
+    my $pn   = ( shift || 1 ) - 1;
+    my $rot  = shift;
+    my $tmp = POSIX::tmpnam();
+    my @l;
+
     my @cmd = ( $convert, $fn, qw{-trim -normalize -thumbnail 100} );
     push @cmd, "-rotate", $rot if $rot;
     push @cmd, "png:-";
     {
         # HACK
-        my $tmp = "/tmp/$$.tmp";
-        $cmd[1] = "\$(eval $tmp.*)";
+        #my $tmp = "/tmp/$$.tmp";
+    #    $cmd[1] = "\$(eval $tmp.*)";
         $fn =~ s/\[$pn\]$//;
         my @c1 =
           ( $pdfimages, "-all", "-f", $pn + 1, "-l", $pn + 1, $fn, $tmp );
@@ -692,14 +734,14 @@ sub pdf_icon {
 
         #unshift @cmd,@c1,"&&";
         qx {@c1};
-        my @l = glob("'${tmp}*'");
+        @l = glob("'${tmp}*'");
         print STDERR "  R:" . join( ":", @l, "\n" );
         $cmd[1] = $l[0];
 
-        #unlink glob("$tmp.*");
     }
     print STDERR "X:" . join( " ", @cmd ) . "\n";
     my $png = qx{@cmd};
+    unlink @l;
     return undef unless length($png);
     return ( "image/png", $png );
 
