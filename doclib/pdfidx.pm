@@ -11,17 +11,19 @@ my $mth   = 1;
 my $tools = "/usr/pkg/bin";
 $tools = "/home/thilo/documentix/tools" unless -d $tools;
 
+$tools = "/usr/bin" unless -d $tools;
 $tools = "/usr/local/bin" unless -d $tools;
+#$ENV{"PATH"}.= ":tools";
 
 # Used tools
-my $convert   = "$tools/convert";
-my $lynx      = "$tools/lynx";
-my $pdfimages = "$tools/pdfimages";
-my $pdfinfo   = "$tools/pdfinfo";
-my $pdfopt    = "$tools/pdfopt";
-my $pdftoppm  = "$tools/pdftoppm";
-my $pdftotext = "$tools/pdftotext";
-my $tesseract = "$tools/tesseract";
+my $convert   = "convert";
+my $lynx      = "lynx";
+my $pdfimages = "pdfimages";
+my $pdfinfo   = "pdfinfo";
+my $pdfopt    = "pdfopt";
+my $pdftoppm  = "pdftoppm";
+my $pdftotext = "pdftotext";
+my $tesseract = "tesseract";
 
 # use threads;
 # use threads::shared;
