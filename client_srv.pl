@@ -215,11 +215,14 @@ sub get_pg {
             }
         },
         {
-            p  => '/(.*)',
+            p  => '/+(.*)',
             cb => sub {
                 my $c = shift;
-                return "Failed" unless ( -f $1 );
-                $c->{"c"}->send_file_response($1);
+	        my $f = ".".$c -> {request}->uri->path;
+		return HTTP::Message->parse(qx{$f})->content()
+			if ( $f =~ /\.cgi$/ && -x $f );
+                return "Failed $f" unless ( -f $f );
+                $c->{"c"}->send_file_response($f);
                 return undef;
             }
         }
