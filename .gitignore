@@ -6,3 +6,7 @@ delme
 h
 *.swp
 *.bak
+db/*
+lib/build/*
+Documents/*
+PDF/*
