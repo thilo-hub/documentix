@@ -17,6 +17,8 @@ my $q       = CGI->new;
 my $ncols   = 2;
 my $entries = 9;
 
+use Sys::Hostname;
+my $myhost=hostname();
 # my $pdfidx = pdfidx->new();
 
 
@@ -75,6 +77,7 @@ my $s3 = q{insert into cache_q ( qidx,idx,snippet ) select
 		qidx,docid,snippet(text) 
 		from cache_lst, text  where qidx = ? and text match query
 	};
+my $s4 = q{delete from cache_q  where qidx=8 and idx in ( select idx from cache_q join hash using(idx)  natural join file where qidx=8 and host is NULL )};
 # qidx,idx,rowid,snippet from cache_q_tmp
 
 sub ldres {
@@ -117,7 +120,8 @@ s/\s*daterange:\s*(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d\s*)//i
         $dh->do( $s2, undef, $search );
         $idx=$dh->last_insert_id( undef, undef, undef, undef );
         my $nres = $dh->do( $s3, undef, $idx );
-        print STDERR "nres: $nres\n";
+	my $unavail = $dh->do( $s4, undef, $idx);
+        print STDERR "nres/unavail: $nres $unavail\n";
         #$dh->do($s3_fin,undef,);
         $dh->do( 'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?',
             undef, $nres, $idx );

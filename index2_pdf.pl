@@ -17,12 +17,13 @@ die "No popfile running"
 
 # system($popfile);
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
+use Sys::Hostname;
 #
 #
 my $dh = $pdfidx->{"dh"};
 my $get_f =
   $dh->prepare("select idx,md5 from file natural join hash  where file=?");
-my $new_f = $dh->prepare("insert or replace into file (md5,file) values(?,?)");
+my $new_f = $dh->prepare("insert or replace into file (md5,file,host) values(?,?,?)");
 
 $dh->do("begin transaction");
 
@@ -42,7 +43,7 @@ while (<>) {
     flushdb($dh);
     my $md5_f = file_md5_hex($inpdf);
 
-    $new_f->execute( $md5_f, $inpdf );
+    $new_f->execute( $md5_f, $inpdf,hostname() );
 
     # print "NEW: $inpdf\n";
     print STDERR "+";
