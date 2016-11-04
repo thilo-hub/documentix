@@ -77,7 +77,7 @@ my $s3 = q{insert into cache_q ( qidx,idx,snippet ) select
 		qidx,docid,snippet(text) 
 		from cache_lst, text  where qidx = ? and text match query
 	};
-my $s4 = q{delete from cache_q  where qidx=8 and idx in ( select idx from cache_q join hash using(idx)  natural join file where qidx=8 and host is NULL )};
+my $s4 = q{delete from cache_q  where idx in ( select idx from cache_q join hash using(idx)  natural join file where qidx=? and host is NULL )};
 # qidx,idx,rowid,snippet from cache_q_tmp
 
 sub ldres {
