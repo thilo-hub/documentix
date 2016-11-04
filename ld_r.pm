@@ -351,6 +351,7 @@ sub get_cell {
     # build various URLS
     #my $pdf    = "docs/pdf/$md5/$short_name";
     my $pdf    = "web/viewer.html?file=../docs/pdf/$md5/$short_name";
+    my $pdf2    = "docs/pdf/$md5/$short_name";
     my $lowres = "docs/lowres/$md5/$short_name";
 
     #my $ico    = qq{<img src='docs/ico/$md5/$short_name'};
@@ -366,9 +367,8 @@ sub get_cell {
 
     # print STDERR "TIP:$tip\n";
 
-# my @a=stat($pdf); my $e= strftime("%Y-%b-%d %a  %H:%M ($a[7]) $_",localtime($a[10]));
-# $meta->{PopFile}->{value} =~ s|http://$docsrv|$q->url(-base=>'1')|e
-# if $meta->{PopFile};;
+$meta->{PopFile}->{value} =~ s|http://$docsrv|$q->url(-base=>'1')|e
+ if $meta->{PopFile};;
     my $day = $d;
     $day =~ s/\s+\d+:\d+:\d+\s+/ /;
 
@@ -394,7 +394,7 @@ sub get_cell {
         $q->a( { -href => $meta->{PopFile}->{value}, -target => "_popfile" },
             $meta->{Class}->{value} )
           . $q->br
-          . $q->a( { -class => "doclink", -href => $pdf, -target => "docpage" },
+          . $q->a( { -class => "doclink", -href => $pdf2, -target => "docpage" },
             $sshort_name )
           . $q->br
           . $q->a( { -class => "dtags" }, $tags )
