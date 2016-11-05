@@ -5,21 +5,29 @@ use strict;
 use warnings;
 use doclib::pdfidx;
 use Cwd 'abs_path';
+use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
+use Sys::Hostname;
+# use Data::Dumper;
 
 my $pdfidx = pdfidx->new();
 
-my $popfile = "/var/db/pdf/start_pop";
+my $use_popfile=1;
 
-if(0){
-my $popf=$pdfidx->pop_session();
-$pdfidx->pop_release;
-die "No popfile running"
-	unless $popf;
+if($use_popfile){
+    my $popf=eval {$pdfidx->pop_session()};
+    unless ($popf)
+    {
+	 print STDERR "Start popfile....\n";
+	 system('perl ./start_pop.pl $PWD');
+	 $popf=$pdfidx->pop_session();
+    }
+    die "No popfile running"
+	    unless $popf;
 
-# system($popfile);
+    $pdfidx->pop_release;
+
 }
-use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
-use Sys::Hostname;
+
 #
 #
 my $dh = $pdfidx->{"dh"};
@@ -54,10 +62,10 @@ my $it_idx = $dh->prepare(
     q{select idx,md5,file from hash natural join file order by idx desc});
 my $gt_md = $dh->prepare(q{select tag,value from metadata where idx=?});
 $it_idx->execute();
-use Data::Dumper;
 my @list;
 while ( my $r = $it_idx->fetchrow_hashref ) {
 #	next unless -f $r->{"file"};
+	next if($r->{"file"} =~  m|pdf.js/test/pdfs/|); # ignore test-files
 	push @list,$r;
 }
 printf STDERR "Process: %d files\n",scalar(@list);
@@ -206,7 +214,7 @@ my $dt=shift;
 	    $dt->{"Text"}->{"value"}    = $t;
 	    $dt->{"Content"}->{"value"} = $c;
 	}
-  my $l=length($t);
+  my $l=length($t) || "-FAILURE-";
   return "FINISH ($l)";
 }
 

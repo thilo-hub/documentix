@@ -11,3 +11,6 @@ db/*
 lib/build/*
 Documents/*
 PDF/*
+popuser/popfile.db*
+popuser/messages/
+popuser/popfile.pid
