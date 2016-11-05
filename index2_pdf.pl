@@ -10,12 +10,14 @@ my $pdfidx = pdfidx->new();
 
 my $popfile = "/var/db/pdf/start_pop";
 
+if(0){
 my $popf=$pdfidx->pop_session();
 $pdfidx->pop_release;
 die "No popfile running"
 	unless $popf;
 
 # system($popfile);
+}
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 use Sys::Hostname;
 #
@@ -55,7 +57,7 @@ $it_idx->execute();
 use Data::Dumper;
 my @list;
 while ( my $r = $it_idx->fetchrow_hashref ) {
-	next unless -f $r->{"file"};
+#	next unless -f $r->{"file"};
 	push @list,$r;
 }
 printf STDERR "Process: %d files\n",scalar(@list);

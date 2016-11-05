@@ -4,10 +4,13 @@ use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 
 use parent DBI;
 use DBI qw(:sql_types);
-use File::Temp qw/tempfile tempdir/;
+use File::Temp qw/tempfile tmpnam tempdir/;
+use File::Basename;
 print STDERR ">>> pdfidx.pm\n";
 $File::Temp::KEEP_ALL = 1;
 my $mth   = 1;
+my $maxcpu= 8;
+my $debug=1;
 my $tools = "/usr/pkg/bin";
 $tools = "/home/thilo/documentix/tools" unless -d $tools;
 
@@ -307,7 +310,7 @@ sub pdftohtml {
             print STDERR "Conv $_\n";
             $dh->disconnect if $mth;
             my $o    = "$base.prc.$ext";
-            my $o    = "$base.prc.tiff";
+            my $o    = "$base.prc.jpg";
             my $fail = 0;
             print "No input $base.html" unless ( -f "$base.html" ) ;
             unless ( -f "$base.html" ) {
@@ -341,15 +344,98 @@ print STDERR "PID: $pid\n";
     print STDERR "Wait..\n";
     $errs += w_load(0) if $mth;
     print STDERR "Done Errs:$errs\n";
+    my @opages;
     foreach ( @pages )
     {
-	next if -f $_;
-        die "Ups: $_";
+        die "Ups: $_" unless -f $_;
+	push @opages,$_;
     }
     return @pages;
 }
-
 sub ocrpdf {
+    my $self = shift;
+    my ( $inpdf, $outpdf, $ascii ) = @_;
+    print STDERR "ocrpdf $inpdf $outpdf\n" if $debug >1;
+    my $txt = undef;
+    my $fail=0;
+
+    # MX hack -with broken jpg
+    # pdfimages -all   ( extract all images into temp-dir )
+    # convert -density 300 -trim xpage-00$i.jpg  -quality 100  page-$i.jpg
+    # tesseract  page-$i.jpg  ypage-$i  pdf 
+    # pdfunite ypage-*.pdf z.pdf
+
+    my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
+    my @cmd = (qw{pdfimages -all }, $inpdf , $tmpdir."/page");
+    print STDERR "CMD: ".join(" ",@cmd,"\n");
+    $fail += ( system( @cmd) ? 1 : 0);
+    my @inpages=glob($tmpdir->dirname."/page*");
+    my @outpages;
+    my $pg="001";
+    if ( grep( /\.ccitt$/ , @inpages ))
+    {
+	#hack
+	unlink(@inpages);
+	print STDERR "Hack for ccitt files\n" if $debug > 1;
+	my @cmd = (qw{pdfimages -tiff }, $inpdf , $tmpdir."/page");
+	print STDERR "CMD: ".join(" ",@cmd,"\n");
+	$fail += ( system( @cmd) ? 1 : 0);
+	@inpages=glob($tmpdir->dirname."/page*");
+    }
+    foreach $in ( @inpages )
+    {
+	my $outpage=$tmpdir->dirname."/o-page-".$pg++;
+	my $outim=$in.".jpg";
+        if ( !$mth || ( $pid = fork() ) == 0 ) 
+	{
+            print STDERR "Conv $_\n";
+	    @cmd=(qw{convert -density 150 }, $in , qw {-trim -quality 70 -flatten -sharpen 0x1.0},$outim);
+	    $msg .= "CMD: ".join(" ",@cmd,"\n");
+            $fail += ( system( @cmd) ? 1 : 0);
+	    @cmd = ($tesseract,  $outim,$outpage, qw{ -l deu+eng+equ -psm 1 pdf});
+	    $msg .= "CMD: ".join(" ",@cmd,"\n");
+	    $outpage .= ".pdf";
+            $fail += ( system( @cmd) ? 1 : 0) unless -f $outpage;
+	    # die "Ups: $outpage" unless -f $outpage;
+	    print STDERR "Done $outpage\n";
+	    unlink ($in,$outim) unless $debug>2;
+            exit($fail) if $mth;
+            $errs += $fail;
+        }
+        $childs{$pid}++;
+        $errs += w_load($maxcpu);
+	$outpage .= ".pdf";
+	push @outpages,$outpage;
+    }
+    print STDERR "Wait..\n";
+    $errs += w_load(0) if $mth;
+    print STDERR "Done Errs:$errs\n";
+
+    return undef unless @outpages;
+
+    foreach(@outpages)
+    {
+	die "Failure: $_" unless -f $_;
+    }
+
+    @cmd = (qw{ pdfunite }, @outpages, $outpdf); 
+    print STDERR "CMD: ".join(" ",@cmd,"\n");
+    $fail += ( system( @cmd) ? 1 : 0) unless -f $outpdf;
+    # die "Failure generating $outpdf" unless -f $outpdf;
+    unlink(@outpages) unless $debug>2;
+    unlink $tmpdir unless $debug>2;
+
+    my $tmp= tmpnam().".pdf";
+    symlink($outpdf,$tmp);
+    @cmd=($pdftotext,$tmp,"-");
+    
+    print STDERR "CMD: ".join(" ",@cmd,"\n");
+    my $txt=qx( @cmd );
+    unlink $tmp unless $debug >2;
+    return $txt;
+}
+
+sub ocrpdf_old {
     my $self = shift;
     my ( $inpdf, $outpdf, $ascii ) = @_;
     my $txt = undef;
@@ -552,6 +638,7 @@ sub index_pdf {
     my $self = shift;
     my $dh   = $self->{"dh"};
     my $fn   = shift;
+    print STDERR "index_pdf $fn\n" if $debug >1;
 
     # make sure we skip already ocred docs
     $fn =~ s/\.ocr\.pdf$/\.pdf/;
@@ -632,39 +719,62 @@ sub ins_e {
       unless $self->{"new_e"}->execute;
 }
 
+sub pdf_totext {
+    my $self = shift;
+    my $fn   = shift;
+    print STDERR " pdf_totext $fn\n" if $debug >1;
+
+    $fn =~ s/\.ocr\.pdf$/.pdf/;
+    my $ocrpdf=$fn;
+    $ocrpdf =~ s/\.pdf$/.ocr.pdf/;
+    die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
+
+    my ($fh, $filename) = tempfile( $template, SUFFIX => '.pdf');
+  
+
+    if ( -r $ocrpdf )
+    {
+	$filename=$ocrpdf;
+    }
+    else
+    {
+	my @cmd=($pdfopt, $fn, $filename);
+	system(@cmd);
+    }
+    my $tmp= tmpnam();
+    symlink($filename,$tmp);
+    @cmd=($pdftotext,$tmp,"-");
+    my $txt=qx( @cmd );
+    unlink $tmp unless $debug >2;
+    return $txt if length($txt) > 100;
+    return $txt if (-r $ocrpdf);
+
+    return $self->ocrpdf($fn,$ocrpdf);
+}
+
+
 sub pdf_text {
     my $self = shift;
     my $fn   = shift;
     my $md5  = shift;
     my $txt;
 
-    # return "--not--available--";
-    # split pdf into page
     my $ofn = $fn;
-    $ofn =~ s/\.pdf$/.txt/;
-
-    # return slurp($ofn) if ( -f $ofn );
 
     my $dh = $self->{"dh"};
 
     $txt = $dh->selectrow_array(
-q{select value from hash natural join metadata where md5=? and tag="Text"},
+	q{select value from hash natural join metadata where md5=? and tag="Text"},
         undef, $md5
     );
     return $txt if $txt;
 
-    #$fn=~ s/\$/\\\$/g;
-    # $txt = qx{pdftotext "$fn" -};
-    $txt =
-qx{$pdfopt "$fn" /tmp/$$.pdf >/dev/null || cp "$fn" /tmp/$$.pdf; $pdftotext /tmp/$$.pdf -; rm /tmp/$$.pdf};
-    undef $txt  if length($txt) < 100;
-    return $txt if $txt;
+    my $dir=dirname($fn);
+    
+    $ofn =~ s/\.pdf$/.txt/;
+    $ofn = tempname() unless -w $dir;
 
-    # next ressort to ocr
-    my $newpdf = $fn;
-    $newpdf =~ s/\.pdf$/.ocr.pdf/;
-    $txt = $self->ocrpdf( $fn, $newpdf );
-    return $txt;
+    return $self->pdf_totext($fn,$ofn);
 }
 
 sub pdf_thumb {
