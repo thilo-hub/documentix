@@ -112,6 +112,7 @@ sub http_child {
         my $arg;
         foreach ( split( /&/, $r->content ) ) {
             my ( $k, $v ) = split( /=/, $_, 2 );
+	    next unless $k;
             $arg->{$k} = $v;
         }
         if ( $r->uri->as_iri =~ /\?(.*)/ ) {
@@ -172,8 +173,23 @@ sub _http_response {
 sub get_pg {
     return (
         {
-            p  => '/p0',
-            cb => sub { return "HiHo" }
+            p  => '/upload.cgi(/.*)?',
+            cb => sub { 
+		my $c=shift;
+		my $r=$c->{request};
+		# print Dumper($c);
+		use Digest::MD5;
+		my $ctx=Digest::MD5->new();
+		$ctx->add($r->content());
+		my $digest = $ctx->hexdigest;
+		my $n=$r->header("x-file-name");
+		$n =~ s/[^a-zA-Z0-9_\-]/_/g;
+		mkdir "incomming" unless -d "incomming";
+		open(my $f,">","incomming/$digest.$n");
+		print $f $r->content();
+		close($f);
+		print "File: ".$r->header("x-file-name")."\n";
+		}
         },
         {
             p  => '/',
