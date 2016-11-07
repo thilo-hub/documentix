@@ -183,12 +183,20 @@ sub get_pg {
 		$ctx->add($r->content());
 		my $digest = $ctx->hexdigest;
 		my $n=$r->header("x-file-name");
-		$n =~ s/[^a-zA-Z0-9_\-]/_/g;
-		mkdir "incomming" unless -d "incomming";
-		open(my $f,">","incomming/$digest.$n");
+		$n =~ s/[^a-zA-Z0-9._\-]/_/g;
+
+		my $fn="incomming";
+		mkdir $fn or die "No dir: $fn" unless -d $fn ;
+                $fn .="/$digest";
+		mkdir $fn or die "No dir: $fn" unless -d $fn ;
+		$fn .="/$n";
+		open(my $f,">",$fn) or die "No open $fn";
 		print $f $r->content();
 		close($f);
 		print "File: ".$r->header("x-file-name")."\n";
+		use doclib::pdfidx;
+		my $pdfidx = pdfidx->new();
+		my $txt = $pdfidx->index_pdf($fn);
 		}
         },
         {

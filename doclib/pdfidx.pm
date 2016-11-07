@@ -591,7 +591,7 @@ sub pdf_icon {
     my $fn   = '"' . shift . '"';
     my $pn   = ( shift || 1 ) - 1;
     my $rot  = shift;
-    my $tmp = POSIX::tmpnam();
+    my $tmp= tmpnam();
     my @l;
 
     my @cmd = ( $convert, $fn."[$pn]", qw{-trim -normalize -thumbnail 100} );
