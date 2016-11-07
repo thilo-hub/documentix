@@ -13,6 +13,8 @@ my $pdfidx = pdfidx->new();
 
 my $use_popfile=1;
 
+my $only_listed=1;
+
 if($use_popfile){
     my $popf=eval {$pdfidx->pop_session()};
     unless ($popf)
@@ -36,9 +38,14 @@ my $get_f =
 my $new_f = $dh->prepare("insert or replace into file (md5,file,host) values(?,?,?)");
 
 $dh->do("begin transaction");
+$dh->do("create temporary table pfiles (idx,md5,file)")
+	if $only_listed;
 
 # read all files into index
 #foreach (@ARGV)
+
+my $ins_p1=$dh->prepare("insert into pfiles (idx,md5,file) select idx,md5,? from hash where idx=?");
+my $ins_p2=$dh->prepare("insert into pfiles (idx,md5,file) select idx,md5,? from hash where md5=?");
 while (<>) {
     s/\s*$//;
     next if /\.ocr.pdf$/;
@@ -49,17 +56,25 @@ while (<>) {
 
     #print "GOT: $inpdf\n" if $idx;
     print STDERR "." if $idx;
+    $ins_p1->execute($inpdf,$idx)
+	if $idx && $only_listed;
     next if $idx;
     flushdb($dh);
     my $md5_f = file_md5_hex($inpdf);
 
     $new_f->execute( $md5_f, $inpdf,hostname() );
-
+    $ins_p2->execute($inpdf,$md5_f)
+	if $only_listed;
     # print "NEW: $inpdf\n";
     print STDERR "+";
 }
 my $it_idx = $dh->prepare(
-    q{select idx,md5,file from hash natural join file order by idx desc});
+   ($only_listed ? 
+	    q{select idx,md5,file from pfiles order by idx desc}
+    :
+	    q{select idx,md5,file from hash natural join file order by idx desc}
+    )
+    );
 my $gt_md = $dh->prepare(q{select tag,value from metadata where idx=?});
 $it_idx->execute();
 my @list;
