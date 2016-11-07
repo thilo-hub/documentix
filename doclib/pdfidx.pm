@@ -6,6 +6,7 @@ use parent DBI;
 use DBI qw(:sql_types);
 use File::Temp qw/tempfile tmpnam tempdir/;
 use File::Basename;
+use Cwd;
 print STDERR ">>> pdfidx.pm\n";
 $File::Temp::KEEP_ALL = 1;
 my $mth   = 1;
@@ -264,7 +265,7 @@ sub w_load {
     return $err;
 }
 
-sub ocrpdf {
+sub ocrpdf3 {
     my $self = shift;
     my ( $inpdf, $outpdf, $ascii ) = @_;
     print STDERR "ocrpdf $inpdf $outpdf\n" if $debug >1;
@@ -344,6 +345,89 @@ sub ocrpdf {
     print STDERR "CMD: ".join(" ",@cmd,"\n");
     my $txt=qx( @cmd );
     unlink $tmp unless $debug >2;
+    return $txt;
+}
+
+sub ocrpdf {
+    my $self = shift;
+    my ( $inpdf, $outpdf, $ascii ) = @_;
+    print STDERR "ocrpdf $inpdf $outpdf\n" if $debug >1;
+    $inpdf=abs_path($inpdf);
+    $outpdf=abs_path($outpdf);
+    my $txt = undef;
+    my $fail=0;
+
+    # MX hack -with broken jpg
+    # pdfimages -all   ( extract all images into temp-dir )
+    # convert -density 300 -trim xpage-00$i.jpg  -quality 100  page-$i.jpg
+    # tesseract  page-$i.jpg  ypage-$i  pdf 
+    # pdfunite ypage-*.pdf z.pdf
+
+    my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
+    symlink ($inpdf,"$tmpdir/in.pdf");
+    my @cmd=(qw{pdftocairo -r 300 -jpeg}, "$tmpdir/in.pdf","$tmpdir/page");
+    print STDERR "CMD: ".join(" ",@cmd,"\n");
+    $fail += ( system( @cmd) ? 1 : 0);
+    unlink("$tmpdir/in.pdf");
+
+
+    my @inpages=glob($tmpdir->dirname."/page*");
+    foreach $in ( @inpages )
+    {
+	my $outpage=$tmpdir->dirname."/o-page-".$pg++;
+	my $outim=$in.".jpg";
+        if ( !$mth || ( $pid = fork() ) == 0 ) 
+	{
+            print STDERR "Conv $in\n";
+	    my @cmd=qw{convert %in -trim -quality 70 -flatten -sharpen 0x1.0 %out};
+	    map { s/%in/$in/g; s/%out/$outim/g;} @cmd;
+	    print STDERR "CMD: ".join(" ",@cmd,"\n");
+	    $fail += ( system( @cmd) ? 1 : 0);
+
+	    @cmd = ($tesseract,  $outim,$outpage, qw{ -l deu+eng+equ -psm 1 pdf});
+	    $msg .= "CMD: ".join(" ",@cmd,"\n");
+	    $outpage .= ".pdf";
+            $fail += ( system( @cmd) ? 1 : 0) unless -f $outpage;
+	    # die "Ups: $outpage" unless -f $outpage;
+
+	    print STDERR "Done $outpage\n";
+	    unlink ($in,$outim) unless $debug>2;
+            exit($fail) if $mth;
+            $errs += $fail;
+        }
+        $childs{$pid}++;
+        $errs += w_load($maxcpu);
+	$outpage .= ".pdf";
+	push @outpages,$outpage;
+    }
+    print STDERR "Wait..\n";
+    $errs += w_load(0) if $mth;
+    print STDERR "Done Errs:$errs\n";
+
+    return undef unless @outpages;
+
+    my @cpages;
+    foreach(@outpages)
+    {
+	push @cpages,$_ if -f $_;
+	#die "Failure: $_" unless -f $_;
+    }
+    return undef unless @cpages;
+
+    @cmd = (qw{ pdfunite }, @cpages, $outpdf); 
+    print STDERR "CMD: ".join(" ",@cmd,"\n");
+    $fail += ( system( @cmd) ? 1 : 0) unless -f $outpdf;
+    # die "Failure generating $outpdf" unless -f $outpdf;
+    unlink(@outpages) unless $debug>2;
+
+    my $tmp= "$tmpdir/out.pdf";
+    symlink($outpdf,$tmp);
+    @cmd=($pdftotext,$tmp,"-");
+    
+    print STDERR "CMD: ".join(" ",@cmd,"\n");
+    my $txt=qx( @cmd );
+    unlink $tmp unless $debug >2;
+    rmdir $tmpdir unless $debug>2;
     return $txt;
 }
 
@@ -440,25 +524,20 @@ sub pdf_totext {
     my $fn   = shift;
     print STDERR " pdf_totext $fn\n" if $debug >1;
 
+    $fn=abs_path($fn);
     $fn =~ s/\.ocr\.pdf$/.pdf/;
     my $ocrpdf=$fn;
     $ocrpdf =~ s/\.pdf$/.ocr.pdf/;
     die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
 
-    my ($fh, $filename) = tempfile( $template, SUFFIX => '.pdf');
   
 
     if ( -r $ocrpdf )
     {
-	$filename=$ocrpdf;
+	$fn=$ocrpdf;
     }
-    else
-    {
-	my @cmd=($pdfopt, $fn, $filename);
-	system(@cmd);
-    }
-    my $tmp= tmpnam();
-    symlink($filename,$tmp);
+    my $tmp= tmpnam().".pdf";
+    symlink($fn,$tmp);
     @cmd=($pdftotext,$tmp,"-");
     my $txt=qx( @cmd );
     unlink $tmp unless $debug >2;
