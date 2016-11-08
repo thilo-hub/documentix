@@ -6,7 +6,7 @@ use parent DBI;
 use DBI qw(:sql_types);
 use File::Temp qw/tempfile tmpnam tempdir/;
 use File::Basename;
-use Cwd;
+use Cwd 'abs_path';
 print STDERR ">>> pdfidx.pm\n";
 $File::Temp::KEEP_ALL = 1;
 my $mth   = 1;
@@ -448,19 +448,19 @@ sub index_pdf {
     my ($idx) =
       $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
 
-    return $idx if $idx;   # already indexed -- TODO:potentially check timestamp
+    #return $idx if $idx;   # already indexed -- TODO:potentially check timestamp
 
     # $dh->do("begin exclusive transaction");
-    $dh->prepare("insert into file (md5,file) values(?,?)")
+    $dh->prepare("insert or ignore into file (md5,file) values(?,?)")
       ->execute( $md5_f, $fn );
 
-    $idx = $dh->last_insert_id( "", "", "", "" );
+    # $idx = $dh->last_insert_id( "", "", "", "" );
+    my ($idx) = $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
     print STDERR "Loading: ($idx) $fn\n";
 
-# my ($idx) = $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
 
-    my $thumb = $self->pdf_thumb($fn);
-    my $ico   = $self->pdf_icon($fn);
+    my $thumb = eval { $self->pdf_thumb($fn)};
+    my $ico   = eval { $self->pdf_icon($fn)};
     if (0) {
         my $ins_d =
           $dh->prepare("insert into data (idx,thumb,ico) values(?,?,?)");
@@ -472,12 +472,24 @@ sub index_pdf {
     my %meta;
     $meta{"Docname"} = $fn;
     $meta{"Docname"} =~ s/^.*\///s;
-    $meta{"Text"} = $self->pdf_text( $fn, $md5_f );
-    $meta{"Text"} =~ m/^\s*(([^\n]*\n){24}).*/s;
-    $meta{"Content"} = $1;
+    $self->{"file"}=$fn;
+    $self->{"idx"}=$idx;
+    chomp(my $type=qx|file -b --mime-type "$self->{file}"|);
+    $meta{"Mime"} = $type;
+    my %mime_handler=(
+	    "application/x-gzip" => \&tp_gzip,
+	    "application/pdf"    => \&tp_pdf
+	    );
+
+    $type = $mime_handler{$type}($self,\%meta)
+	    while $mime_handler{$type};
+
+    print STDERR " -> $type\n";
+
+
+
     $meta{"mtime"}   = ( stat($fn) )[9];
     $meta{"hash"}    = $md5_f;
-    $meta{"pdfinfo"} = $self->pdf_info($fn);
     $meta{"Image"}   = '<img src="?type=thumb&send=#hash#">';
     ( $meta{"PopFile"}, $meta{"Class"} ) =
       ( $self->pdf_class( $fn, \$meta{"Text"}, $meta{"hash"} ) );
@@ -486,23 +498,41 @@ sub index_pdf {
     foreach ( keys %meta ) {
         $self->ins_e( $idx, $_, $meta{$_} );
     }
-    if (0) {
-
-        # load and fill file-template
-        my $tpl = slurp("/home/thilo/public_html/fl/t2/templ_doc.html");
-
-        #my $tpl=slurp("template_pdf.html");
-        $tpl = expand_templ( $dh, $tpl, \%meta );
-
-#BADBAD $tpl = sprintf "Content-Type: text/html; charset=utf-8\nContent-Length: %d\n\n%s", length($tpl), $tpl;
-        $dh->prepare(q{update data set html=? where idx=? })
-          ->execute( $tpl, $idx );
-    }
-
     # $dh->do("commit");
     $meta{"thumb"} = \$thumb;
     $meta{"ico"}   = \$ico;
     return $idx, \%meta;
+
+    sub tp_gzip
+    {
+	    my $self=shift;
+	    my $i=$self->{"file"};
+	    $self->{"fh"} = File::Temp->new(SUFFIX => '.pdf');
+	    $self->{"file"} = $self->{"fh"}->filename;
+	    qx|gzip -dc $i > "$self->{file}"|;
+	    chomp(my $type=qx|file -b --mime-type "$self->{file}"|);
+	    return $type;
+    }
+    sub tp_pdf
+    {
+	my $self=shift;
+	my $meta=shift;
+	    my $t = $self->pdf_text( $self->{"file"}, $meta->{"md5"} );
+	    if ($t) {
+		$self->ins_e( $self->{"idx"}, "Text", $t );
+
+		# short version
+		$t =~ m/^\s*(([^\n]*\n){24}).*/s;
+		my $c = $1 || "";
+		$self->ins_e( $self->{"idx"}, "Content", $c );
+		$meta->{"Text"}->{"value"}    = $t;
+		$meta->{"Content"}->{"value"} = $c;
+		$meta->{"pdfinfo"} = $self->pdf_info($fn);
+	    }
+      my $l=length($t) || "-FAILURE-";
+      return "FINISH ($l)";
+    }
+
 }
 
 sub ins_e {
@@ -530,7 +560,7 @@ sub pdf_totext {
     $ocrpdf =~ s/\.pdf$/.ocr.pdf/;
     die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
 
-  
+    undef $ocrpdf if $ocrpdf eq $fn;
 
     if ( -r $ocrpdf )
     {
@@ -834,30 +864,6 @@ sub slurp {
     open( my $fh, "<" . shift )
       or return "File ?";
     return <$fh>;
-}
-
-sub pdf_process {
-    my $self = shift;
-    my ( $fn, $op, $tmpdir, $outf ) = @_;
-    my $ol = "";
-    $spdf = PDF::API2->open($fn) || die "Failed open: $? *$fn*";
-    $pdf  = PDF::API2->new()     || die "No new PDF $?";
-
-    foreach ( split( /,/, $op ) ) {
-        next if s/D$//;    # delete
-        next unless s/^(\d+)([RUL]?)//;
-        my $att = 0;
-        $att = "90"  if $2 eq "R";
-        $att = "180" if $2 eq "U";
-        $att = "270" if $2 eq "L";
-        $pdf->importpage( $spdf, $1, 0 );
-        if ($att) {
-            my $p = $pdf->openpage(0);
-            $p->rotate($att);
-        }
-    }
-    use Cwd 'abs_path';
-    $pdf->saveas("$tmpdir/out.pdf");
 }
 
 
