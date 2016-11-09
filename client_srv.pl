@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+#copyright Thilo Jeremias
 
 use strict;
 use warnings;
