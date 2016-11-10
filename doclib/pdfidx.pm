@@ -451,8 +451,8 @@ sub index_pdf {
     #return $idx if $idx;   # already indexed -- TODO:potentially check timestamp
 
     # $dh->do("begin exclusive transaction");
-    $dh->prepare("insert or ignore into file (md5,file) values(?,?)")
-      ->execute( $md5_f, $fn );
+    $dh->prepare("insert or ignore into file (md5,file,host) values(?,?,?)")
+      ->execute( $md5_f, $fn,hostname() );
 
     # $idx = $dh->last_insert_id( "", "", "", "" );
     my ($idx) = $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
