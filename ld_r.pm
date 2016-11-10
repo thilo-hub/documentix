@@ -34,9 +34,39 @@ sub new {
         $self->{pd}= pdfidx->new();
         $self->{dh}= $self->{pd}->{dh};
 	setup_db($self->{dh});
+	update_caches($self);
 	return bless $self, $class;
 }
 
+#
+# Update search results for new documents
+sub update_caches
+{
+    my $self=shift;
+    my $dh=$self->{"dh"};
+
+    my @sql=(
+    q{ create temporary table cache_q1 as
+    select a.*,b.docid idx,snippet(text) snippet  from cache_lst a,text b 
+           where text match a.query and idx > 
+                     (select value from config where var="max_idx") ;},
+    q{ create temporary table cache_q2 as select qidx,count(*) n from cache_q1 group by qidx;},
+    q{ insert or replace into cache_q (qidx,idx,snippet) select qidx,idx,snippet from cache_q1;},
+    q{ insert or replace into cache_lst (qidx,query,nresults,last_used) select qidx,query,nresults+n,last_used 
+	from cache_lst natural join cache_q2;},
+    q{ insert or replace  into config (var,value) select "max_idx",max(idx) from hash;},
+    q{drop table cache_q1},
+    q{drop table cache_q2},
+    );
+
+    foreach (@sql)
+    {
+	#print "$_\n";
+	$dh->do($_) or die "Error $_";
+    }
+
+
+}
   
 
 sub trace_db {

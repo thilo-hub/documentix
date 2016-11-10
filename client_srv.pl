@@ -203,6 +203,7 @@ sub get_pg {
 		use doclib::pdfidx;
 		my $pdfidx = pdfidx->new();
 		my $txt = $pdfidx->index_pdf($fn);
+		$ld_r->update_caches();
 		}
         },
         {
@@ -262,7 +263,7 @@ sub get_pg {
             p  => '/+(.*)',
             cb => sub {
                 my $c = shift;
-print  Dumper($c);
+#print  Dumper($c);
 	        my $f = ".".$c -> {request}->uri->path;
 		return HTTP::Message->parse(qx{$f})->content()
 			if ( $f =~ /\.cgi$/ && -x $f );
