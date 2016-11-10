@@ -13,18 +13,20 @@ use HTTP::Status;
 use POSIX qw/ WNOHANG /;
 use ld_r;
 use feed;
+use tags;
 use Fcntl qw(:flock SEEK_END);
 
 use constant HOSTNAME => qx{hostname};
 
-open(my $fh,"/tmp/xx.lock");
+
+open(my $fhx,">/tmp/xx.lock") || die "No Open";
 
 sub lock {
-	flock($fh, LOCK_EX) or die "Cannot lock mailbox - $!\n";
+	flock($fhx, LOCK_EX) or die "Cannot lock mailbox - $!\n";
 }
 
 sub unlock {
-	flock($fh, LOCK_UN) or die "Cannot unlock mailbox - $!\n";
+	flock($fhx, LOCK_UN) or die "Cannot unlock mailbox - $!\n";
 }
 
 my ($i,$p)=split(/:/,$ARGV[0] || "127.0.0.1:8080");
@@ -46,7 +48,8 @@ my $d = HTTP::Daemon->new(
 
 print "Started HTTP listener at " . $d->url . "\n";
 
-# system("open http://$O{'listen-host'}:$O{'listen-port'}/");
+system("open http://$O{'listen-host'}:$O{'listen-port'}/")
+	if ( $^O =~ /darwin/);
 my %chld;
 
 if ( $O{'listen-clients'} ) {
@@ -92,6 +95,7 @@ sub http_child {
     my $ld_r=ld_r->new();
     my $feed=feed->new();
     my @pages = get_pg();
+    my $tags=tags->new();
 
     my $i;
     while ( ++$i < $O{'listen-max-req-per-child'} ) {
@@ -125,6 +129,7 @@ sub http_child {
         my $ro;
         $ro->{"request"} = $r;
         $ro->{"args"}    = $arg;
+        $ro->{"q"}       = $r->uri->as_iri."&".$r->content;
         foreach my $g (@pages) {
             if ( $r->uri->path =~ /^$g->{p}$/ ) {
                 $ENV{'PATH_INFO'} = $1;
@@ -239,10 +244,25 @@ sub get_pg {
 		return $m;
             }
         },
+	{
+            p  => '/tags.cgi',
+            cb => sub {
+                my $c = shift;
+                my $r = shift;
+                my $a = $c->{"args"};
+
+		lock();
+                my $m= $tags->add_tag($c->{"args"});
+		unlock();
+
+		return $m;
+            }
+        },
         {
             p  => '/+(.*)',
             cb => sub {
                 my $c = shift;
+print  Dumper($c);
 	        my $f = ".".$c -> {request}->uri->path;
 		return HTTP::Message->parse(qx{$f})->content()
 			if ( $f =~ /\.cgi$/ && -x $f );

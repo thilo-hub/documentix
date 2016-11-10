@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use Data::Dumper;
-use WWW::Authen::Simple;
+# use WWW::Authen::Simple;
 use doclib::pdfidx;
 use Cwd 'abs_path';
 use CGI;
@@ -18,17 +18,18 @@ my $pdfidx = pdfidx->new();
 # put them into a cookie
 my @mycookies;
 
-my $auth = WWW::Authen::Simple->new(
-    db             => $pdfidx->{"dh"},
-    expire_seconds => 9999,
-    cookie_domain  => $ENV{"SERVER_NAME"}
-);
-my ( $user, $uid ) = check_auth($q);
+# my $auth = WWW::Authen::Simple->new(
+#     db             => $pdfidx->{"dh"},
+#     expire_seconds => 9999,
+#     cookie_domain  => $ENV{"SERVER_NAME"}
+# );
+# my ( $user, $uid ) = check_auth($q);
 
 #===== AUTHENTICATED BELOW ===========
 my $dh = $pdfidx->{"dh"};
 print $q->header( -charset => 'utf-8' )    # , -cookie=> \@mycookies),,
   ;
+print STDERR Dumper(\%ENV);
 my $json_text = $q->param('json_string');
 if ($json_text) {
     my $json        = JSON::PP->new->utf8;
@@ -54,17 +55,17 @@ if ($json_text) {
 print $q->start_html, "Tag added";
 print $q->end_html;
 exit 0;
-
-sub check_auth {
-    my $q = shift;
-    $auth->logout() if $q->param('Logout');
-
-    my ( $s, $user, $uid ) =
-      $auth->login( $q->param('user'), $q->param('passwd') );
-    if ( $s != 1 ) {
-        do "login.cgi";
-        exit 0;
-    }
-    return ( $user, $uid );
-}
-
+#
+#sub check_auth {
+#    my $q = shift;
+#     $auth->logout() if $q->param('Logout');
+#
+#    my ( $s, $user, $uid ) =
+#      $auth->login( $q->param('user'), $q->param('passwd') );
+#    if ( $s != 1 ) {
+#        do "login.cgi";
+#        exit 0;
+#    }
+#    return ( $user, $uid );
+#}
+#
