@@ -18,9 +18,12 @@ $(function () {
     $('.p_content:visible').slideUp("slow");
     $('#result').append(data);
     var el=$('#page_'+idx.toString());
-    $('#msg').append("<p>"+idx+"</p>");
+    $('#msg').html("Item:<p>"+idx+"</p>");
     $('#set_page').html($(el).find('#pages').html());
-    $('#taglist').html($(el).find('#classes').html());
+    var tl= $(el).find('#classes').html();
+    if ( $('#taglist').html() != tl ) {
+	    $('#taglist').html(tl);
+    }
   }
 
 // request/save/cache pages to the same result set

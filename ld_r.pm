@@ -397,8 +397,9 @@ sub get_cell {
 
     # print STDERR "TIP:$tip\n";
 
+my $docsrv="ts2";
 $meta->{PopFile}->{value} =~ s|http://$docsrv|$q->url(-base=>'1')|e
- if $meta->{PopFile};;
+ if $meta->{PopFile} && $meta->{PopFile}->{value};
     my $day = $d;
     $day =~ s/\s+\d+:\d+:\d+\s+/ /;
 

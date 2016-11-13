@@ -215,13 +215,13 @@ sub get_pg {
             }
         },
         {
-            p  => '/docs(/.*)',
+            p  => '/docs/([^/]+)/([^/]+)/(.*)',
             cb => sub {
                 my $c = shift;
                 print "feed.cgi $1\n";
 
 		lock();
-                my $r = HTTP::Message->new( $feed->feed_m( undef, undef, $1 ) );
+                my $r = HTTP::Message->new( $feed->feed_m( $2, $1, $3 ) );
 		unlock();
                 my $rp =
                   HTTP::Response->new( RC_OK, undef, $r->headers, $r->content );
