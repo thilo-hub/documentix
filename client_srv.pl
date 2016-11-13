@@ -15,9 +15,11 @@ use ld_r;
 use feed;
 use tags;
 use Fcntl qw(:flock SEEK_END);
+use doclib::pdfidx;
 
 use constant HOSTNAME => qx{hostname};
 
+$main::debug=0;
 
 open(my $fhx,">/tmp/xx.lock") || die "No Open";
 
@@ -36,7 +38,7 @@ my %O = (
     'listen-host' => $i,
     # 'listen-host'              => '127.0.0.1',
     'listen-port'              => $p,
-    #'listen-clients'           => 20,
+    'listen-clients'           => 8,
     'listen-max-req-per-child' => 100,
 );
 
@@ -96,6 +98,7 @@ sub http_child {
     my $feed=feed->new();
     my @pages = get_pg();
     my $tags=tags->new();
+    my $pdfidx = pdfidx->new();
 
     my $i;
     while ( ++$i < $O{'listen-max-req-per-child'} ) {
@@ -191,17 +194,25 @@ sub get_pg {
 		my $n=$r->header("x-file-name");
 		$n =~ s/[^a-zA-Z0-9._\-]/_/g;
 
+		my $nfh=$pdfidx->get_file($digest);
+		if ( $nfh ) {
+			print STDERR "File known\n";
+			if ( -r $nfh ){
+				print STDERR "File available ($nfh)\n";
+				return;
+			}
+		}
+
 		my $fn="incomming";
 		mkdir $fn or die "No dir: $fn" unless -d $fn ;
                 $fn .="/$digest";
 		mkdir $fn or die "No dir: $fn" unless -d $fn ;
 		$fn .="/$n";
+			
 		open(my $f,">",$fn) or die "No open $fn";
 		print $f $r->content();
 		close($f);
 		print "File: ".$r->header("x-file-name")."\n";
-		use doclib::pdfidx;
-		my $pdfidx = pdfidx->new();
 		my $txt = $pdfidx->index_pdf($fn);
 		$ld_r->update_caches();
 		}
@@ -218,7 +229,7 @@ sub get_pg {
             p  => '/docs/([^/]+)/([^/]+)/(.*)',
             cb => sub {
                 my $c = shift;
-                print "feed.cgi $1\n";
+                print "feed.cgi $1\n" if $main::debug >0;
 
 		lock();
                 my $r = HTTP::Message->new( $feed->feed_m( $2, $1, $3 ) );

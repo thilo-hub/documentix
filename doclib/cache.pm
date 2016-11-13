@@ -12,7 +12,7 @@ sub new {
     my $user   = "";
     my $pass   = "";
     my $class  = shift;
-    return $db_con if $db_con;
+    # return $db_con if $db_con;
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
     print STDERR "New db conn: $dh\n";

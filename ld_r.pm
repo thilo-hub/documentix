@@ -46,6 +46,7 @@ sub update_caches
     my $dh=$self->{"dh"};
 
     my @sql=(
+    q{ create table if not exists config (var primary key unique,value)},
     q{ create temporary table cache_q1 as
     select a.*,b.docid idx,snippet(text) snippet  from cache_lst a,text b 
            where text match a.query and idx > 
@@ -59,11 +60,13 @@ sub update_caches
     q{drop table cache_q2},
     );
 
+    $dh->do("begin exclusive transaction");
     foreach (@sql)
     {
 	#print "$_\n";
 	$dh->do($_) or die "Error $_";
     }
+    $dh->do("commit");
 
 
 }
@@ -361,7 +364,7 @@ sub get_cell {
 "select tagname from hash natural join tags natural join tagname where md5=\"$md5\"";
     $tags = $dh->selectall_hashref( $tags, 'tagname' );
     $tags = join( ",", sort keys %$tags );
-    $tags = $q->p(
+    $tags = $q->p( {-class => "tagfield"},
         $q->input(
             {
                 -name  => "tags",
@@ -380,8 +383,8 @@ sub get_cell {
 
     # build various URLS
     #my $pdf    = "docs/pdf/$md5/$short_name";
-    my $pdf    = "web/viewer.html?file=../docs/pdf/$md5/$short_name";
-    my $pdf2    = "docs/pdf/$md5/$short_name";
+    my $pdf    = "web/viewer.html?file=../docs/raw/$md5/$short_name#pagemode=thumb";
+    my $pdf2    = "docs/raw/$md5/$short_name";
     my $lowres = "docs/lowres/$md5/$short_name";
 
     #my $ico    = qq{<img src='docs/ico/$md5/$short_name'};

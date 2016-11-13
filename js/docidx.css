@@ -13,6 +13,7 @@ div.results {border: none; width:100%; height:100%; float: right }
 a.doclink {border: green;color: green; word-wrap: break-word}
 div.rcell { border: none; background-color: #f83}
 a.dtags { background-color:#333}
+.tagfield{ background-color:#ddd}
 .tagbox{ background-color:transparent; border:none;font-style:italic; padding:1px}
 img.thumb{width:100%;padding-right:10px}
 a.thumb { border: none; width:100%; float:left;}

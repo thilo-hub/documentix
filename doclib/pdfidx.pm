@@ -4,6 +4,7 @@ use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 
 use parent DBI;
 use DBI qw(:sql_types);
+use Sys::Hostname;
 use File::Temp qw/tempfile tmpnam tempdir/;
 use File::Basename;
 use Cwd 'abs_path';
@@ -42,11 +43,9 @@ sub new {
     my $user   = "";
     my $pass   = "";
     my $class  = shift;
-    return $db_con if $db_con;
+    # return $db_con if $db_con;
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
-    #DBI->trace(1, "/tmp/n.trace");
-    #trace_db($dh);
     print STDERR "New db conn: $dh\n";
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
     $self->{"setup_db"} = \&setup_db;
@@ -159,9 +158,9 @@ sub get_file {
 
     my $q = "select file from file where md5=?";
     # print STDERR "$q : $md5\n";
-    # $dh->do("begin exclusive transaction");
+    $dh->do("begin exclusive transaction");
     my $fn = $dh->selectcol_arrayref( $q, undef, $md5 );
-    # $dh->do("commit");
+    $dh->do("commit");
     foreach (@$fn) {
         # return the first readable
         return $_ if -r $_;
@@ -473,14 +472,16 @@ sub index_pdf {
     $meta{"Docname"} = $fn;
     $meta{"Docname"} =~ s/^.*\///s;
     $self->{"file"}=$fn;
+ die "Bad filename: $fn" if $fn =~ /'/;
     $self->{"idx"}=$idx;
-    chomp(my $type=qx|file -b --mime-type "$self->{file}"|);
+    chomp(my $type=qx|file -b -i '$self->{file}'|);
     $meta{"Mime"} = $type;
     my %mime_handler=(
 	    "application/x-gzip" => \&tp_gzip,
 	    "application/pdf"    => \&tp_pdf
 	    );
 
+    $type =~ s/;.*//;
     $type = $mime_handler{$type}($self,\%meta)
 	    while $mime_handler{$type};
 
@@ -495,6 +496,7 @@ sub index_pdf {
       ( $self->pdf_class( $fn, \$meta{"Text"}, $meta{"hash"} ) );
 
     $meta{"keys"} = join( ' ', keys(%meta) );
+# die Dumper(\%meta)." DEBUG";
     foreach ( keys %meta ) {
         $self->ins_e( $idx, $_, $meta{$_} );
     }
@@ -525,8 +527,8 @@ sub index_pdf {
 		$t =~ m/^\s*(([^\n]*\n){24}).*/s;
 		my $c = $1 || "";
 		$self->ins_e( $self->{"idx"}, "Content", $c );
-		$meta->{"Text"}->{"value"}    = $t;
-		$meta->{"Content"}->{"value"} = $c;
+		$meta->{"Text"}    = $t;
+		$meta->{"Content"} = $c;
 		$meta->{"pdfinfo"} = $self->pdf_info($fn);
 	    }
       my $l=length($t) || "-FAILURE-";
@@ -644,7 +646,7 @@ sub pdf_icon {
     }
     print STDERR "X:" . join( " ", @cmd ) . "\n";
     my $png = qx{@cmd};
-    print STDERR "L:" .length($png) . "\n";
+    print STDERR "L:" .length($png) . "\n" if $main::debug>1;
     unlink @l if @l;
     if ( length($png) <= 900 ) {
 	print STDERR "FAILURE:\n";
@@ -774,7 +776,7 @@ sub pdf_class2 {
     unlink($tmp_doc);
     my $res = $resv->result;
     use Data::Dumper;
-    die "ups: $tmp_out" . Dumper($resv) unless $res;
+    die "ups: $tmp_out" . Dumper($resv)."  " unless $res;
     my $ln = undef;
 
     unless ($classify) {
@@ -814,7 +816,7 @@ sub pdf_class {
     print $fh "File:  $fn\n";
     print $fh "Message-ID: $md5\n";
     print $fh "\n";
-    print $fh "$xinfo";
+    # print $fh "$xinfo";
 
     # print $fh "$p\n";
     my $tx = substr( $$txt, 0, 100000 );
@@ -842,7 +844,7 @@ sub pdf_class {
       ->call( 'POPFile/API.release_session_key', $sk );
     my $res = $resv->result;
     use Data::Dumper;
-    die "ups: $tmp_out" . Dumper($resv) unless $res;
+    die "ups: $tmp_out" . Dumper($resv)."  " unless $res;
     my $ln = undef;
 
     unless ($classify) {
@@ -850,7 +852,7 @@ sub pdf_class {
             ( $ln = $1, last ) if m/X-POPFile-Link:\s*(.*?)\s*$/;
         }
 
-        # print STDERR "$r\nLink: $ln\n";
+        print STDERR "$r\nLink: $ln\n";
     }
     pop_release();
     close($fh_out);
