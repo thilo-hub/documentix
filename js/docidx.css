@@ -29,6 +29,7 @@ div.descr { border: none; background:transparent; width:68%; float: left;padding
 #query{ float: left; border: solid grey}
 #pages{ display:none; position:fixed; width:100% ; border:  inset red}
 #classes { display:none; border:blue }
+.hidden{display:none}
 
 input.tagbox_l { border:1px solid #CCC; background: #cccc00; padding:2px; border-radius: 10px;} 
 unsel { background: #cccccc; }

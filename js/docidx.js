@@ -1,7 +1,20 @@
 var idx = 1;
+var whileLoading = 0;
 var clname = "";
 var nsrch = "";
 $(function () {
+     $(window).scroll(function() {
+	if ( whileLoading )
+		return;
+        var pixelsFromWindowBottomToBottom = 0 + $(document).height() - $(window).scrollTop() -  $(window).height();
+        if ( pixelsFromWindowBottomToBottom > 500 )
+		return;
+	var n=$('#nextpage').html();
+	whileLoading = 1;
+	idx=n;
+        update_res();
+	// alert(pixelsFromWindowBottomToBottom + " --> " + n);
+});
   $.get("ldres.cgi",function(data) {
 	load_result( idx,"<div class='p_content' id='page_"+idx.toString()+"'>"+data+"</div>")});
   $("#search").keypress(function (event) {
@@ -15,15 +28,30 @@ $(function () {
 
 //  callback when new data arrive
   function load_result(idx,data) {
-    $('.p_content:visible').slideUp("slow");
-    $('#result').append(data);
+
+    // We get multiple blocks
+    // a) tags
+    // b) page info
+    // c) query results
+
+    $('#tmpstore').html(data);
+    var nitm=$('#X_results');
+    var itm=$('#tmpstore').find('#X_results');
+    $('#result').append(itm);
+
+    // update page indicator
     var el=$('#page_'+idx.toString());
     $('#msg').html("Item:<p>"+idx+"</p>");
     $('#set_page').html($(el).find('#pages').html());
+
+    // update tags
     var tl= $(el).find('#classes').html();
     if ( $('#taglist').html() != tl ) {
 	    $('#taglist').html(tl);
     }
+    $('#tmpstore').html("");
+
+    whileLoading = 0;
   }
 
 // request/save/cache pages to the same result set
@@ -44,13 +72,10 @@ $(function () {
       params += "&class=" + clname;
     };
     // debug
-    $.post("doclib/env.cgi", params, function (data) {
-      $('#msg').html(data);
-    });
+    // $.post("doclib/env.cgi", params, function (data) { $('#msg').html(data); });
     $.post("ldres.cgi", params,
       function (data) {
         load_result( idx,"<div class='p_content' id='page_"+idx.toString()+"'>"+data+"</div>");
-      	// $("#result").data(idx.toString(), $('#set_page').html());
 
       }
     );
@@ -71,27 +96,8 @@ $(function () {
   })
   $('#set_page').click(function (e) {
     if ($(e.target).hasClass("pageno")) {
-      var oidxs=idx.toString();
-      var opage=$('.p_content#page_'+oidxs);
-      if ( ! $("#result").data(oidxs) )
-	{
-	    $("#result").data(oidxs, $('#set_page').html());
-	 }
-
-      // new index
       idx = e.target.id;
-      var idxs=idx.toString();
-      var r = $("#result").data(idxs);
-      if (r) {
-	  var npage=$('.p_content#page_'+idxs);
-	  $('.p_content#page_'+oidxs).slideUp("slow");
-	  $('.p_content#page_'+idxs).slideDown("slow");
-	  $('#set_page').html(r);
-	  // opage.slideUp("slow");
-	  // npage.slideUp("slow");
-      } else {
-        update_res();
-      }
+      update_res();
     }
   });
   $('#tags').tagsInput({
@@ -141,8 +147,5 @@ $(function () {
 
 				    	})
       }
-  })
-})
-
-
-
+  });
+});
