@@ -15,7 +15,7 @@ my $docsrv = "ts2.nispuk.com";
 my $__meta_sel;
 my $q       = CGI->new;
 my $ncols   = 2;
-my $entries = 9;
+my $entries = 10;
 
 use Sys::Hostname;
 my $myhost=hostname();
@@ -275,7 +275,7 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
     $res .= "<br>";
     $res .=
       $q->div(
-        $q->ul( { -id => "X_results" }, $q->div( {-id=> "XX"}, $q->li( { -class => "rbox" }, $out )) )
+        $q->ul( { -id => "X_results" }, $q->li( { -class => "rbox" }, $out ) )
       );
     $res .= $q->end_html;
 
@@ -297,7 +297,7 @@ sub pages {
     my $lo = $pi - int( $entries / 2 );
     $lo = $p0 if $lo < 1;
     my $hi = $lo + $entries;
-    $hi = $last_p if $hi > $last_p;
+    $hi = $last_p+1 if $hi > $last_p;
 
     push @pgurl, $q->button( -class => 'pageno', -value => "<<", -id => 1 );
     push @pgurl,
@@ -328,8 +328,7 @@ sub pages {
         -value => ">>",
         -id    => ( $last_p - 1 ) * $ppage + 1
       );
-    push @pgurl, $q->div({-id => 'nextpage', -class => 'hidden'} ,($next_p -1)*$ppage+1)
-	if ( $next_p < $last_p);
+    push @pgurl, $q->div({-id => 'nextpage', -class => 'hidden'} ,($next_p -1)*$ppage+1);
     return join( "", @pgurl );
     return $q->table( $q->Tr( $q->td( \@pgurl ) ) );
 }

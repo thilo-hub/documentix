@@ -1,91 +1,29 @@
-var idx = 1;
 var whileLoading = 0;
-var first_idx = 1;
+var first_item = -1;
+var next_item = -1;
 var clname = "";
 var nsrch = "";
+var reload_limit = 500;
 $(function () {
-     $(window).scroll(function() {
-	if ( whileLoading )
-		return;
-        var pixelsFromWindowBottomToBottom = 0 + $(document).height() - $(window).scrollTop() -  $(window).height();
-        if ( pixelsFromWindowBottomToBottom > 500 )
-		return;
-	var n=$('#nextpage').html();
-	whileLoading = 1;
-	idx=n;
-        update_res();
-	// alert(pixelsFromWindowBottomToBottom + " --> " + n);
-});
-  $.get("ldres.cgi",function(data) {
-	load_result( idx,"<div class='p_content' id='page_"+idx.toString()+"'>"+data+"</div>")});
+  $(window).scroll(function() {
+	check_reload();
+      });
+
+  // Initial load
+  $.get("ldres.cgi",function(data) { load_result( 1,data);});
+
+  // React on return button in search
   $("#search").keypress(function (event) {
     if (event.keyCode == 13) { // return in search box
-      $("#search").blur();
-      idx = 1;
-      clname = "";
-      update_res();
+	$("#search").blur();
+	// reset class filter
+	clname = "";
+	next_item=-1;
+	load_page(1);
     }
   });
 
-//  callback when new data arrive
-  function load_result(idx,data) {
-
-    // We get multiple blocks
-    // a) tags
-    // b) page info
-    // c) query results
-
-    $('#tmpstore').html(data);
-    var nitm=$('#X_results');
-    var itm=$('#tmpstore').find('#X_results');
-    $('#result').append(itm);
-
-    // update page indicator
-    var el=$('#page_'+idx.toString());
-    $('#msg').html("Item:<p>"+idx+"</p>");
-    $('#set_page').html($(el).find('#pages').html());
-
-    // update tags
-    var tl= $(el).find('#classes').html();
-    if ( $('#taglist').html() != tl ) {
-	    $('#taglist').html(tl);
-    }
-    $('#tmpstore').html("");
-
-    whileLoading = 0;
-  }
-
-// request/save/cache pages to the same result set
-// remove cache if search is different
-  function update_res() {
-    var params = "";
-    if (idx > 0) {
-      params += "idx=" + idx;
-    };
-    var sv = $("#search").val();
-    if (nsrch != sv) {
-      $("#result").html("");
-      $("#result").removeData();
-      idx = 1;
-      nsrch = sv;
-    }
-    if ( idx < first_idx )
-	first_idx = idx;
-    params += "&search=" + sv;
-    if (clname) {
-      params += "&class=" + clname;
-    };
-    // debug
-    // $.post("doclib/env.cgi", params, function (data) { $('#msg').html(data); });
-    $.post("ldres.cgi", params,
-      function (data) {
-        load_result( idx,"<div class='p_content' id='page_"+idx.toString()+"'>"+data+"</div>");
-
-      }
-    );
-
-  }
-
+  // react on filter tags
   $('#taglist').click(function (e) {
     if ($(e.target).hasClass("tagbox")) {
       var ncl = $(e.target).val();
@@ -94,20 +32,14 @@ $(function () {
         $("#result").removeData();
       }
       clname = ncl;
-      idx = 1;
-      update_res();
+      next_item = -1;
+      load_page(1);
     }
   })
+  // react on page-no click
   $('#set_page').click(function (e) {
     if ($(e.target).hasClass("pageno")) {
-       if ( e.target.id > idx || e.target.id < first_idx )
-       {
-        $("#result").html("");
-        $("#result").removeData();
-	first_idx = e.target.id;
-      }
-      idx = e.target.id;
-      update_res();
+      show_page(e.target.id);
     }
   });
   $('#tags').tagsInput({
@@ -158,4 +90,126 @@ $(function () {
 				    	})
       }
   });
+// Check if we need to load more based on
+// viewport
+var last_e=-1;
+
+function  check_reload() {
+	if ( whileLoading )
+		return;
+	w_top = $(window).scrollTop();
+        w_bot = w_top + $(window).height();
+	if ( last_e < w_top || last_e > w_bot )
+	{
+	    var e;
+	    $('#result .page_sep').each(
+		function(id,el) 
+		{
+		    e_li=$(el).find(' li').offset().top;
+		    if ( e_li > w_top && e_li < w_bot )
+		    {
+			e = $(el).attr('id');
+			last_e = e_li;
+			return false;
+			 // $('#msg').append("  "+id+" : "+e_li+ " :" + e + "<br>");
+		    }
+		}
+	    );
+	    $('#set_page').html(
+		$("#"+e).data('p'));
+	    //last_e=$(e);
+	}
+
+        var pixelsFromWindowBottomToBottom = 0 + $(document).height() - w_bot;
+        if ( pixelsFromWindowBottomToBottom > reload_limit )
+	{
+	    return;
+	}
+	whileLoading = 1;
+        load_page(next_item);
+}
+// request/save/cache pages to the same result set
+// remove cache if search is different
+  function show_page(page) {
+	if ( page < first_item || page > next_item )
+		return load_page(page);
+	btn='#page_' + page;
+        $('html body').animate({scrollTop: $(btn + ' li').offset().top},2000)
+
+  }
+  function load_page(page) {
+    var params = "";
+    if (page > 0) {
+      params += "idx=" + page;
+    };
+    var sv = $("#search").val();
+    if (nsrch != sv) {
+      next_item = -1;
+      nsrch = sv;
+    }
+    params += "&search=" + sv;
+    if (clname) {
+      params += "&class=" + clname;
+    };
+    $.post("ldres.cgi", params,
+      function (data) { load_result( page,data); }
+    );
+
+  }
+//  callback when new data arrive
+  function load_result(idx,data) {
+
+    // We get multiple blocks
+    // a) tags
+    // b) page info
+    // c) query results
+    $('#tmpstore').html(data);
+
+    // update page indicator
+    var el=$('#tmpstore');
+    var btn=$(el).find('#pages').html();
+    $('#msg').html("Item:<p>"+idx+"</p>");
+
+    var nitm=$('#X_results');
+    var itm=$('#tmpstore').find('#X_results');
+    var new_next_item=parseInt($(el).find('#nextpage').html());
+    var last_page = (new_next_item == next_item);
+    $(nitm).attr('id',  "page_" + idx);
+    $(nitm).attr('class',  "page_sep");
+    $(nitm).data('p',btn);
+
+    if ( (first_item < next_item ) && ( idx >= first_item ) && ( new_next_item  <= next_item ))
+    {
+	// nothing
+	return;
+    }
+    if ( new_next_item<first_item || idx > next_item) 
+    {
+	// reload all
+	first_item=idx;
+	next_item=new_next_item;
+	$('#result').html(itm);
+    } else if ( idx == next_item ) 
+    {
+	    $('#result').append(itm);
+	    next_item = new_next_item;
+    } else if ( new_next_item ==  first_item )
+    {
+	    $('#result').prepend(itm);
+	    first_idx = idx;
+    }
+
+    // update tags
+    var tl= $(el).find('#classes').html();
+    if ( $('#taglist').html() != tl ) {
+	    $('#taglist').html(tl);
+    }
+    //$('#tmpstore').html("");
+
+    if ( ! last_page )
+	whileLoading = 0;
+    check_reload();
+  }
+
+
 });
