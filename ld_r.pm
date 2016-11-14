@@ -328,7 +328,8 @@ sub pages {
         -value => ">>",
         -id    => ( $last_p - 1 ) * $ppage + 1
       );
-    push @pgurl, $q->div({-id => 'nextpage', -class => 'hidden'} ,($next_p -1)*$ppage+1);
+    push @pgurl, $q->div({-id => 'nextpage', -class => 'hidden'} ,($next_p -1)*$ppage+1)
+	if ( $next_p < $last_p);
     return join( "", @pgurl );
     return $q->table( $q->Tr( $q->td( \@pgurl ) ) );
 }
