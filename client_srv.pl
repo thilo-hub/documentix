@@ -38,7 +38,7 @@ my %O = (
     'listen-host' => $i,
     # 'listen-host'              => '127.0.0.1',
     'listen-port'              => $p,
-    'listen-clients'           => 8,
+     'listen-clients'           => 8,
     'listen-max-req-per-child' => 100,
 );
 

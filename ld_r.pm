@@ -106,11 +106,11 @@ sub setup_db {
 
 my $s1 = q{select qidx from cache_lst where query = ?};
 my $s2 = q{insert or abort into cache_lst (query) values(?)};
-my $s3 = q{insert into cache_q ( qidx,idx,snippet ) select 
+my $s3 = q{insert or ignore into cache_q ( qidx,idx,snippet ) select 
 		qidx,docid,snippet(text) 
-		from cache_lst, text  where qidx = ? and text match query
+		from cache_lst, text  join hash on (docid=idx) natural join file where qidx = ? and text match query and host is not NULL
 	};
-my $s4 = q{delete from cache_q  where idx in ( select idx from cache_q join hash using(idx)  natural join file where qidx=? and host is NULL )};
+# my $s4 = q{delete from cache_q  where idx in ( select idx from cache_q join hash using(idx)  natural join file where qidx=? and host is NULL )};
 # qidx,idx,rowid,snippet from cache_q_tmp
 
 sub ldres {
@@ -153,8 +153,8 @@ s/\s*daterange:\s*(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d\s*)//i
         $dh->do( $s2, undef, $search );
         $idx=$dh->last_insert_id( undef, undef, undef, undef );
         my $nres = $dh->do( $s3, undef, $idx );
-	my $unavail = $dh->do( $s4, undef, $idx);
-        print STDERR "nres/unavail: $nres $unavail\n";
+	# my $unavail = $dh->do( $s4, undef, $idx);
+        # print STDERR "nres/unavail: $nres $unavail\n";
         #$dh->do($s3_fin,undef,);
         $dh->do( 'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?',
             undef, $nres, $idx );
@@ -187,11 +187,11 @@ q{create temporary table docids as select distinct(idx) idx  from cls natural jo
 qq{create temporary table resl as select * from $subsel cache_q where qidx = ?};
 
         $dh->do( $rest, undef, $idx );
-        print TRC "Tm: $dmin ... $dmax\n";
+        # print TRC "Tm: $dmin ... $dmax\n";
         if ($dmin) {
             my $drest =
 
-              print TRC "Delete timerangs\n";
+              # print TRC "Delete timerangs\n";
             $dh->do(
 qq{create temporary table subd as select distinct(idx) idx  from dates where date between ? and ?},
                 undef, $dmin, $dmax

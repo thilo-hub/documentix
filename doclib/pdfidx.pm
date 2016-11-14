@@ -182,10 +182,12 @@ sub get_meta {
     my $self = shift;
     my $dh   = $self->{"dh"};
     my ( $typ, $fn ) = @_;
+    $dh->do("begin exclusive transaction");
     my $idx = $dh->selectrow_array(
         "select value from hash natural join metadata where md5=? and tag = ?",
         undef, $fn, $typ
     );
+    $dh->do("commit");
     return $idx;
 }
 

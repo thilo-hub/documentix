@@ -74,7 +74,7 @@ sub dfeed {
             && ( $sz = ( stat(_) )[7] ) > 0 );
         $res  = slurp($f);
        } else {
-	die "Handle: $m ($f)";
+	$res = slurp($f);
       }
      
        
