@@ -1,5 +1,6 @@
 var idx = 1;
 var whileLoading = 0;
+var first_idx = 1;
 var clname = "";
 var nsrch = "";
 $(function () {
@@ -65,8 +66,11 @@ $(function () {
     if (nsrch != sv) {
       $("#result").html("");
       $("#result").removeData();
+      idx = 1;
       nsrch = sv;
     }
+    if ( idx < first_idx )
+	first_idx = idx;
     params += "&search=" + sv;
     if (clname) {
       params += "&class=" + clname;
@@ -96,6 +100,12 @@ $(function () {
   })
   $('#set_page').click(function (e) {
     if ($(e.target).hasClass("pageno")) {
+       if ( e.target.id > idx || e.target.id < first_idx )
+       {
+        $("#result").html("");
+        $("#result").removeData();
+	first_idx = e.target.id;
+      }
       idx = e.target.id;
       update_res();
     }
