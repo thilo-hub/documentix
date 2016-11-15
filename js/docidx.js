@@ -1,4 +1,4 @@
-var whileLoading = 0;
+var no_update_possible = 0;  // indicates update possible
 var first_item = -1;
 var next_item = -1;
 var clname = "";
@@ -95,12 +95,13 @@ $(function () {
 var last_e=-1;
 
 function  check_reload() {
-	if ( whileLoading )
+	if ( no_update_possible )
 		return;
 	w_top = $(window).scrollTop();
         w_bot = w_top + $(window).height();
 	if ( last_e < w_top || last_e > w_bot )
 	{
+	    // adjust page-info
 	    var e;
 	    $('#result .page_sep').each(
 		function(id,el) 
@@ -111,22 +112,22 @@ function  check_reload() {
 			e = $(el).attr('id');
 			last_e = e_li;
 			return false;
-			 // $('#msg').append("  "+id+" : "+e_li+ " :" + e + "<br>");
 		    }
 		}
 	    );
 	    $('#set_page').html(
 		$("#"+e).data('p'));
-	    //last_e=$(e);
 	}
 
         var pixelsFromWindowBottomToBottom = 0 + $(document).height() - w_bot;
         if ( pixelsFromWindowBottomToBottom > reload_limit )
 	{
+	    // Still unvisible data at the bottom
 	    return;
 	}
-	whileLoading = 1;
-        load_page(next_item);
+	no_update_possible = 1;
+	if ( next_item != first_item )
+	    load_page(next_item);
 }
 // request/save/cache pages to the same result set
 // remove cache if search is different
@@ -168,7 +169,10 @@ function  check_reload() {
     // update page indicator
     var el=$('#tmpstore');
     var btn=$(el).find('#pages').html();
-    $('#msg').html("Item:<p>"+idx+"</p>");
+    $('#msg').html("Item:"+idx+"</br>");
+    var msg=$(el).find('#message').html();
+    if ( msg )
+	    $('#msg').append(msg);
 
     var nitm=$('#X_results');
     var itm=$('#tmpstore').find('#X_results');
@@ -207,7 +211,7 @@ function  check_reload() {
     //$('#tmpstore').html("");
 
     if ( ! last_page )
-	whileLoading = 0;
+	no_update_possible = 0;
     check_reload();
   }
 
