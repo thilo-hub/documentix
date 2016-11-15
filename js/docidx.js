@@ -17,6 +17,7 @@ $(function () {
     if (event.keyCode == 13) { // return in search box
 	$("#search").blur();
 	// reset class filter
+	$('#msg').html("Searching...");
 	clname = "";
 	next_item=-1;
 	load_page(1);
@@ -27,10 +28,12 @@ $(function () {
   $('#taglist').click(function (e) {
     if ($(e.target).hasClass("tagbox")) {
       var ncl = $(e.target).val();
-      if (ncl != clname) {
-        $("#result").html("");
-        $("#result").removeData();
+      if (ncl == clname) {
+	// reset tag
+	ncl = "";
       }
+      $("#result").html("");
+      $("#result").removeData();
       clname = ncl;
       next_item = -1;
       load_page(1);
