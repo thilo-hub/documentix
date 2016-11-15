@@ -85,7 +85,7 @@ q{create table if not exists file ( md5 text primary key, file text unique)},
 q{create table if not exists data ( idx integer primary key , thumb text, ico text, html text) },
         q{create table if not exists ocr ( idx integer, text text)},
 q{create table if not exists metadata ( idx integer, tag text, value text, unique ( idx,tag) )},
-        q{CREATE VIRTUAL TABLE if not exists text USING fts4(tokenize=porter);},
+        # q{CREATE VIRTUAL TABLE if not exists text USING fts4(tokenize=porter);},
 q{CREATE TABLE if not exists mtime ( idx integer primary key, mtime integer)},
         q{CREATE INDEX if not exists mtime_i on mtime(mtime)},
 q{CREATE TABLE if not exists class ( idx integer primary key, class text )},
@@ -116,7 +116,7 @@ q{CREATE TRIGGER if not exists intxt after insert on metadata when new.tag = "te
     foreach (@slist) {
 
         #print STDERR "DO: $_\n";
-        $dh->do($_);
+        $dh->do($_) or print STDERR "Err: $_";
     }
 
 }
