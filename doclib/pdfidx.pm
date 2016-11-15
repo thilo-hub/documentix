@@ -533,17 +533,21 @@ sub classify_all {
 }
 {
     my $popsession = undef;
+    my $pop_xml;
+
+	    #$pop_xml = "http://localhost:".qx{awk "/xmlrpc_port/{printf '%s',$2}" popuser/popfile.cfg}."/RPC2";
+	    $pop_xml = "http://localhost:8180/RPC2";
 
     sub pop_session {
         $popsession =
-          XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
+          XMLRPC::Lite->proxy($pop_xml)
           ->call( 'POPFile/API.get_session_key', 'admin', '' )->result
           unless $popsession;
         return $popsession;
     }
 
     sub pop_release {
-        XMLRPC::Lite->proxy('http://localhost:8081/RPC2')
+        XMLRPC::Lite->proxy($pop_xml)
           ->call( 'POPFile/API.release_session_key', $popsession )
           if $popsession;
         undef $popsession;
