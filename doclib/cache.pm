@@ -31,6 +31,7 @@ sub setup_db {
     $dh->sqlite_busy_timeout(60000);
     my @slist = (
 	q{create table if not exists cache (ref primary key unique,date,type text,data blob)},
+	q{pragma journal_mode=wal},
 );
     foreach (@slist) {
         #print STDERR "DO: $_\n";
