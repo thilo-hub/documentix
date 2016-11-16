@@ -8,10 +8,14 @@
         // Depending on browser support files (FileList) might contain multiple items.
         files.each(function (file) {
           // React on successful AJAX upload:
-          file.event('done', function (xhr) {
-	    $('#msg').append("<p>"+this.name+"</p>")
-            // 'this' here points to fd.File instance that has triggered the event.
-           // alert('Done uploading ' + this.name + ', response:\n\n' + xhr.responseText);
+	  $('#msg').append("Uploading...");
+          file.event(
+		'done', function (xhr) {
+		    $('#msg').append(this.name+" done<br>")
+		  });
+          file.event(
+		  'error', function (xhr,XMLHttpReques) {
+		    $('#msg').append("ERROR: "+XMLHttpRequest.statusText+"<br>")
           });
 
           // Send the file:

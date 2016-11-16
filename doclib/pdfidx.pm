@@ -439,6 +439,7 @@ sub index_pdf {
     my $self = shift;
     my $dh   = $self->{"dh"};
     my $fn   = shift;
+    my $wdir = shift;
     print STDERR "index_pdf $fn\n" if $debug >1;
 
     # make sure we skip already ocred docs
@@ -460,16 +461,6 @@ sub index_pdf {
     print STDERR "Loading: ($idx) $fn\n";
 
 
-    my $thumb = eval { $self->pdf_thumb($fn)};
-    my $ico   = eval { $self->pdf_icon($fn)};
-    if (0) {
-        my $ins_d =
-          $dh->prepare("insert into data (idx,thumb,ico) values(?,?,?)");
-        $ins_d->bind_param( 1, $idx,   SQL_INTEGER );
-        $ins_d->bind_param( 2, $thumb, SQL_BLOB );
-        $ins_d->bind_param( 3, $ico,   SQL_BLOB );
-        $ins_d->execute();
-    }
     my %meta;
     $meta{"Docname"} = $fn;
     $meta{"Docname"} =~ s/^.*\///s;
@@ -480,7 +471,9 @@ sub index_pdf {
     $meta{"Mime"} = $type;
     my %mime_handler=(
 	    "application/x-gzip" => \&tp_gzip,
-	    "application/pdf"    => \&tp_pdf
+	    "application/pdf"    => \&tp_pdf,
+	    "application/msword" => \&tp_any,
+	    "application/vnd.ms-powerpoint" => \&tp_any
 	    );
 
     $type =~ s/;.*//;
@@ -502,11 +495,30 @@ sub index_pdf {
     foreach ( keys %meta ) {
         $self->ins_e( $idx, $_, $meta{$_} );
     }
+    #my $thumb = eval { $self->pdf_thumb($fn)};
+    #my $ico   = eval { $self->pdf_icon($fn)};
     # $dh->do("commit");
-    $meta{"thumb"} = \$thumb;
-    $meta{"ico"}   = \$ico;
+    #$meta{"thumb"} = \$thumb;
+    #$meta{"ico"}   = \$ico;
     return $idx, \%meta;
 
+    sub tp_any
+    {
+	    my $self=shift;
+	    my $i=abs_path($self->{"file"});
+	    $self->{"fh"} = File::Temp->new(SUFFIX => '.pdf');
+	    $self->{"file"} = $self->{"fh"}->filename;
+	    $self->{"file"} = $wdir."/$1.pdf" if ( defined($wdir) && -d $wdir && $i =~ /([^\/]*$)/);
+	    $self->{"file"} = abs_path($self->{"file"});
+	    print STDERR "convert: $i\n";
+main::lock();
+	    qx|unoconv -o $self->{file} "$i"|;
+main::unlock();
+	    die "failed: $i" unless -f $self->{file};
+	    chomp(my $type=qx|file -b --mime-type "$self->{file}"|);
+	    close $self->{"fh"};
+	    return $type;
+    }
     sub tp_gzip
     {
 	    my $self=shift;
@@ -608,10 +620,11 @@ sub pdf_text {
 
 sub pdf_thumb {
     my $self = shift;
-    my $fn   = '"' . shift . '"';
+    my $fn   = shift;
     my $pn   = ( shift || 1 ) - 1;
+    $fn .= ".pdf" if (-f $fn.".pdf"); 
     $fn .= "[$pn]";
-    my @cmd = ( $convert, $fn, qw{-trim -normalize -thumbnail 400 png:-} );
+    my @cmd = ( $convert, "'$fn'", qw{-trim -normalize -thumbnail 400 png:-} );
     print STDERR "X:" . join( " ", @cmd ) . "\n";
     my $png = qx{@cmd};
     return undef unless length($png);
@@ -622,13 +635,14 @@ sub pdf_thumb {
 
 sub pdf_icon {
     my $self = shift;
-    my $fn   = '"' . shift . '"';
+    my $fn   = shift ;
     my $pn   = ( shift || 1 ) - 1;
     my $rot  = shift;
     my $tmp= tmpnam();
     my @l;
 
-    my @cmd = ( $convert, $fn."[$pn]", qw{-trim -normalize -thumbnail 100} );
+    $fn .= ".pdf" if (-f $fn.".pdf"); 
+    my @cmd = ( $convert, "'${fn}[$pn]'", qw{-trim -normalize -thumbnail 100} );
     push @cmd, "-rotate", $rot if $rot;
     push @cmd, "png:-";
     if(0){
@@ -667,7 +681,7 @@ sub pdf_icon2 {
     my $tmp = POSIX::tmpnam();
     my @l;
 
-    my @cmd = ( $convert, $fn, qw{-trim -normalize -thumbnail 100} );
+    my @cmd = ( $convert, "'${fn}[$pn]'", qw{-trim -normalize -thumbnail 100} );
     push @cmd, "-rotate", $rot if $rot;
     push @cmd, "png:-";
     {

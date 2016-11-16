@@ -6,6 +6,7 @@ use doclib::pdfidx;
 use doclib::cache;
 use HTTP::Message;
 use HTTP::Date;
+use Cwd 'abs_path';
 
 use CGI;
 $ENV{"PATH"} .= ":/usr/bin:/usr/pkg/bin";
@@ -66,7 +67,7 @@ sub dfeed {
     return ("text/text","Error")
 	unless -r $f;
     my $m = $self->{pdfidx}->get_meta("Mime",$hash);
-    if ( $tpe eq "raw" ) {
+    if ( $tpe eq "raw" || $tpe eq "pdf") {
        if ( $m =~ /pdf/ ) {
        $f = $1 . ".ocr.pdf"
           if ( $f =~ /^(.*)\.pdf$/
@@ -74,7 +75,32 @@ sub dfeed {
             && ( $sz = ( stat(_) )[7] ) > 0 );
         $res  = slurp($f);
        } else {
+	if ( $tpe eq "pdf" )
+	{
+		( $m, $res ) = $self->{cache}->get_cache( $f, "$hash-$tpe", 
+			sub {
+				my ( $item, $idx, $mtime ) = @_;
+				my $ntime = ( stat($item) )[9];
+				$mtime = 0 unless $mtime;
+				print STDERR "$item - $idx $mtime <> $ntime\n" if ($main::debug>1);
+				return undef if ( $mtime && -r $item && $ntime < $mtime );
+				print STDERR "OK\n" if ($main::debug>=0);
+				#return undef unless $idx-- > 0;
+				print STDERR "REDO\n" if ($main::debug >=0);
+				my $fn=abs_path(${item});
+				my $res =qq{unoconv -o /tmp/$$.pdf ${fn} 2>&1};
+				$res = qx{$res};
+				if (!-f "/tmp/$$.pdf" || $?) {
+				    return ( 'text/text', $res );
+				} else {
+					$res=slurp("/tmp/$$.pdf");
+				}
+				return ( 'application/pdf', $res );
+			}
+			 );
+	} else {
 	$res = slurp($f);
+	}
       }
      
        

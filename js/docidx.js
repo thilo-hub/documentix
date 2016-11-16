@@ -55,7 +55,8 @@ $(function () {
 		md5: foc_id
 	      })
 	    },
-	    function (data) { $('#msg').html(data); }))
+	    function (data) { 
+	    $('#msg').html(data+ "E:"+elem); }))
 	  },
 	  onRemoveTag: function (elem, elem_tags) {
 	    $.post("tags.cgi", {

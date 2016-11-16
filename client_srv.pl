@@ -38,7 +38,8 @@ my %O = (
     'listen-host' => $i,
     # 'listen-host'              => '127.0.0.1',
     'listen-port'              => $p,
-     'listen-clients'           => 8,
+#TJ 
+    'listen-clients'           => 8,
     'listen-max-req-per-child' => 100,
 );
 
@@ -96,9 +97,9 @@ sub http_child {
     my $d = shift;
     my $ld_r=ld_r->new();
     my $feed=feed->new();
-    my @pages = get_pg();
     my $tags=tags->new();
     my $pdfidx = pdfidx->new();
+    my @pages = get_pg();
 
     my $i;
     while ( ++$i < $O{'listen-max-req-per-child'} ) {
@@ -199,13 +200,14 @@ sub get_pg {
 			print STDERR "File known\n";
 			if ( -r $nfh ){
 				print STDERR "File available ($nfh)\n";
-				return;
+				return "duplicate";
 			}
 		}
 
 		my $fn="incomming";
 		mkdir $fn or die "No dir: $fn" unless -d $fn ;
                 $fn .="/$digest";
+		my $wdir=$fn;
 		mkdir $fn or die "No dir: $fn" unless -d $fn ;
 		$fn .="/$n";
 			
@@ -213,8 +215,9 @@ sub get_pg {
 		print $f $r->content();
 		close($f);
 		print "File: ".$r->header("x-file-name")."\n";
-		my $txt = $pdfidx->index_pdf($fn);
+		my $txt = $pdfidx->index_pdf($fn,$wdir);
 		$ld_r->update_caches();
+		return "OK";
 		}
         },
         {

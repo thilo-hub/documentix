@@ -258,6 +258,8 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
     ];
 
     my $out = load_results($dh,$stm1);
+    my $msg = "results: $ndata<br>";
+    $msg .= "qidx: $idx<br>" if $idx;
 
     $res =
         $q->div( { -class => "tick", -id => "nresults" }, $ndata )
@@ -270,7 +272,9 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
       . $q->div(
         { -class => "tick", -id => "pages" },
         pages( $q, $idx0, $ndata, $ppage )
-      ) . $q->div( { -id => "classes" }, join( "", @$classes ) );
+      ) . $q->div( { -id => "classes" }, join( "", @$classes ) )
+      . $q->div( {-id => "message"},$msg)
+      ;
 
     $res .= "<br>";
     $res .=
@@ -384,7 +388,7 @@ sub get_cell {
 
     # build various URLS
     #my $pdf    = "docs/pdf/$md5/$short_name";
-    my $pdf    = "web/viewer.html?file=../docs/raw/$md5/$short_name#pagemode=thumb";
+    my $pdf    = "web/viewer.html?file=../docs/pdf/$md5/$short_name#pagemode=thumb";
     my $pdf2    = "docs/raw/$md5/$short_name";
     my $lowres = "docs/lowres/$md5/$short_name";
 
