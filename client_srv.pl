@@ -38,8 +38,7 @@ my %O = (
     'listen-host' => $i,
     # 'listen-host'              => '127.0.0.1',
     'listen-port'              => $p,
-#TJ 
-    'listen-clients'           => 8,
+#TJ 'listen-clients'           => 8,
     'listen-max-req-per-child' => 100,
 );
 
@@ -99,7 +98,14 @@ sub http_child {
     my $feed=feed->new();
     my $tags=tags->new();
     my $pdfidx = pdfidx->new();
-    my @pages = get_pg();
+    my @pages = (
+        { p  => '/upload.cgi(/.*)?',          cb => \&do_upload },
+        { p  => '/docs/([^/]+)/([^/]+)/(.*)', cb => \&do_feed },
+        { p  => '/ldres.cgi',                 cb => \&do_ldres },
+	{ p  => '/tags.cgi',                  cb => \&do_tags, },
+        { p  => '/',                          cb => \&do_index },
+        { p  => '/+(.*)',                     cb => \&do_anycgi },
+    );
 
     my $i;
     while ( ++$i < $O{'listen-max-req-per-child'} ) {
@@ -180,14 +186,62 @@ sub _http_response {
     );
 }
 
-sub get_pg {
-    return (
-        {
-            p  => '/upload.cgi(/.*)?',
-            cb => sub { 
+sub do_tags {
+                my $c = shift;
+                my $r = shift;
+                my $a = $c->{"args"};
+
+		lock();
+                my $m= $tags->add_tag($c->{"args"});
+		unlock();
+
+		return $m;
+            }
+
+sub do_anycgi {
+                my $c = shift;
+#print  Dumper($c);
+	        my $f = ".".$c -> {request}->uri->path;
+		return HTTP::Message->parse(qx{$f})->content()
+			if ( $f =~ /\.cgi$/ && -x $f );
+                return "Failed $f" unless ( -f $f );
+                $c->{"c"}->send_file_response($f);
+                return undef;
+            }
+sub do_ldres {
+                my $c = shift;
+                my $r = shift;
+                my $a = $c->{"args"};
+
+		lock();
+                my $m= $ld_r->ldres(
+                    $a->{"class"},  $a->{"idx"},
+                    $a->{"ppages"}, $a->{"search"}
+                );
+		unlock();
+		return $m;
+            }
+sub do_feed {
+                my $c = shift;
+                print "feed.cgi $1\n" if $main::debug >0;
+
+		lock();
+                my $r = HTTP::Message->new( $feed->feed_m( $2, $1, $3 ) );
+		unlock();
+                my $rp =
+                  HTTP::Response->new( RC_OK, undef, $r->headers, $r->content );
+                $c->{"c"}->send_response($rp);
+                return undef;
+}
+sub do_index{
+                my $c = shift;
+                $c->{"c"}->send_file_response("index.html");
+                return undef;
+            }
+sub do_upload { 
 		my $c=shift;
 		my $r=$c->{request};
-		# print Dumper($c);
+		 #print Dumper($c);
 		use Digest::MD5;
 		my $ctx=Digest::MD5->new();
 		$ctx->add($r->content());
@@ -219,74 +273,4 @@ sub get_pg {
 		$ld_r->update_caches();
 		return "OK";
 		}
-        },
-        {
-            p  => '/',
-            cb => sub {
-                my $c = shift;
-                $c->{"c"}->send_file_response("index.html");
-                return undef;
-            }
-        },
-        {
-            p  => '/docs/([^/]+)/([^/]+)/(.*)',
-            cb => sub {
-                my $c = shift;
-                print "feed.cgi $1\n" if $main::debug >0;
-
-		lock();
-                my $r = HTTP::Message->new( $feed->feed_m( $2, $1, $3 ) );
-		unlock();
-                my $rp =
-                  HTTP::Response->new( RC_OK, undef, $r->headers, $r->content );
-                $c->{"c"}->send_response($rp);
-                return undef;
-            }
-        },
-        {
-            p  => '/ldres.cgi',
-            cb => sub {
-                my $c = shift;
-                my $r = shift;
-                my $a = $c->{"args"};
-
-		lock();
-                my $m= $ld_r->ldres(
-                    $a->{"class"},  $a->{"idx"},
-                    $a->{"ppages"}, $a->{"search"}
-                );
-		unlock();
-		return $m;
-            }
-        },
-	{
-            p  => '/tags.cgi',
-            cb => sub {
-                my $c = shift;
-                my $r = shift;
-                my $a = $c->{"args"};
-
-		lock();
-                my $m= $tags->add_tag($c->{"args"});
-		unlock();
-
-		return $m;
-            }
-        },
-        {
-            p  => '/+(.*)',
-            cb => sub {
-                my $c = shift;
-#print  Dumper($c);
-	        my $f = ".".$c -> {request}->uri->path;
-		return HTTP::Message->parse(qx{$f})->content()
-			if ( $f =~ /\.cgi$/ && -x $f );
-                return "Failed $f" unless ( -f $f );
-                $c->{"c"}->send_file_response($f);
-                return undef;
-            }
-        }
-
-    );
-}
 }
