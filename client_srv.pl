@@ -19,26 +19,28 @@ use doclib::pdfidx;
 
 use constant HOSTNAME => qx{hostname};
 
-$main::debug=0;
+$main::debug = 0;
 
-open(my $fhx,">/tmp/xx.lock") || die "No Open";
+open( my $fhx, ">/tmp/xx.lock" ) || die "No Open";
 
 sub lock {
-	flock($fhx, LOCK_EX) or die "Cannot lock mailbox - $!\n";
+    flock( $fhx, LOCK_EX ) or die "Cannot lock mailbox - $!\n";
 }
 
 sub unlock {
-	flock($fhx, LOCK_UN) or die "Cannot unlock mailbox - $!\n";
+    flock( $fhx, LOCK_UN ) or die "Cannot unlock mailbox - $!\n";
 }
 
-my ($i,$p)=split(/:/,$ARGV[0] || "127.0.0.1:8080");
+my ( $i, $p ) = split( /:/, $ARGV[0] || "127.0.0.1:8080" );
 
 my %O = (
 
     'listen-host' => $i,
+
     # 'listen-host'              => '127.0.0.1',
-    'listen-port'              => $p,
-#TJ 'listen-clients'           => 8,
+    'listen-port' => $p,
+
+    #TJ 'listen-clients'           => 8,
     'listen-max-req-per-child' => 100,
 );
 
@@ -51,7 +53,7 @@ my $d = HTTP::Daemon->new(
 print "Started HTTP listener at " . $d->url . "\n";
 
 system("open http://$O{'listen-host'}:$O{'listen-port'}/")
-	if ( $^O =~ /darwin/);
+  if ( $^O =~ /darwin/ );
 my %chld;
 
 if ( $O{'listen-clients'} ) {
@@ -93,18 +95,18 @@ while (1) {
 }
 
 sub http_child {
-    my $d = shift;
-    my $ld_r=ld_r->new();
-    my $feed=feed->new();
-    my $tags=tags->new();
+    my $d      = shift;
+    my $ld_r   = ld_r->new();
+    my $feed   = feed->new();
+    my $tags   = tags->new();
     my $pdfidx = pdfidx->new();
-    my @pages = (
-        { p  => '/upload.cgi(/.*)?',          cb => \&do_upload },
-        { p  => '/docs/([^/]+)/([^/]+)/(.*)', cb => \&do_feed },
-        { p  => '/ldres.cgi',                 cb => \&do_ldres },
-	{ p  => '/tags.cgi',                  cb => \&do_tags, },
-        { p  => '/',                          cb => \&do_index },
-        { p  => '/+(.*)',                     cb => \&do_anycgi },
+    my @pages  = (
+        { p => '/upload.cgi(/.*)?',          cb => \&do_upload },
+        { p => '/docs/([^/]+)/([^/]+)/(.*)', cb => \&do_feed },
+        { p => '/ldres.cgi',                 cb => \&do_ldres },
+        { p => '/tags.cgi',                  cb => \&do_tags, },
+        { p => '/',                          cb => \&do_index },
+        { p => '/+(.*)',                     cb => \&do_anycgi },
     );
 
     my $i;
@@ -127,7 +129,7 @@ sub http_child {
         my $arg;
         foreach ( split( /&/, $r->content ) ) {
             my ( $k, $v ) = split( /=/, $_, 2 );
-	    next unless $k;
+            next unless $k;
             $arg->{$k} = $v;
         }
         if ( $r->uri->as_iri =~ /\?(.*)/ ) {
@@ -139,7 +141,7 @@ sub http_child {
         my $ro;
         $ro->{"request"} = $r;
         $ro->{"args"}    = $arg;
-        $ro->{"q"}       = $r->uri->as_iri."&".$r->content;
+        $ro->{"q"}       = $r->uri->as_iri . "&" . $r->content;
         foreach my $g (@pages) {
             if ( $r->uri->path =~ /^$g->{p}$/ ) {
                 $ENV{'PATH_INFO'} = $1;
@@ -160,117 +162,122 @@ sub http_child {
         undef $c;
     }
 
-sub _http_error {
-    my ( $c, $code, $msg ) = @_;
+    sub _http_error {
+        my ( $c, $code, $msg ) = @_;
 
-    $c->send_error( $code, $msg );
-}
+        $c->send_error( $code, $msg );
+    }
 
-sub _http_response {
-    my $c       = shift;
-    my $options = shift;
+    sub _http_response {
+        my $c       = shift;
+        my $options = shift;
 
-    $c->send_response(
-        HTTP::Response->new(
-            RC_OK, undef,
-            [
-                'Content-Type' => $options->{content_type} . " charset=utf-8",
-                'charset'      => 'utf-8',
-                'Cache-Control' =>
+        $c->send_response(
+            HTTP::Response->new(
+                RC_OK, undef,
+                [
+                    'Content-Type' => $options->{content_type}
+                      . " charset=utf-8",
+                    'charset' => 'utf-8',
+                    'Cache-Control' =>
 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0',
-                'Pragma'  => 'no-cache',
-                'Expires' => 'Thu, 01 Dec 1994 16:00:00 GMT',
-            ],
-            join( "\n", @_ ),
-        )
-    );
-}
+                    'Pragma'  => 'no-cache',
+                    'Expires' => 'Thu, 01 Dec 1994 16:00:00 GMT',
+                ],
+                join( "\n", @_ ),
+            )
+        );
+    }
 
-sub do_tags {
-                my $c = shift;
-                my $r = shift;
-                my $a = $c->{"args"};
+    sub do_tags {
+        my $c = shift;
+        my $r = shift;
+        my $a = $c->{"args"};
 
-		lock();
-                my $m= $tags->add_tag($c->{"args"});
-		unlock();
+        lock();
+        my $m = $tags->add_tag( $c->{"args"} );
+        unlock();
 
-		return $m;
+        return $m;
+    }
+
+    sub do_anycgi {
+        my $c = shift;
+
+        #print  Dumper($c);
+        my $f = "." . $c->{request}->uri->path;
+        return HTTP::Message->parse(qx{$f})->content()
+          if ( $f =~ /\.cgi$/ && -x $f );
+        return "Failed $f" unless ( -f $f );
+        $c->{"c"}->send_file_response($f);
+        return undef;
+    }
+
+    sub do_ldres {
+        my $c = shift;
+        my $r = shift;
+        my $a = $c->{"args"};
+
+        lock();
+        my $m =
+          $ld_r->ldres( $a->{"class"}, $a->{"idx"}, $a->{"ppages"},
+            $a->{"search"} );
+        unlock();
+        return $m;
+    }
+
+    sub do_feed {
+        my $c = shift;
+        print "feed.cgi $1\n" if $main::debug > 0;
+
+        lock();
+        my $r = HTTP::Message->new( $feed->feed_m( $2, $1, $3 ) );
+        unlock();
+        my $rp = HTTP::Response->new( RC_OK, undef, $r->headers, $r->content );
+        $c->{"c"}->send_response($rp);
+        return undef;
+    }
+
+    sub do_index {
+        my $c = shift;
+        $c->{"c"}->send_file_response("index.html");
+        return undef;
+    }
+
+    sub do_upload {
+        my $c = shift;
+        my $r = $c->{request};
+
+        #print Dumper($c);
+        use Digest::MD5;
+        my $ctx = Digest::MD5->new();
+        $ctx->add( $r->content() );
+        my $digest = $ctx->hexdigest;
+        my $n      = $r->header("x-file-name");
+        $n =~ s/[^a-zA-Z0-9._\-]/_/g;
+
+        my $nfh = $pdfidx->get_file($digest);
+        if ($nfh) {
+            print STDERR "File known\n";
+            if ( -r $nfh ) {
+                print STDERR "File available ($nfh)\n";
+                return "duplicate";
             }
+        }
 
-sub do_anycgi {
-                my $c = shift;
-#print  Dumper($c);
-	        my $f = ".".$c -> {request}->uri->path;
-		return HTTP::Message->parse(qx{$f})->content()
-			if ( $f =~ /\.cgi$/ && -x $f );
-                return "Failed $f" unless ( -f $f );
-                $c->{"c"}->send_file_response($f);
-                return undef;
-            }
-sub do_ldres {
-                my $c = shift;
-                my $r = shift;
-                my $a = $c->{"args"};
+        my $fn = "incomming";
+        mkdir $fn or die "No dir: $fn" unless -d $fn;
+        $fn .= "/$digest";
+        my $wdir = $fn;
+        mkdir $fn or die "No dir: $fn" unless -d $fn;
+        $fn .= "/$n";
 
-		lock();
-                my $m= $ld_r->ldres(
-                    $a->{"class"},  $a->{"idx"},
-                    $a->{"ppages"}, $a->{"search"}
-                );
-		unlock();
-		return $m;
-            }
-sub do_feed {
-                my $c = shift;
-                print "feed.cgi $1\n" if $main::debug >0;
-
-		lock();
-                my $r = HTTP::Message->new( $feed->feed_m( $2, $1, $3 ) );
-		unlock();
-                my $rp =
-                  HTTP::Response->new( RC_OK, undef, $r->headers, $r->content );
-                $c->{"c"}->send_response($rp);
-                return undef;
-}
-sub do_index{
-                my $c = shift;
-                $c->{"c"}->send_file_response("index.html");
-                return undef;
-            }
-sub do_upload { 
-		my $c=shift;
-		my $r=$c->{request};
-		 #print Dumper($c);
-		use Digest::MD5;
-		my $ctx=Digest::MD5->new();
-		$ctx->add($r->content());
-		my $digest = $ctx->hexdigest;
-		my $n=$r->header("x-file-name");
-		$n =~ s/[^a-zA-Z0-9._\-]/_/g;
-
-		my $nfh=$pdfidx->get_file($digest);
-		if ( $nfh ) {
-			print STDERR "File known\n";
-			if ( -r $nfh ){
-				print STDERR "File available ($nfh)\n";
-				return "duplicate";
-			}
-		}
-
-		my $fn="incomming";
-		mkdir $fn or die "No dir: $fn" unless -d $fn ;
-                $fn .="/$digest";
-		my $wdir=$fn;
-		mkdir $fn or die "No dir: $fn" unless -d $fn ;
-		$fn .="/$n";
-			
-		open(my $f,">",$fn) or die "No open $fn";
-		print $f $r->content();
-		close($f);
-		print "File: ".$r->header("x-file-name")."\n";
-		my $txt = $pdfidx->index_pdf($fn,$wdir);
-		$ld_r->update_caches();
-		return "OK";
-		}
+        open( my $f, ">", $fn ) or die "No open $fn";
+        print $f $r->content();
+        close($f);
+        print "File: " . $r->header("x-file-name") . "\n";
+        my $txt = $pdfidx->index_pdf( $fn, $wdir );
+        $ld_r->update_caches();
+        return "OK";
+    }
 }
