@@ -4,6 +4,8 @@ var next_item = -1;
 var clname = "";
 var nsrch = "";
 var reload_limit = 500;
+var foc_el = 0;
+var foc_id;
 $(function () {
   $(window).scroll(function() {
 	check_reload();
@@ -55,7 +57,8 @@ $(function () {
 		md5: foc_id
 	      })
 	    },
-	    function (data) { 
+	    function (data) {
+	    $(foc_el).val($('#tags').val());
 	    $('#msg').html(data+ "E:"+elem); }))
 	  },
 	  onRemoveTag: function (elem, elem_tags) {
@@ -66,7 +69,9 @@ $(function () {
 		md5: foc_id
 	      })
 	    },
-	    function (data) { $('#msg').html(data); })
+	    function (data) {
+	        $(foc_el).val($('#tags').val());
+		$('#msg').html(data); })
 	  }
 	});
   $('input#tags_tag').keypress(function(event){
@@ -79,19 +84,30 @@ $(function () {
 		  $('#tagedit').hide('slow')
      }
 });
+  function tag_in(e) {
+	if ( foc_el && foc_el != e )
+	    $(foc_el).css("background-color","");
+        if (e)
+	    $(e).css("background-color","yellow");
+	else
+	    $('#tagedit').hide('slow')
+	foc_el = e;
+}
+	
   $('#tags_tag_').focusout(function(){
-	          $(foc_el).val($('#tags').val());
-		  $('#tagedit').hide('slow')
+	          tag_in(0);
+		  //$('#tagedit').hide('slow')
   });
   $('.right').click(function(e){
-    foc_el= e.target;
-    if ($(foc_el).hasClass("tagbox")){
+	var f=e.target;
+    if ($(f).hasClass("tagbox")){
+	    tag_in(f);
 	    foc_id=foc_el.id;
-	        $('#tags').importTags($(foc_el).val());
-		$('#tagedit').show('slow', function () {
-			            $('#tags_tag').focus();
-
-				    	})
+	    $(foc_el).css("background-color","yellow");
+	    $('#tags').importTags($(foc_el).val());
+	    $('#tagedit').show('slow', function () {
+			$('#tags_tag').focus();
+		    })
       }
   });
 // Check if we need to load more based on
@@ -108,7 +124,7 @@ function  check_reload() {
 	    // adjust page-info
 	    var e;
 	    $('#result .page_sep').each(
-		function(id,el) 
+		function(id,el)
 		{
 		    e_li=$(el).find(' li').offset().top;
 		    if ( e_li > w_top && e_li < w_bot )
@@ -156,6 +172,7 @@ function  check_reload() {
     if (clname) {
       params += "&class=" + clname;
     };
+    tag_in(0);
     $.post("ldres.cgi", params,
       function (data) { load_result( page,data); }
     );
@@ -191,13 +208,13 @@ function  check_reload() {
 	// nothing
 	return;
     }
-    if ( new_next_item<first_item || idx > next_item) 
+    if ( new_next_item<first_item || idx > next_item)
     {
 	// reload all
 	first_item=idx;
 	next_item=new_next_item;
 	$('#result').html(itm);
-    } else if ( idx == next_item ) 
+    } else if ( idx == next_item )
     {
 	    $('#result').append(itm);
 	    next_item = new_next_item;
@@ -218,6 +235,4 @@ function  check_reload() {
 	no_update_possible = 0;
     check_reload();
   }
-
-
 });
