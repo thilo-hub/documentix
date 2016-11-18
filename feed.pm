@@ -65,7 +65,7 @@ sub dfeed {
 
     my $f = $self->{pdfidx}->get_file($hash);
     return ("text/text","Error")
-	unless -r $f;
+	unless $f && -r $f;
     my $m = $self->{pdfidx}->get_meta("Mime",$hash);
     if ( $tpe eq "raw" || $tpe eq "pdf") {
        if ( $m =~ /pdf/ ) {
