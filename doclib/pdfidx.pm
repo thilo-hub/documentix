@@ -28,7 +28,7 @@ my $pdfinfo   = "pdfinfo";
 my $pdfopt    = "pdfopt";
 my $pdftoppm  = "pdftoppm";
 my $pdftotext = "pdftotext";
-my $tesseract = "tesseract";
+my $pdftocairo = "pdftocairo";
 
 # use threads;
 # use threads::shared;
@@ -266,89 +266,6 @@ sub w_load {
     return $err;
 }
 
-sub ocrpdf3 {
-    my $self = shift;
-    my ( $inpdf, $outpdf, $ascii ) = @_;
-    print STDERR "ocrpdf $inpdf $outpdf\n" if $debug >1;
-    my $txt = undef;
-    my $fail=0;
-
-    # MX hack -with broken jpg
-    # pdfimages -all   ( extract all images into temp-dir )
-    # convert -density 300 -trim xpage-00$i.jpg  -quality 100  page-$i.jpg
-    # tesseract  page-$i.jpg  ypage-$i  pdf 
-    # pdfunite ypage-*.pdf z.pdf
-
-    my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
-    my @cmd = (qw{pdfimages -all }, $inpdf , $tmpdir."/page");
-    print STDERR "CMD: ".join(" ",@cmd,"\n");
-    $fail += ( system( @cmd) ? 1 : 0);
-    my @inpages=glob($tmpdir->dirname."/page*");
-    my @outpages;
-    my $pg="001";
-    if ( grep( /\.ccitt$/ , @inpages ))
-    {
-	#hack
-	unlink(@inpages);
-	print STDERR "Hack for ccitt files\n" if $debug > 1;
-	my @cmd = (qw{pdfimages -tiff }, $inpdf , $tmpdir."/page");
-	print STDERR "CMD: ".join(" ",@cmd,"\n");
-	$fail += ( system( @cmd) ? 1 : 0);
-	@inpages=glob($tmpdir->dirname."/page*");
-    }
-    foreach $in ( @inpages )
-    {
-	my $outpage=$tmpdir->dirname."/o-page-".$pg++;
-	my $outim=$in.".jpg";
-        if ( !$mth || ( $pid = fork() ) == 0 ) 
-	{
-            print STDERR "Conv $_\n";
-	    @cmd=(qw{convert -density 150 }, $in , qw {-trim -quality 70 -flatten -sharpen 0x1.0},$outim);
-	    $msg .= "CMD: ".join(" ",@cmd,"\n");
-            $fail += ( system( @cmd) ? 1 : 0);
-	    @cmd = ($tesseract,  $outim,$outpage, qw{ -l deu+eng+equ -psm 1 pdf});
-	    $msg .= "CMD: ".join(" ",@cmd,"\n");
-	    $outpage .= ".pdf";
-            $fail += ( system( @cmd) ? 1 : 0) unless -f $outpage;
-	    # die "Ups: $outpage" unless -f $outpage;
-	    print STDERR "Done $outpage\n";
-	    unlink ($in,$outim) unless $debug>2;
-            exit($fail) if $mth;
-            $errs += $fail;
-        }
-        $childs{$pid}++;
-        $errs += w_load($maxcpu);
-	$outpage .= ".pdf";
-	push @outpages,$outpage;
-    }
-    print STDERR "Wait..\n";
-    $errs += w_load(0) if $mth;
-    print STDERR "Done Errs:$errs\n";
-
-    return undef unless @outpages;
-
-    foreach(@outpages)
-    {
-	die "Failure: $_" unless -f $_;
-    }
-
-    @cmd = (qw{ pdfunite }, @outpages, $outpdf); 
-    print STDERR "CMD: ".join(" ",@cmd,"\n");
-    $fail += ( system( @cmd) ? 1 : 0) unless -f $outpdf;
-    # die "Failure generating $outpdf" unless -f $outpdf;
-    unlink(@outpages) unless $debug>2;
-    unlink $tmpdir unless $debug>2;
-
-    my $tmp= tmpnam().".pdf";
-    symlink($outpdf,$tmp);
-    @cmd=($pdftotext,$tmp,"-");
-    
-    print STDERR "CMD: ".join(" ",@cmd,"\n");
-    my $txt=qx( @cmd );
-    unlink $tmp unless $debug >2;
-    return $txt;
-}
-
 sub ocrpdf {
     my $self = shift;
     my ( $inpdf, $outpdf, $ascii ) = @_;
@@ -358,21 +275,10 @@ sub ocrpdf {
     my $txt = undef;
     my $fail=0;
 
-    # MX hack -with broken jpg
-    # pdfimages -all   ( extract all images into temp-dir )
-    # convert -density 300 -trim xpage-00$i.jpg  -quality 100  page-$i.jpg
-    # tesseract  page-$i.jpg  ypage-$i  pdf 
-    # pdfunite ypage-*.pdf z.pdf
-
     my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
-    symlink ($inpdf,"$tmpdir/in.pdf");
-    my @cmd=(qw{pdftocairo -r 300 -jpeg}, "$tmpdir/in.pdf","$tmpdir/page");
-    print STDERR "CMD: ".join(" ",@cmd,"\n");
-    $fail += ( system( @cmd) ? 1 : 0);
-    unlink("$tmpdir/in.pdf");
-
-
+    $fail += do_pdftocairo($inpdf,"$tmpdir/page");
     my @inpages=glob($tmpdir->dirname."/page*");
+
     foreach $in ( @inpages )
     {
 	my $outpage=$tmpdir->dirname."/o-page-".$pg++;
@@ -380,18 +286,8 @@ sub ocrpdf {
         if ( !$mth || ( $pid = fork() ) == 0 ) 
 	{
             print STDERR "Conv $in\n";
-	    my @cmd=qw{convert %in -trim -quality 70 -flatten -sharpen 0x1.0 %out};
-	    map { s/%in/$in/g; s/%out/$outim/g;} @cmd;
-	    print STDERR "CMD: ".join(" ",@cmd,"\n");
-	    $fail += ( system( @cmd) ? 1 : 0);
-
-	    @cmd = ($tesseract,  $outim,$outpage, qw{ -l deu+eng+equ -psm 1 pdf});
-	    $msg .= "CMD: ".join(" ",@cmd,"\n");
-	    $outpage .= ".pdf";
-            $fail += ( system( @cmd) ? 1 : 0) unless -f $outpage;
-	    # die "Ups: $outpage" unless -f $outpage;
-
-	    print STDERR "Done $outpage\n";
+	    $fail += do_convert_ocr($in,$outim);
+	    $fail += do_tesseract($outim,$outpage);
 	    unlink ($in,$outim) unless $debug>2;
             exit($fail) if $mth;
             $errs += $fail;
@@ -411,22 +307,14 @@ sub ocrpdf {
     foreach(@outpages)
     {
 	push @cpages,$_ if -f $_;
-	#die "Failure: $_" unless -f $_;
     }
     return undef unless @cpages;
 
-    @cmd = (qw{ pdfunite }, @cpages, $outpdf); 
-    print STDERR "CMD: ".join(" ",@cmd,"\n");
-    $fail += ( system( @cmd) ? 1 : 0) unless -f $outpdf;
-    # die "Failure generating $outpdf" unless -f $outpdf;
+    $fail += do_pdfunite($outpdf,@cpages);
     unlink(@outpages) unless $debug>2;
 
     my $tmp= "$tmpdir/out.pdf";
-    symlink($outpdf,$tmp);
-    @cmd=($pdftotext,$tmp,"-");
-    
-    print STDERR "CMD: ".join(" ",@cmd,"\n");
-    my $txt=qx( @cmd );
+    my $txt=do_pdftotext("$tmp");
     unlink $tmp unless $debug >2;
     rmdir $tmpdir unless $debug>2;
     return $txt;
@@ -505,17 +393,11 @@ sub index_pdf {
     sub tp_any
     {
 	    my $self=shift;
-	    my $i=abs_path($self->{"file"});
 	    $self->{"fh"} = File::Temp->new(SUFFIX => '.pdf');
 	    $self->{"file"} = $self->{"fh"}->filename;
 	    $self->{"file"} = $wdir."/$1.pdf" if ( defined($wdir) && -d $wdir && $i =~ /([^\/]*$)/);
-	    $self->{"file"} = abs_path($self->{"file"});
-	    print STDERR "convert: $i\n";
-main::lock();
-	    qx|unoconv -o $self->{file} "$i"|;
-main::unlock();
-	    die "failed: $i" unless -f $self->{file};
-	    chomp(my $type=qx|file -b --mime-type "$self->{file}"|);
+	    do_unopdf($i,$self->{file});
+	    my $type = do_file($self->{file});
 	    close $self->{"fh"};
 	    return $type;
     }
@@ -525,8 +407,9 @@ main::unlock();
 	    my $i=$self->{"file"};
 	    $self->{"fh"} = File::Temp->new(SUFFIX => '.pdf');
 	    $self->{"file"} = $self->{"fh"}->filename;
-	    qx|gzip -dc $i > "$self->{file}"|;
-	    chomp(my $type=qx|file -b --mime-type "$self->{file}"|);
+	    do_ungzip($i,$self->{file});
+
+	    my $type=do_file($self->{file});
 	    return $type;
     }
     sub tp_pdf
@@ -536,7 +419,6 @@ main::unlock();
 	    my $t = $self->pdf_text( $self->{"file"}, $meta->{"md5"} );
 	    if ($t) {
 		$self->ins_e( $self->{"idx"}, "Text", $t );
-
 		# short version
 		$t =~ m/^\s*(([^\n]*\n){24}).*/s;
 		my $c = $1 || "";
@@ -577,16 +459,11 @@ sub pdf_totext {
     die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
 
     undef $ocrpdf if $ocrpdf eq $fn;
-
     if ( -r $ocrpdf )
     {
 	$fn=$ocrpdf;
     }
-    my $tmp= tmpnam().".pdf";
-    symlink($fn,$tmp);
-    @cmd=($pdftotext,$tmp,"-");
-    my $txt=qx( @cmd );
-    unlink $tmp unless $debug >2;
+    $txt = do_pdftotext($fn);
     return $txt if length($txt) > 100;
     return $txt if (-r $ocrpdf);
 
@@ -623,14 +500,9 @@ sub pdf_thumb {
     my $fn   = shift;
     my $pn   = ( shift || 1 ) - 1;
     $fn .= ".pdf" if (-f $fn.".pdf"); 
-    $fn .= "[$pn]";
-    my @cmd = ( $convert, "'$fn'", qw{-trim -normalize -thumbnail 400 png:-} );
-    print STDERR "X:" . join( " ", @cmd ) . "\n";
-    my $png = qx{@cmd};
+    my $png = do_convert_thumb($fn,$pn);
     return undef unless length($png);
     return ( "image/png", $png );
-
-# return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s", length($png), $png;
 }
 
 sub pdf_icon {
@@ -639,70 +511,9 @@ sub pdf_icon {
     my $pn   = ( shift || 1 ) - 1;
     my $rot  = shift;
     my $tmp= tmpnam();
-    my @l;
 
     $fn .= ".pdf" if (-f $fn.".pdf"); 
-    my @cmd = ( $convert, "'${fn}[$pn]'", qw{-trim -normalize -thumbnail 100} );
-    push @cmd, "-rotate", $rot if $rot;
-    push @cmd, "png:-";
-    if(0){
-        # HACK
-        #my $tmp = "/tmp/$$.tmp";
-    #    $cmd[1] = "\$(eval $tmp.*)";
-        my @c1 =
-          ( $pdfimages, "-all", "-f", $pn + 1, "-l", $pn + 1, $fn, $tmp );
-        print STDERR "X1:" . join( " ", @c1 ) . "\n";
-
-        #unshift @cmd,@c1,"&&";
-        qx {@c1};
-        @l = glob("'${tmp}*'");
-        print STDERR "  R:" . join( ":", @l, "\n" );
-        $cmd[1] = $l[0];
-
-    }
-    print STDERR "X:" . join( " ", @cmd ) . "\n";
-    my $png = qx{@cmd};
-    print STDERR "L:" .length($png) . "\n" if $main::debug>1;
-    unlink @l if @l;
-    if ( length($png) <= 900 ) {
-	print STDERR "FAILURE:\n";
-	return pdf_icon2($self,$fn,$pn+1,$rot);
-    }
-    return undef unless length($png);
-    return ( "image/png", $png );
-
-# return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s", length($png), $png;
-}
-sub pdf_icon2 {
-    my $self = shift;
-    my $fn   = shift; # '"' . shift . '"';
-    my $pn   = ( shift || 1 ) - 1;
-    my $rot  = shift;
-    my $tmp = POSIX::tmpnam();
-    my @l;
-
-    my @cmd = ( $convert, "'${fn}[$pn]'", qw{-trim -normalize -thumbnail 100} );
-    push @cmd, "-rotate", $rot if $rot;
-    push @cmd, "png:-";
-    {
-        # HACK
-        #my $tmp = "/tmp/$$.tmp";
-    #    $cmd[1] = "\$(eval $tmp.*)";
-        $fn =~ s/\[$pn\]$//;
-        my @c1 =
-          ( $pdfimages, "-all", "-f", $pn + 1, "-l", $pn + 1, $fn, $tmp );
-        print STDERR "X1:" . join( " ", @c1 ) . "\n";
-
-        #unshift @cmd,@c1,"&&";
-        qx {@c1};
-        @l = glob("'${tmp}*'");
-        print STDERR "  R:" . join( ":", @l, "\n" );
-        $cmd[1] = $l[0];
-
-    }
-    print STDERR "X:" . join( " ", @cmd ) . "\n";
-    my $png = qx{@cmd};
-    unlink @l;
+    my $png = do_convert_icon($fn,$pn);
     return undef unless length($png);
     return ( "image/png", $png );
 
@@ -884,5 +695,116 @@ sub slurp {
     return <$fh>;
 }
 
+my $tesseract = "tesseract";
+
+
+#image pre-process to enhance later ocr
+sub do_convert_ocr
+{
+	my ($in,$outim)=@_;
+	    @cmd=(qw{convert -density 150 }, $in , qw {-trim -quality 70 -flatten -sharpen 0x1.0},$outim);
+	    $msg .= "CMD: ".join(" ",@cmd,"\n");
+            $fail += ( system( @cmd) ? 1 : 0);
+	return $fail;
+}
+sub do_convert_thumb
+{
+    my ($fn,$pn)=@_;
+    $fn .= "[$pn]";
+    my @cmd = ( $convert, "'$fn'", qw{-trim -normalize -thumbnail 400 png:-} );
+    print STDERR "X:" . join( " ", @cmd ) . "\n";
+    my $png = qx{@cmd};
+    return $png;
+}
+sub do_convert_icon
+{
+  my ($fn,$pn)=@_;
+    # my @cmd = ( $convert, "'${fn}[$pn]'", qw{-trim -normalize -thumbnail 100} );
+    my @cmd = ( $pdftocairo, qw{-scale-to  100 -jpeg -singlefile -f },$pn,"-l",$pn,"'$fn'" , "-");
+    # push @cmd, "-rotate", $rot if $rot;
+    # push @cmd, "png:-";
+    print STDERR "X:" . join( " ", @cmd ) . "\n";
+    my $png = qx{@cmd};
+    print STDERR "L:" .length($png) . "\n" if $main::debug>1;
+    return $png;
+}
+#convert single pdf-page to ocr-pdfpage
+sub do_tesseract
+{
+     my ($outim,$outpage)=@_;
+	    @cmd = ($tesseract,  $outim,$outpage, qw{ -l deu+eng+equ -psm 1 pdf});
+	    $msg .= "CMD: ".join(" ",@cmd,"\n");
+	    $outpage .= ".pdf";
+            $fail += ( system( @cmd) ? 1 : 0) unless -f $outpage;
+	    print STDERR "Done $outpage\n";
+	return $fail;
+}
+
+#split pdf into separate jpgs ($page) prefix
+sub do_pdftocairo
+{
+    my ($inpdf,$pages)=@_;
+
+    symlink ($inpdf,"$tmpdir/in.pdf");
+    my @cmd=(qw{pdftocairo -r 300 -jpeg}, "$tmpdir/in.pdf","$tmpdir/page");
+    print STDERR "CMD: ".join(" ",@cmd,"\n");
+    my $fail += ( system( @cmd) ? 1 : 0);
+    unlink("$tmpdir/in.pdf");
+    return $fail;
+}
+sub do_pdfunite
+{
+    my ($outpdf,@cpages)=@_;
+    @cmd = (qw{ pdfunite }, @cpages, $outpdf); 
+    print STDERR "CMD: ".join(" ",@cmd,"\n");
+    $fail += ( system( @cmd) ? 1 : 0) unless -f $outpdf;
+    # die "Failure generating $outpdf" unless -f $outpdf;
+return $fail
+}
+sub do_pdftotext
+{
+    my ($tmp)=@_;
+    symlink($outpdf,$tmp);
+    @cmd=($pdftotext,$tmp,"-");
+    
+    print STDERR "CMD: ".join(" ",@cmd,"\n");
+    my $txt=qx( @cmd );
+return $txt;
+}
+sub do_unopdf
+{
+  my ($in,$out)=@_;
+	    $in = abs_path($in);
+	    $out = abs_path($out);
+	    print STDERR "convert: $in\n";
+	    main::lock();
+	    qx|unoconv -o $out "$in"|;
+	    main::unlock();
+	    die "failed: $in" unless -f $out;
+return
+}
+
+sub do_file
+{
+  my ($in)=@_;
+	    chomp(my $type=qx|file -b --mime-type "$in"|);
+  return $type;
+}
+sub do_ungzip
+{
+  my ($in,$out)=@_;
+  qx|gzip -dc $i > "$out"|;
+  return;
+}
+sub do_pdftotext
+{
+   my ($in)=@_;
+    my $tmp= tmpnam().".pdf";
+    symlink($fn,$tmp);
+    @cmd=($pdftotext,$tmp,"-");
+    my $txt=qx( @cmd );
+    unlink $tmp unless $debug >2;
+return $txt;
+}
 
 1;
