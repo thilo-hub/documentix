@@ -314,6 +314,7 @@ sub ocrpdf {
     unlink(@outpages) unless $debug>2;
 
     my $tmp= "$tmpdir/out.pdf";
+    symlink($outpdf,$tmp);
     my $txt=do_pdftotext("$tmp");
     unlink $tmp unless $debug >2;
     rmdir $tmpdir unless $debug>2;
@@ -393,6 +394,7 @@ sub index_pdf {
     sub tp_any
     {
 	    my $self=shift;
+	    my $i = $self->{"file"};
 	    $self->{"fh"} = File::Temp->new(SUFFIX => '.pdf');
 	    $self->{"file"} = $self->{"fh"}->filename;
 	    $self->{"file"} = $wdir."/$1.pdf" if ( defined($wdir) && -d $wdir && $i =~ /([^\/]*$)/);
@@ -723,13 +725,20 @@ sub do_convert_thumb
 sub do_convert_icon
 {
   my ($fn,$pn)=@_;
+    my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
     # my @cmd = ( $convert, "'${fn}[$pn]'", qw{-trim -normalize -thumbnail 100} );
-    my @cmd = ( $pdftocairo, qw{-scale-to  100 -jpeg -singlefile -f },$pn,"-l",$pn,"'$fn'" , "-");
+    my $out=$tmpdir."/out";
+    my @cmd = ( $pdftocairo, qw{-scale-to  100 -jpeg -singlefile -f },$pn,"-l",$pn,"'$fn'" , $out);
     # push @cmd, "-rotate", $rot if $rot;
     # push @cmd, "png:-";
     print STDERR "X:" . join( " ", @cmd ) . "\n";
     my $png = qx{@cmd};
+    $out .= ".jpg" if -r $out.".jpg";
     print STDERR "L:" .length($png) . "\n" if $main::debug>1;
+    die "Failed cairo... " unless -f $out;
+    $png = slurp($out);
+    unlink ($out);
+    rmdir($tmpdir);
     return $png;
 }
 #convert single pdf-page to ocr-pdfpage
@@ -768,7 +777,7 @@ return $fail
 sub do_pdftotext
 {
     my ($tmp)=@_;
-    symlink($outpdf,$tmp);
+    # symlink($outpdf,$tmp);
     @cmd=($pdftotext,$tmp,"-");
     
     print STDERR "CMD: ".join(" ",@cmd,"\n");
@@ -782,9 +791,9 @@ sub do_unopdf
 	    $out = abs_path($out);
 	    print STDERR "convert: $in\n";
 	    main::lock();
-	    qx|unoconv -o $out "$in"|;
+	    qx|unoconv -o "$out" "$in"|;
 	    main::unlock();
-	    die "failed: $in" unless -f $out;
+	    die "failed: -o $out $in" unless -f $out;
 return
 }
 
@@ -804,7 +813,7 @@ sub do_pdftotext
 {
    my ($in)=@_;
     my $tmp= tmpnam().".pdf";
-    symlink($fn,$tmp);
+    symlink($in,$tmp);
     @cmd=($pdftotext,$tmp,"-");
     my $txt=qx( @cmd );
     unlink $tmp unless $debug >2;
