@@ -8,15 +8,30 @@
         // Depending on browser support files (FileList) might contain multiple items.
         files.each(function (file) {
           // React on successful AJAX upload:
-	  $('#msg').append("Uploading...");
+	  $('#msg').append("<div id=progress>Uploading...</div>");
           file.event(
 		'done', function (xhr) {
+	    var p=$('#progress');
+		    $(p).remove();
 		    $('#msg').append(this.name+" done<br>")
 		  });
           file.event(
 		  'error', function (xhr,XMLHttpReques) {
 		    $('#msg').append("ERROR: "+XMLHttpRequest.statusText+"<br>")
           });
+	  file.event('progress', function (sentBytes, totalBytes, XMLHttpRequest, eventObject) {
+	    var p=$('#progress');
+	    var f=5 * sentBytes/totalBytes;
+            var s="[";
+            for( var i=0;i< 5 ; i++) {
+                if ( i < f )
+		   s += "X";
+		else
+		   s += "-"
+	    }
+	    s += "]";
+	    $(p).html(s);
+	  });
 
           // Send the file:
           file.sendTo('upload.cgi');
