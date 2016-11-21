@@ -16,6 +16,7 @@ use feed;
 use tags;
 use Fcntl qw(:flock SEEK_END);
 use doclib::pdfidx;
+my $nthreads=8;
 
 use constant HOSTNAME => qx{hostname};
 
@@ -40,9 +41,11 @@ my %O = (
     # 'listen-host'              => '127.0.0.1',
     'listen-port' => $p,
 
-    #TJ 'listen-clients'           => 8,
+
     'listen-max-req-per-child' => 100,
 );
+     $O{'listen-clients'}=  $ENV{"THREADS"} || $nthreads
+	unless $ENV{"NOTHREADS"};
 
 my $d = HTTP::Daemon->new(
     LocalAddr => $O{'listen-host'},
