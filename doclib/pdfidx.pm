@@ -735,6 +735,7 @@ sub do_convert_icon
     my $png = qx{@cmd};
     $out .= ".jpg" if -r $out.".jpg";
     print STDERR "L:" .length($png) . "\n" if $main::debug>1;
+    $out="icon/noimg.jpg" unless -f $out;
     die "Failed cairo... " unless -f $out;
     $png = slurp($out);
     unlink ($out);
