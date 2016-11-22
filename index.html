@@ -29,25 +29,15 @@
 		    <input id="tags" />
 		</div>
 		<hr>
+		     <fieldset id="zone">
+		      <legend>Drop a file inside&hellip;</legend>
 		<div id="msg"></div>
 		<div id="scan">
 		    <a href="scanns.cgi" target="scanner">
 			Load scanned data
 		   </a>
 	        </div>
-    <div id="upload_zone">
-     <fieldset id="zone">
-      <legend>Drop a file inside&hellip;</legend>
-      <p>Or click here to <em>Browse</em>..</p>
-
-      <!-- Putting another element on top of file input so it overlays it
-           and user can interact with it freely. -->
-      <p style="z-index: 10; position: relative">
-        <input type="checkbox" id="multiple">
-        <label for="multiple">Allow multiple selection</label>
-      </p>
      </fileset>
-    </div>
 <script type="text/javascript" src="js/upload.js"></script>
 		<div id="pref">
 			<input id="ppage" value="10" size="10%" />
