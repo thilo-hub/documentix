@@ -179,16 +179,17 @@ $(function() {
         if (idx > 0) {
             params += "idx=" + idx;
         }
-        ;var sv = $("#search").val();
+        var sv = $("#search").val();
         if (nsrch != sv) {
             last_item = -1;
             nsrch = sv;
         }
-        params += "&search=" + sv;
+        if ( sv )
+		params += "&search=" + sv;
         if (clname) {
             params += "&class=" + clname;
         }
-        ;tag_in(0);
+        tag_in(0);
         $.ajax({
             url: "ldres.cgi",
             dataType: 'json',
