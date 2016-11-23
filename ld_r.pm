@@ -7,6 +7,7 @@ use doclib::pdfidx;
 use Cwd 'abs_path';
 use CGI;
 use POSIX;
+use JSON::PP;
 
 print STDERR ">>> ld_r.pm\n";
 $ENV{"PATH"} .= ":/usr/pkg/bin";
@@ -132,7 +133,6 @@ sub ldres {
     $class =~ s/:\d+$// if $class;
     undef $class if defined($class) && $class eq $ANY;
 
-    # $hd=$q->header( -charset => 'utf-8' ),    # , -cookie=> \@mycookies), ;
 
     my $idx = $dh->selectrow_array( $s1, undef, $search );
     my ( $dmin, $dmax );
@@ -260,30 +260,21 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
     my $out = load_results($dh,$stm1);
     my $msg = "results: $ndata<br>";
     $msg .= "qidx: $idx<br>" if $idx;
+    my $m = { 
+      nresults => $ndata,
+      idx  => $idx0,
+      dates=> $dater,
+      pageno=> int( $idx0 / $ppage ) + 1 ,
+      next_page => ($idx0+$ppage > $ndata)? $idx0 : $idx0 + $ppage,
+      query=> $search,
+      pages => pages( $q, $idx0, $ndata, $ppage ),
+      classes => join("", @$classes),
+      msg => $msg,
+      items => $out,
+    };
+    $out = JSON::PP->new->pretty->encode($m);
 
-    $res =
-        $q->div( { -class => "tick", -id => "nresults" }, $ndata )
-      . $q->div( { -class => "tick", -id => "idx" },      $idx0 )
-      . "&nbsp;"
-      . $q->div( { -class => "tick", -id => "dates" }, $dater )
-      . $q->div( { -class => "tick", -id => "pageno" },
-        int( $idx0 / $ppage ) + 1 )
-      . $q->div( { -class => "tick", -id => "query" }, $search )
-      . $q->div(
-        { -class => "tick", -id => "pages" },
-        pages( $q, $idx0, $ndata, $ppage )
-      ) . $q->div( { -id => "classes" }, join( "", @$classes ) )
-      . $q->div( {-id => "message"},$msg)
-      ;
-
-    $res .= "<br>";
-    $res .=
-      $q->div(
-        $q->ul( { -id => "X_results" }, $q->li( { -class => "rbox" }, $out ) )
-      );
-    $res .= $q->end_html;
-
-    return $hd . $res;
+return $out;
 }
 
 # print page jumper  bar
@@ -332,9 +323,8 @@ sub pages {
         -value => ">>",
         -id    => ( $last_p - 1 ) * $ppage + 1
       );
-    push @pgurl, $q->div({-id => 'nextpage', -class => 'hidden'} ,($next_p -1)*$ppage+1);
+    #push @pgurl, $q->div({-id => 'nextpage', -class => 'hidden'} ,($next_p -1)*$ppage+1);
     return join( "", @pgurl );
-    return $q->table( $q->Tr( $q->td( \@pgurl ) ) );
 }
 
 sub get_meta {
@@ -352,10 +342,6 @@ sub get_cell {
     my ($r)  = @_;
     my $meta = get_meta($dh, $r->{"idx"} );
     my $md5  = $meta->{"hash"}->{"value"};
-
-    my $editor = "edit.cgi?send=";
-    my $qt     = "'";
-    $editor .= "$md5&type=lowres";
     my $s = 0;
     my $p = "1";
     my $d = $r->{"date"} || "--";
@@ -365,91 +351,30 @@ sub get_cell {
         $d = $1 if $mpdf =~ /CreationDate\s*<\/td><td>(.*?)<\/td>/;
     }
     $p = 1 unless $p;
-    my $tags =
-"select tagname from hash natural join tags natural join tagname where md5=\"$md5\"";
+    my $tags = "select tagname from hash natural join tags natural join tagname where md5=\"$md5\"";
     $tags = $dh->selectall_hashref( $tags, 'tagname' );
     $tags = join( ",", sort keys %$tags );
-    $tags = $q->p( {-class => "tagfield"},
-        $q->input(
-            {
-                -name  => "tags",
-                -id    => "$md5",
-                -type  => "text",
-                -class => "tagbox",
-                -value => $tags
-            }
-        )
-    );
-
     my $short_name = $meta->{"Docname"}->{"value"};
     $short_name =~ s/^.*\///;
     my $sshort_name = $short_name;
     $short_name =~ s/#/%23/g;
-
-    # build various URLS
-    #my $pdf    = "docs/pdf/$md5/$short_name";
-    my $pdf    = "web/viewer.html?file=../docs/pdf/$md5/$short_name#pagemode=thumb";
-    my $pdf2    = "docs/raw/$md5/$short_name";
-    my $lowres = "docs/lowres/$md5/$short_name";
-
-    #my $ico    = qq{<img src='docs/ico/$md5/$short_name'};
-    my $ico =
-      $q->img( { -class => "thumb", -src => "docs/ico/$md5/$short_name" } );
     my $tip = $r->{"snippet"} || "";
-
-    #$tip =~ s/(.{1024}) .*/$1/;
-    #$tip =~ s/(([^\n]*\n){10}).*/$1/;
-    $tip =~ s/'/&quot;/g;
+    $tip =~ s/["']/&quot;/g;
     $tip =~ s/\n/<br>/g;
-    $tip = qq{'$tip'};
 
-    # print STDERR "TIP:$tip\n";
-
-my $docsrv="ts2";
-$meta->{PopFile}->{value} =~ s|http://$docsrv|$q->url(-base=>'1')|e
- if $meta->{PopFile} && $meta->{PopFile}->{value};
+  # $meta->{PopFile}
     my $day = $d;
     $day =~ s/\s+\d+:\d+:\d+\s+/ /;
-
-    # $d = $&;
-    $d =~ s/^\s*\S*\s+//;
-    $d =~ s/\s+\d+:\d+:\d+\s+/ /;
-
-    my $data = $q->div(
-        { -class => "thumb" },
-        $q->a(
-            {
-                -class       => "thumb",
-                -href        => $pdf,
-                -target      => "docpage",
-                -onmouseover => "Tip($tip)",
-                -onmouseout  => "UnTip()"
-            },
-            $ico
-        )
-      )
-      . $q->div(
-        { -class => "descr" },
-        $q->a( { -href => $meta->{PopFile}->{value}, -target => "_popfile" },
-            $meta->{Class}->{value} )
-          . $q->br
-          . $q->a( { -class => "doclink", -href => $pdf2, -target => "docpage" },
-            $sshort_name )
-          . $q->br
-          . $q->a( { -class => "dtags" }, $tags )
-          . (
-            ( ( $s / $p ) > 500000 )
-            ? $q->a( { -href => $lowres, -target => "docpage" },
-                "&lt;Lowres&gt;" )
-            : ""
-          )
-          . $q->a( { -href => $editor, -target => "docpage" }, "&lt;Edit&gt;" )
-          . "<br>$d"
-          . "<br> Pages: $p <br>$s"
-      );
-
-    return $q->td( $q->div( { -class => "rcell" }, $data ) );
-
+    my $vals={
+      md5 => $md5,
+      doc => $short_name,
+      tip => $tip,
+      pg => $p,
+      sz => $s,
+      dt => $day,
+      tg => $tags,
+    };
+    return $vals;
 }
 
 sub load_results {
@@ -459,24 +384,8 @@ sub load_results {
     my @outrow;
     my @out;
     while ( my $r = $stmt_hdl->fetchrow_hashref ) {
-        if (0) {
-            if ( $r->{"date"} && $t0 ne $r->{"date"} ) {
-                push @out, join( "\n  ", splice(@outrow) );
-
-                push @out,
-                  $q->th( { -colspan => $ncols }, $q->hr, $r->{"date"} );
-                $t0 = $r->{"date"};
-            }
-            push @outrow, get_cell($dh,$r);
-            push @out, join( "\n  ", splice(@outrow) )
-              if scalar(@outrow) >= $ncols;
-        }
-        else {
-            push @out, get_cell($dh,$r);
-        }
+	push @out, get_cell($dh,$r);
     }
-
-    # push @out, join( "\n  ", splice(@outrow) );
     return \@out;
 }
 

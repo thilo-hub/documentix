@@ -389,7 +389,7 @@
   //    // because of the object-wise preview handler that returns false
   //    // any event we call will return false bypassing its actual handlers.
   global.callAllOfObject = function (obj, event, args) {
-    if (global.logging && global.hasConsole) {
+    if (0 && global.logging && global.hasConsole) {
       var handlers = obj.events[event] ? obj.events[event].length || 0 : 0
       console.info('FileDrop ' + event + ' event (' + handlers + ') args:')
       console.dir([args])
