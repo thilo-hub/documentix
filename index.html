@@ -35,67 +35,59 @@
                     </div>
                     <hr>
                     <fieldset id="zone">
-                        <legend>Drop a file inside &hellip;</legend>
-                        <div id="msg"></div>
-                        <div id="scan">
-                            <a href="scanns.cgi" target="scanner">Load scanned data
-		   </a>
-                        </div>
-</fileset><script type="text/javascript" src="js/upload.js"></script>
-<div id="pref">
-    <input id="ppage" value="10" size="10%"/>
-</div>
-</div></div>
-<div class="right">
-    <div id="result" class="results">
-        Results
-        <script id="template_result" type="text/x-jsrender">
-            
-            
-	<div class="page_sep" id="item_{{:idx}}">
-	 <div class="hidden" id="pgs">{{:pages}}</div>
-	 {{for items tmpl="template_result_items"/}}
-	</div>
-
-        
-        </script>
-        <script id="template_result_items" type="text/x-jsrender">
-            
-            
-<li class="rbox">
-    <td>
-	<div class="rcell">
-	    <div class="thumb">
-		<a class="thumb" href="web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}#pagemode=thumb" onmouseout="UnTip()" 
-			onmouseover="Tip('{{:tip}}')" target="docpage">
-		    <img class="thumb" src="docs/ico/{{:md5}}/{{:doc}}" />
-		</a>
+			<legend>Drop a file inside &hellip;</legend>
+			<div id="msg"></div>
+			<div id="scan">
+			    <a href="scanns.cgi" target="scanner">Load scanned data </a>
+			</div>
+		    </fileset>
+		    <script type="text/javascript" src="js/upload.js"></script>
+		    <div id="pref">
+			<input id="ppage" value="10" size="10%"/>
+		    </div>
+		</div>
 	    </div>
-	    <div class="descr">
-		<a href target="_popfile">
-		</a>
-		<br />
-		<a class="doclink" href="docs/raw/{{:md5}}/{{:doc}}" target="docpage">{{:doc}}
-		</a>
-		<br />
-		<a class="dtags">
-		    <p class="tagfield">
-			<input class="tagbox" id="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
-		    </p>
-		</a>
-		<a href="edit.cgi?send={{:md5}}&amp;type=lowres" target="docpage">&lt;Edit&gt;
-		</a>
-		<br>{{:dt}}
-		<br> Pages: {{:pg}} 
-		<br>{{:sz}}
-	    </div>
+	    <div class="right">
+		<div id="result" class="results">
+		    Results
+<script id="template_result" type="text/x-jsrender">
+		    <div class="page_sep" id="item_{{:idx}}">
+		     <div class="hidden" id="pgs">{{:pages}}</div>
+		     {{for items tmpl="template_result_items"/}}
+		    </div>
+</script>
+<script id="template_result_items" type="text/x-jsrender">
+	    <li class="rbox">
+		<td>
+		    <div class="rcell">
+			<div class="thumb">
+			    <a class="thumb" href="web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}#pagemode=thumb" onmouseout="UnTip()" 
+				    onmouseover="Tip('{{:tip}}')" target="docpage">
+				<img class="thumb" src="docs/ico/{{:md5}}/{{:doc}}" />
+			    </a>
+			</div>
+			<div class="descr">
+			    <a href target="_popfile">
+			    </a>
+			    <br />
+			    <a class="doclink" href="docs/raw/{{:md5}}/{{:doc}}" target="docpage">{{:doc}}
+			    </a>
+			    <br />
+			    <a class="dtags">
+				<p class="tagfield">
+				    <input class="tagbox" id="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
+				</p>
+			    </a>
+			    <a href="edit.cgi?send={{:md5}}&amp;type=lowres" target="docpage">&lt;Edit&gt;
+			    </a>
+			    <br>{{:dt}}
+			    <br> Pages: {{:pg}} 
+			    <br>{{:sz}}
+			</div>
+		    </div>
+		</td>
+	    </li> 
+</script>
 	</div>
-    </td>
-</li> 
-
-        
-        </script>
     </div>
-</div>
-</div><div id="tmpstore" class="hidden"></div>
 </body></html>
