@@ -420,6 +420,7 @@ sub index_pdf {
 	my $meta=shift;
 	    my $t = $self->pdf_text( $self->{"file"}, $meta->{"md5"} );
 	    if ($t) {
+		$t =~ s/\s+/ /g;
 		$self->ins_e( $self->{"idx"}, "Text", $t );
 		# short version
 		$t =~ m/^\s*(([^\n]*\n){24}).*/s;
@@ -537,8 +538,8 @@ sub classify_all {
     my $popsession = undef;
     my $pop_xml;
 
-	    #$pop_xml = "http://localhost:".qx{awk "/xmlrpc_port/{printf '%s',$2}" popuser/popfile.cfg}."/RPC2";
-	    $pop_xml = "http://localhost:8180/RPC2";
+	    $pop_xml = "http://localhost:".qx{awk '/xmlrpc_port/{printf "%s",\$2}' popuser/popfile.cfg}."/RPC2";
+	    #$pop_xml = "http://localhost:8180/RPC2";
 
     sub pop_session {
         $popsession =
@@ -653,7 +654,7 @@ sub pdf_class {
 
     # print $fh "$p\n";
     my $tx = substr( $$txt, 0, 100000 );
-    $tx =~ s/\s+/ /g;
+    $tx =~ s/[^a-zA-Z_0-9]+/ /g;
     print $fh $tx;
 
     # print "T:$tf:$msg\n";
@@ -759,11 +760,13 @@ sub do_pdftocairo
 {
     my ($inpdf,$pages)=@_;
 
+    my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
     symlink ($inpdf,"$tmpdir/in.pdf");
-    my @cmd=(qw{pdftocairo -r 300 -jpeg}, "$tmpdir/in.pdf","$tmpdir/page");
+    my @cmd=(qw{pdftocairo -r 300 -jpeg}, "$tmpdir/in.pdf",$pages);
     print STDERR "CMD: ".join(" ",@cmd,"\n");
     my $fail += ( system( @cmd) ? 1 : 0);
     unlink("$tmpdir/in.pdf");
+    rmdir($tmpdir) or die "DIr: $!";
     return $fail;
 }
 sub do_pdfunite
