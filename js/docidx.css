@@ -48,7 +48,7 @@ div.menu {
 
 #taglist {
     border: inset thin red;
-    height: 120px
+    #height: 120px
 }
 
 #msg {
@@ -123,22 +123,29 @@ div.descr {
     padding-left: 4px
 }
 
+input {
+	background: none;
+}
 .pageno {
     padding: 0px;
-    border: none;
-    width: 16px
+    #border: inset blue;
+    #background: grey;
+    width: 16px;
 }
 
 .this_page {
     padding: 0px;
-    border: inset blue;
-    background: magenta
+    #border: inset blue;
+    background: grey;
+    color: red
+    width: 16px;
 }
 
 #set_page {
     padding: 0px;
-    border: inset thin magenta;
-    height: 20px;
+    #border: inset thin magenta;
+    background: none;
+    //height: 20px;
     width: 100%
 }
 
@@ -155,7 +162,7 @@ div.descr {
     float: left
 }
 
-#pageno {
+#XXXpageno {
     float: right;
     height: 20px;
 }
@@ -165,7 +172,7 @@ div.descr {
     border: solid grey
 }
 
-#pages {
+#XXXpages {
     display: none;
     position: fixed;
     width: 100% ;

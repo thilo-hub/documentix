@@ -43,7 +43,7 @@ $(function() {
             $('#msg').html("Searching...");
             clname = "";
             last_item = -1;
-            load_page(1);
+            fetch_page(1);
         }
     });
     // react on filter tags
@@ -57,7 +57,7 @@ $(function() {
             $("#result").html("");
             clname = ncl;
             last_item = -1;
-            load_page(1);
+            fetch_page(1);
         }
     })
     // react on page-no click
@@ -148,7 +148,7 @@ $(function() {
                 if (e_li > w_top && e_li < w_bot) {
                     // View page-selectors
                     last_e = e_li;
-                    $('#set_page').html($(el).find(' #pgs').html());
+                    $('#set_page').html($(el).find('#pgs').html());
                     return false;
                 }
             });
@@ -160,21 +160,22 @@ $(function() {
         }
         no_update_possible = 1;
         if (last_item != first_item)
-            load_page(last_item);
+            fetch_page(last_item);
     }
     // request/save/cache pages to the same result set
     // remove cache if search is different
     function show_page(idx) {
         if (idx < first_item || idx > last_item)
-            return load_page(idx);
+            return fetch_page(idx);
         var top_item = $('#item_' + idx + ' li').offset();
         if (top_item)
             $('html body').animate({
                 scrollTop: top_item.top
             }, 2000)
+	 update_view();
     }
     // Request page from server
-    function load_page(idx) {
+    function fetch_page(idx) {
         var params = "";
         if (idx > 0) {
             params += "idx=" + idx;
@@ -236,6 +237,38 @@ $(function() {
             $('#result').prepend(itm);
             first_idx = idx;
         }
+	var nitems=parseInt(data.nitems);
+	var n5  = Math.ceil(data.idx/nitems);
+	var n0  = n5 - 5;
+	if ( n0 < 0 )
+		    n0 = 0;
+	var n10 = n0+10;
+	if (n10*data.nitems > data.nresults)
+		    n10 = data.nresults/nitems;
+	$('#result').find('#item_'+idx).find('#pgs').find(':button').each( 
+		function(id,el) {
+			var at="pageno";
+			var idxn=parseInt(data.idx)+nitems*(id-2);
+			var vis = el.value;
+			if ( vis =="<<") idxn=1;
+			else if (vis =="<") idxn= idx-nitems;
+			else if (vis ==">") idxn= idx+nitems;
+			else if (vis ==">>")idxn= data.nresults-nitems;
+			else 
+			{
+				vis = n0+id-1;
+				el.value = vis;
+				if ( vis == n5 )
+					at="this_page";
+				else if ( vis < n10 )
+					at="pageno";
+				else
+					at="hidden";
+			}
+			$(el).attr("class",at);
+			el.id=idxn;
+		}
+	)
         if (!last_page)
             no_update_possible = 0;
         update_view();

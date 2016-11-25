@@ -28,7 +28,7 @@
                 <div id="left" class="menu">
                     <div id="pageno" class="pageno"></div>
                     Search: <input id="search" size="15%"/>
-                    <div id="set_page"></div>
+                    <div id="set_page" class="pageno"> </div>
                     <div id="taglist"></div>
                     <div id="tagedit" size="15%">
                         <input id="tags"/>
@@ -52,7 +52,23 @@
 		    Results
 <script id="template_result" type="text/x-jsrender">
 		    <div class="page_sep" id="item_{{:idx}}">
-		     <div class="hidden" id="pgs">{{:pages}}</div>
+		     <div class="hidden" id="pgs">
+			    <input type="button" id="pp" value="&lt;&lt;" />
+			    <input type="button" id="p"  value="&lt;" />
+			    <input type="button" id="1"  value="1"  />
+			    <input type="button" id="2"  value="2"  />
+			    <input type="button" id="3"  value="3"  />
+			    <input type="button" id="4"  value="4"  />
+			    <input type="button" id="5"  value="5"  />
+			    <input type="button" id="6"  value="6"  />
+			    <input type="button" id="7"  value="7"  />
+			    <input type="button" id="8"  value="8"  />
+			    <input type="button" id="9"  value="9"  />
+			    <input type="button" id="10" value="10" />
+			    <input type="button" id="11" value="11" />
+			    <input type="button" id="n"  value="&gt;" />
+			    <input type="button" id="nn" value="&gt;&gt;" />
+		    </div>
 		     {{for items tmpl="template_result_items"/}}
 		    </div>
 </script>

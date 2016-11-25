@@ -124,10 +124,6 @@ sub ldres {
 
     my ( $hd, $res ) = ( "", "" );
 
-    # my $idx0 = ( $q->param("idx") || 1 );
-    # my $ppage = ( $q->param("count") || 18 );
-    # my $search = $q->param("search") || undef;
-    # my $ppage = $q->param("ppage")|| $entries;
     undef $search if $search && $search =~ /^\s*$/;
     $idx0  = 1        unless $idx0;
     $ppage = $entries unless $ppage;
@@ -269,7 +265,9 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
       pageno=> int( $idx0 / $ppage ) + 1 ,
       next_page => ($idx0+$ppage > $ndata)? $idx0 : $idx0 + $ppage,
       query=> $search,
-      pages => pages( $q, $idx0, $ndata, $ppage ),
+      nitems => $ppage,
+      #pages => pages( $q, $idx0, $ndata, $ppage ),
+
       classes => join("", @$classes),
       msg => $msg,
       items => $out,
