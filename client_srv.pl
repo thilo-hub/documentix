@@ -6,6 +6,7 @@ use warnings;
 $ENV{"DISABLE_AUTH"} = 1;
 
 use CGI qw/ :standard /;
+use URI::Escape;
 use Data::Dumper;
 use HTTP::Daemon;
 use HTTP::Response;
@@ -134,11 +135,13 @@ sub http_child {
         foreach ( split( /&/, $r->content ) ) {
             my ( $k, $v ) = split( /=/, $_, 2 );
             next unless $k;
+	    $v = uri_unescape($v);
             $arg->{$k} = $v;
         }
         if ( $r->uri->as_iri =~ /\?(.*)/ ) {
             foreach ( split( /&/, $1 ) ) {
                 my ( $k, $v ) = split( /=/, $_, 2 );
+	        $v = uri_unescape($v);
                 $arg->{$k} = $v;
             }
         }

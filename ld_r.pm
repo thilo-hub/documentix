@@ -119,6 +119,8 @@ sub ldres {
     my $dh = $self->{"dh"};
 
     my ( $class, $idx0, $ppage, $search ) = @_;
+    $search =~ s/\s+$//;
+    $search =~ s/^\s+//;
 
     my ( $hd, $res ) = ( "", "" );
 
