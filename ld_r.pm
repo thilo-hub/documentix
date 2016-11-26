@@ -14,7 +14,6 @@ $ENV{"PATH"} .= ":/usr/pkg/bin";
 my $docsrv = "ts2.nispuk.com";
 
 my $__meta_sel;
-my $q       = CGI->new;
 my $ncols   = 2;
 my $entries = 10;
 
@@ -119,8 +118,8 @@ sub ldres {
     my $dh = $self->{"dh"};
 
     my ( $class, $idx0, $ppage, $search ) = @_;
-    $search =~ s/\s+$//;
-    $search =~ s/^\s+//;
+    $search =~ s/\s+$// if defined($search);
+    $search =~ s/^\s+// if defined($search);
 
     my ( $hd, $res ) = ( "", "" );
 
@@ -246,12 +245,8 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
             $ts = int( $ts * 40 );
             $ts = 19 if $ts > 19;
             $ts = 9 if $ts < 9;
-            $_  = $q->button(
-                -name  => 'button_name',
-                -class => 'tagbox',
-                -style => "font-size: ${ts}px; $bg ",
-                -value => $$_[0]
-              )
+	    my $rr=$$_[0];
+	    $_= "<input type='button'  name='button_name' value='$rr' class='tagbox' style='font-size: ${ts}px; $bg ' />";
         } @$classes
     ];
 
@@ -266,7 +261,6 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
       next_page => ($idx0+$ppage > $ndata)? $idx0 : $idx0 + $ppage,
       query=> $search,
       nitems => $ppage,
-      #pages => pages( $q, $idx0, $ndata, $ppage ),
 
       classes => join("", @$classes),
       msg => $msg,
@@ -278,54 +272,6 @@ return $out;
 }
 
 # print page jumper  bar
-sub pages {
-    my ( $q, $idx0, $ndata, $ppage ) = @_;
-    my @pgurl;
-    my $p0     = 1;
-    my $pi     = int( ( $idx0 - 1 ) / $ppage ) + $p0;
-    my $prev_p = $pi - 1;
-    $prev_p = 1 if $prev_p < 1;
-    my $last_p = int( $ndata / $ppage ) + $p0;
-    my $next_p = $pi + 1;
-    $next_p = $last_p if $next_p > $last_p;
-
-    my $lo = $pi - int( $entries / 2 );
-    $lo = $p0 if $lo < 1;
-    my $hi = $lo + $entries;
-    $hi = $last_p+1 if $hi > $last_p;
-
-    push @pgurl, $q->button( -class => 'pageno', -value => "<<", -id => 1 );
-    push @pgurl,
-      $q->button(
-        -class => 'pageno',
-        -value => "<",
-        -id    => ( $prev_p - 1 ) * $ppage + 1
-      );
-
-    foreach ( $lo .. $hi ) {
-        my $i = ( $_ - 1 ) * $ppage + 1;
-        push @pgurl,
-          $q->button(
-            -class => ( $_ == $pi ? 'this_page' : 'pageno' ),
-            -value => $_,
-            -id    => $i
-          );
-    }
-    push @pgurl,
-      $q->button(
-        -class => 'pageno',
-        -value => ">",
-        -id    => ( $next_p - 1 ) * $ppage + 1
-      );
-    push @pgurl,
-      $q->button(
-        -class => 'pageno',
-        -value => ">>",
-        -id    => ( $last_p - 1 ) * $ppage + 1
-      );
-    #push @pgurl, $q->div({-id => 'nextpage', -class => 'hidden'} ,($next_p -1)*$ppage+1);
-    return join( "", @pgurl );
-}
 
 sub get_meta {
     my $dh = shift;
