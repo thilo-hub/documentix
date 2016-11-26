@@ -5,7 +5,6 @@ use warnings;
 use Data::Dumper;
 use doclib::pdfidx;
 use Cwd 'abs_path';
-use CGI;
 use POSIX;
 use JSON::PP;
 

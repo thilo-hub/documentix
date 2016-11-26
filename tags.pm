@@ -7,6 +7,7 @@ use doclib::pdfidx;
 use Cwd 'abs_path';
 use JSON::PP;
 use Encode;
+use URI::Escape;
 
 my $__meta_sel;
 
@@ -34,7 +35,6 @@ sub new {
         return bless $self, $class;
 }
 
-use CGI::Util;
 
 sub add_tag
 {
@@ -43,7 +43,7 @@ sub add_tag
   my $json_text  = $args->{"json_string"};
 
   return undef unless $json_text;
-$json_text = CGI::unescape($json_text);
+$json_text = uri_unescape($json_text);
 
  print STDERR Dumper($json_text);
     my $json        = JSON::PP->new->utf8;
