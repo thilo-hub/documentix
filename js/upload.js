@@ -4,6 +4,19 @@
       var zone = new FileDrop('zone', options);
 
       // Do something when a user chooses or drops a file:
+      zone.event('upload', function (files) { 
+	      // Check if it is a url
+	      // then retrieve it and send upstream
+	      var itm=files.dataTransfer.getData("text/uri-list")
+	      var url="/web/viewer.html?url='"+itm+"'";
+	      if ( itm ) {
+		      // var win = window.open(url, "_blank");
+		      // if ( win )
+			//       win.focus();
+			downld(itm,"myfile.pdf");
+		      $('#msg').append("<hr>"+itm);
+	      }
+      });
       zone.event('send', function (files) {
         // Depending on browser support files (FileList) might contain multiple items.
         files.each(function (file) {
@@ -48,3 +61,27 @@
       fd.addEvent(fd.byID('multiple'), 'change', function (e) {
         zone.multiple(e.currentTarget || e.srcElement.checked);
       });
+
+function downld(url,filename)
+{
+        var a = document.createElement('a');
+	if (a.click) {
+		  a.href = url;
+		  a.target = '_parent';
+		  // Use a.download if available. This increases the likelihood that
+		  // the file is downloaded instead of opened by another PDF plugin.
+		  if ('download' in a) {
+		    a.download = filename;
+		  }
+		  // <a> must be in the document for IE and recent Firefox versions.
+		  // (otherwise .click() is ignored)
+		  (document.body || document.documentElement).appendChild(a);
+		  a.click();
+		  a.onload(
+			  function(){
+			  alert("Done");
+		  a.parentNode.removeChild(a);
+		  })
+	}
+}
+
