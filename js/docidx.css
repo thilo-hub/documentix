@@ -285,3 +285,7 @@ div.tagsinput span.tag {
     font-size: 13px;
     font-style: italic
 }
+.disable-hover {
+  pointer-events: none;
+}
+
