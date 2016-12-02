@@ -48,7 +48,7 @@ div.menu {
 
 #taglist {
     border: inset thin red;
-    #height: 120px
+    _disabled_height: 120px
 }
 
 #msg {
@@ -128,24 +128,24 @@ input {
 }
 .pageno {
     padding: 0px;
-    #border: inset blue;
-    #background: grey;
+    _disabled_border: inset blue;
+    _disabled_background: grey;
     width: 16px;
 }
 
 .this_page {
     padding: 0px;
-    #border: inset blue;
+    _disabled_border: inset blue;
     background: grey;
-    color: red
+    color: red;
     width: 16px;
 }
 
 #set_page {
     padding: 0px;
-    #border: inset thin magenta;
+    _disabled_border: inset thin magenta;
     background: none;
-    //height: 20px;
+    _disabled_height: 20px;
     width: 100%
 }
 
@@ -210,6 +210,9 @@ unsel {
     height: 200px;
     float: left;
     list-style-type: none
+}
+.rbox:hover {
+   background: #cccccc;
 }
 
 div.tagsinput {

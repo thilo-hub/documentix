@@ -4,9 +4,11 @@ var first_item = -1;
 var last_item = -1;
 var clname = "";
 var nsrch = "";
-var reload_limit = 500;
+var reload_limit = 1500;
 var foc_el = 0;
 var foc_id;
+var body = document.body,
+    timer;
 $(function() {
     var template = $.templates("template_result", {
         markup: "#template_result",
@@ -275,11 +277,10 @@ $(function() {
     }
 });
 
-var body = document.body,
-    timer;
 
 window.addEventListener('scroll', function() {
   clearTimeout(timer);
+  if(body) {
   if(!body.classList.contains('disable-hover')) {
     body.classList.add('disable-hover')
   }
@@ -287,6 +288,7 @@ window.addEventListener('scroll', function() {
   timer = setTimeout(function(){
     body.classList.remove('disable-hover')
   },500);
+}
 }, false);
 
 
