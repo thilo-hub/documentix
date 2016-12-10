@@ -77,8 +77,12 @@
 		<td>
 		    <div class="rcell">
 			<div class="thumb">
-			    <a class="thumb" href="web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}#pagemode=thumb" onmouseout="UnTip()" 
-				    onmouseover="Tip('{{:tip}}')" target="docpage">
+			    <a class="thumb" 
+		href="web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}#pagemode=thumb" 
+			            ondragstart="Dropit('{{:md5}}','{{:doc}}')"
+			            onmouseout="UnTip()" 
+				    onmouseover="Tip('{{:tip}}')" target="docpage"
+				>
 				<img class="thumb" src="docs/ico/{{:md5}}/{{:doc}}" />
 			    </a>
 			</div>

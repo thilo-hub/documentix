@@ -77,11 +77,20 @@ function downld(url,filename)
 		  // (otherwise .click() is ignored)
 		  (document.body || document.documentElement).appendChild(a);
 		  a.click();
-		  a.onload(
+		  $(document).ready(
 			  function(){
 			  alert("Done");
 		  a.parentNode.removeChild(a);
 		  })
 	}
+}
+function Dropit(md5,doc)
+{
+	var e=event.currentTarget;;
+	var url="application/pdf:"+doc+":" +
+		e.baseURI + "docs/pdf/"+md5+"/"+doc;
+	
+	event.dataTransfer.setData("DownloadURL",url);
+	 // data-downloadurl="application/pdf:{{:doc}}:docs/raw/{{:md5}}/{{:doc}}"
 }
 
