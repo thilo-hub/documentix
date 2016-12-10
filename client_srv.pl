@@ -9,6 +9,7 @@ use CGI qw/ :standard /;
 use URI::Escape;
 use Data::Dumper;
 use HTTP::Daemon;
+use HTTP::Daemon::SSL;
 use HTTP::Response;
 use HTTP::Status;
 use POSIX qw/ WNOHANG /;
@@ -49,8 +50,12 @@ my %O = (
 	unless $ENV{"NOTHREADS"};
 
 my $d = HTTP::Daemon->new(
+# my $d = HTTP::Daemon::SSL->new(
     LocalAddr => $O{'listen-host'},
     LocalPort => $O{'listen-port'},
+    SSL_cert_file => 'server-cert.pem',
+    SSL_key_file => 'server-key.pem',
+
     Reuse     => 1,
 ) or die "Can't start http listener at $O{'listen-host'}:$O{'listen-port'}";
 
@@ -190,6 +195,7 @@ sub http_child {
 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0',
                     'Pragma'  => 'no-cache',
                     'Expires' => 'Thu, 01 Dec 1994 16:00:00 GMT',
+                     'Access-Control-Allow-Origin' => "*",
                 ],
                 join( "\n", @_ ),
             )
