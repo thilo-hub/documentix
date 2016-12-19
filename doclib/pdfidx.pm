@@ -523,6 +523,41 @@ sub pdf_icon {
 
 # return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s", length($png), $png;
 }
+# classify unclassified
+
+sub class_unk {
+    my $self = shift;
+    my $all_t =
+    q{select idx,md5,file,substr(value,1,10000) txt    from metadata natural join hash natural join file where tag="Text" and idx not in (select idx from tags)};
+
+    my $add_c = 
+	q{ insert into tags (idx,tagid) select ?,tagid from tagname where tagname =? };
+    my $add_q = $self->{"dh"}->prepare($add_c);
+    my $sk = pop_session();
+
+   my $rv=pop_call( 'POPFile/API.get_buckets',$sk);
+   print STDERR "cln: $tg -> $rv\n";
+
+    my $all_s = $self->{"dh"}->prepare($all_t);
+    $all_s->execute;
+    while ( my $r = $all_s->fetchrow_hashref() ) {
+	    my $tmp_doc = get_popfile( $fn,$md5,$txt);
+	my ( $fh, $odoc ) = tempfile(
+	    'popfileinXXXXXXX',
+	    SUFFIX => ".msg",
+	    UNLINK => 1,
+	    DIR    => $temp_dir
+	);
+	print $fh $r->{"txt"};
+        close($fh);
+	my $rv = pop_call('POPFile/API.handle_message', $sk,$tmp_doc,$odoc);
+	unlink $tmp_doc;
+	unlink $odoc;
+	
+        print STDERR "Tx: $r->{idx} $r->{md5}   -> $rv\n";
+    }
+
+}
 
 sub get_class {
     my $self = shift;
