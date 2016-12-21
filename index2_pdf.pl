@@ -146,9 +146,9 @@ while(@list)
         print STDERR "Class ";
 
         my ( $PopFile, $Class ) = (
-            $pdfidx->pdf_class(
+            $pdfidx->pdf_class_file(
                 $r->{"file"}, \$dt->{"Text"}->{"value"},
-                $dt->{"hash"}->{"value"},0
+                $dt->{"hash"}->{"value"},undef
             )
         );
         $Class   = "----" unless $Class;

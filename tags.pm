@@ -50,11 +50,12 @@ $json_text = uri_unescape($json_text);
     my $perl_scalar = $json->decode($json_text);
 
     my $p=$perl_scalar->{"op"};
-    return "<html><body>Failure</body></html>" unless $p =~ /^(add|rem)$/;
-    $self->{"pd"}->pdf_set_class ($perl_scalar->{"tag"},$perl_scalar->{"md5"},$p);
 
-    $self->{add_l} ->execute( $perl_scalar->{"tag"} );
-    $self->{$p}->execute( $perl_scalar->{"tag"}, $perl_scalar->{"md5"} );
+    return "<html><body>Failure</body></html>" unless $p =~ /^(add|rem)$/;
+    my $cl=$perl_scalar->{"tag"};
+    $cl =~ s/^/-/ if $p eq "rem";
+
+    $self->{"pd"}->pdf_class_md5($perl_scalar->{"md5"},$cl);
 
    return  "
      <html>
