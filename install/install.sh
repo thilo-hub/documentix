@@ -1,5 +1,20 @@
 #!/bin/sh
 
+test -f client_srv.pl || echo "start in top-level directory --- ERROR" && exit 99
+
+# This is defined somewhere else -- you cannot change it yet
+DB_FILE=db/doc_db.db
+test -d $(dirname "$DB_FILE") || mkdir $(dirname "$DB_FILE") || exit 98
+sqlite3 $DB_FILE < install/doc_db.sql
+
+
+test -d incomming || mkdir incomming
+
+
+
+exit 0
+
+#######  UNSUPPORTED currently 
 INSTDIR=/var/db/pdf
 INSTUSER=documentix
 INSTGROUP=www-data
