@@ -8,7 +8,7 @@ my $db_con;
 
 sub new {
     my $dbn    = "SQLite";
-    my $d_name = "/tmp/ncache.db";
+    my $d_name = "/tmp/doc_cache.db";
     my $user   = "";
     my $pass   = "";
     my $class  = shift;

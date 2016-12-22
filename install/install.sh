@@ -1,6 +1,6 @@
 #!/bin/sh
 
-test -f client_srv.pl || echo "start in top-level directory --- ERROR" && exit 99
+test -f client_srv.pl || (echo "start in top-level directory --- ERROR" ;false) || exit 99
 
 # This is defined somewhere else -- you cannot change it yet
 DB_FILE=db/doc_db.db
