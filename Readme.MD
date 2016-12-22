@@ -32,9 +32,25 @@ HOW TO RUN the tool:
 
 #Start popfile -- it is needed for classification
 
-perl start
+ ./run_local.sh perl start_pop.pl $PWD
 
+
+# Before adding files you must (manually) create at least one bucket in popfile
+connect with the browser to localhost:18080
+ navigate to Buckets
+and add one
+
+
+# Then start the server:
 # Start it listening on all interfaces on port 8080
-perl client_srv.pl  0.0.0.0:8080
+ ./run_local.sh perl client_srv.pl 0.0.0.0:8080
 
+
+
+Connect to the server with the browser (Chrome & Safari are tested)
+
+
+Drag some pdf or word or ppt to the "drop-box"
+
+....
 
