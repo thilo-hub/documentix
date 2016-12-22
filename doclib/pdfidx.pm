@@ -359,6 +359,7 @@ sub index_pdf {
  die "Bad filename: $fn" if $fn =~ /'/;
     $self->{"idx"}=$idx;
     chomp(my $type=qx|file -b -i '$self->{file}'|);
+    print STDERR "Type: $type\n";
     $meta{"Mime"} = $type;
     my %mime_handler=(
 	    "application/x-gzip" => \&tp_gzip,
@@ -630,6 +631,7 @@ sub set_class_content
         $self->{"sk"} =
           XMLRPC::Lite->proxy($pop_xml)
           ->call( 'POPFile/API.get_session_key', 'admin', '' )->result;
+print STDERR "POP Session: $self->{sk}\n";
         return $self->{"sk"};
     }
 
@@ -743,9 +745,12 @@ sub pdf_class_file {
             ( $ln = $1, last ) if m/X-POPFile-Link:\s*(.*?)\s*$/;
         }
 
-        # print STDERR "$r\nLink: $ln\n";
+         print STDERR "$r\nLink: $ln\n";
 	close($rh_out);
 	unlink($tmp_out);
+	
+	my $dbop = "insert or ignore into tagname (tagname) values(?)";
+	$self->db_prep("add_class",$dbop)->execute($class);
 	
     }
     close($fh_out);
