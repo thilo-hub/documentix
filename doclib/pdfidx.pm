@@ -589,7 +589,7 @@ sub set_class_content
 {
   my $self=shift;
    my ($tg,$rtxt) =@_;
-   $rv=$self->pop_call( 'create_bucket', $tg);
+   $rv=$self->pop_call( 'create_bucket', to_bucketname($tg));
    print STDERR "TG: $tg -> $rv\n";
     my ( $fh, $tmp_doc ) = tempfile(
 	'popfileinXXXXXXX',
@@ -600,7 +600,7 @@ sub set_class_content
     print $fh $$rtxt;
     close($fh);
     print STDERR " Add: $tg ($ln) -> ";
-    $rv=$self->pop_call( 'add_message_to_bucket', $tg, $tmp_doc);
+    $rv=$self->pop_call( 'add_message_to_bucket', to_bucketname($tg), $tmp_doc);
     my $ln=length($$rtxt);
     print STDERR "$rv\n";
     unlink($tmp_doc);
@@ -632,7 +632,18 @@ sub set_class_content
           XMLRPC::Lite->proxy($pop_xml)
           ->call( 'POPFile/API.get_session_key', 'admin', '' )->result;
 print STDERR "POP Session: $self->{sk}\n";
+	# Check buckets in popfile
+        # ensure that at least a single bucket other than unclassified is available
+        my $bucket_list=$self->pop_call('get_buckets');
+	$self->pop_call('create_bucket', 'default')
+		unless(scalar(@$bucket_list));
         return $self->{"sk"};
+    }
+    sub to_bucketname
+    {
+	my $bn=lc(shift);
+	$bn =~ s/[^a-z0-9\-_]/_/g;
+	return $bn;
     }
 
     sub pop_release {
@@ -675,7 +686,7 @@ sub get_popfile_r {
     $tx =~ s/[^a-zA-Z_0-9]+/ /g;
     print $fh $tx;
 
-    # print "T:$tf:$msg\n";
+    print "T:$md5, $tx" if ($debug >2);
     close($fh);
     return $tmp_doc;
 }
@@ -723,9 +734,10 @@ sub pdf_class_file {
     } elsif ($class) 
     {
 	# Set&create  specific class
-	$rv=$self->pop_call("create_bucket",$class);
+	my $b=to_bucketname($class);
+	$rv=$self->pop_call("create_bucket",$b);
 
-	$rv=$self->pop_call("add_message_to_bucket",$class,$tmp_doc);
+	$rv=$self->pop_call("add_message_to_bucket",$b,$tmp_doc);
 
 	my $dbop = "insert or ignore into tagname (tagname) values(?)";
 	$self->db_prep("add_class",$dbop)->execute($class);
@@ -756,6 +768,7 @@ sub pdf_class_file {
     close($fh_out);
     $db_op->execute($md5,$class);
     unlink($tmp_doc);
+    printf STDERR "Class: $rv\n";
 
     return ( $ln, $rv );
 }
