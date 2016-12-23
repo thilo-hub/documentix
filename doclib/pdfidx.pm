@@ -705,7 +705,7 @@ sub pdf_class_md5
     my $gt_info=$self->db_prep("get_info",
                 q{ select file,substr(value,1,10000) txt from hash natural join file natural join metadata where md5=? and tag="Text"});
 
-    my $res  = $self->{"dh"}->selectrow_hashref($gt_info,undef,$md5);
+    my $r  = $self->{"dh"}->selectrow_hashref($gt_info,undef,$md5);
     return $self->pdf_class_file($r->{"file"},\$r->{"txt"},$md5,$class);
     
 }
