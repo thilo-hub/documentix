@@ -11,9 +11,13 @@ foreach (@pg) {
 	$o =~ s/\.[^\/]+$//;
 print "Do: $_\n";
 	$fail += pdfidx::do_tesseract($_,$o);
+	die "Page $o not generated" unless -f "$o.pdf";
+	push @opage,"$o.pdf";
 }
+$outpdf=$tmpdir."/out.pdf";
+@cpages=sort(@opage);
+$fail += pdfidx::do_pdfunite($outpdf,@cpages);
 # $fail += pdfidx::do_convert_ocr($inpdf,$outim);
-# $fail += pdfidx::do_pdfunite($outpdf,@cpages);
 # my $txt=pdfidx::do_pdftotext("$tmp");
 # pdfidx::do_unopdf($i,$self->{file});
 # my $type = pdfidx::do_file($self->{file});
