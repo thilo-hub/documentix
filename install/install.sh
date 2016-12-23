@@ -8,6 +8,15 @@ test -d $(dirname "$DB_FILE") || mkdir $(dirname "$DB_FILE") || exit 98
 test -f "$DB_FILE" || sqlite3 $DB_FILE < install/doc_db.sql
 test -d incomming || mkdir incomming
 
+echo "check the availability of required perl modules..."
+find . -name '*.p[lm]' -type f | egrep -v './local' | xargs cat | 
+   ./run_local.sh perl -ne '
+  BEGIN{
+    %dm=( pdfidx =>1);
+  }
+  next unless s/^\s*(use|require) ([a-zA-Z0-9_:]+)[\s;].*/require $2/; next if $dm{$2}++; open(STDERR,">/tmp/a.log"); eval($_); print "Failed: $2\n" if $@;'
+
+
 case $1 in
 	start)
 		test -f popuser/popfile.pid ||
