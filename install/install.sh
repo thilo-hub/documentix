@@ -5,10 +5,31 @@ test -f client_srv.pl || (echo "start in top-level directory --- ERROR" ;false) 
 # This is defined somewhere else -- you cannot change it yet
 DB_FILE=db/doc_db.db
 test -d $(dirname "$DB_FILE") || mkdir $(dirname "$DB_FILE") || exit 98
-sqlite3 $DB_FILE < install/doc_db.sql
-
-
+test -f "$DB_FILE" || sqlite3 $DB_FILE < install/doc_db.sql
 test -d incomming || mkdir incomming
+
+case $1 in
+	start)
+		test -f popuser/popfile.pid ||
+			./run_local.sh perl start_pop.pl $PWD  || exit 96
+		./run_local.sh perl client_srv.pl 0.0.0.0:28080 || exit 95
+		;;
+	stop)
+		test -f popuser/popfile.pid &&
+			kill $(cat popuser/popfile.pid)
+		;;
+	uninstall)
+		test -f popuser/popfile.pid &&
+			kill $(cat popuser/popfile.pid)
+		rm -rf "$(dirname "$DB_FILE")" incomming
+		rm -f /tmp/doc_cache.db* /tmp/documentix.*.lock
+		rm -rf popuser/popfile.db popuser/messages
+		echo "All databases have been removed"
+		;;
+	*)
+		echo "Documentix ready to be started"
+		;;
+esac
 
 
 

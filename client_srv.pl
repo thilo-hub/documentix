@@ -24,7 +24,7 @@ use constant HOSTNAME => qx{hostname};
 
 $main::debug = 0;
 
-open( my $fhx, ">/tmp/$$.lock" ) || die "No Open";
+open( my $fhx, ">/tmp/documentix.$$.lock" ) || die "No Open";
 
 sub lock {
     flock( $fhx, LOCK_EX ) or die "Cannot lock mailbox - $!\n";
