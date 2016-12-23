@@ -829,6 +829,7 @@ sub do_tesseract
      my ($image,$outpage)=@_;
 	    @cmd = ($tesseract,  $image,$outpage, qw{ -l deu+eng+equ -psm 1 pdf});
 	    $msg .= "CMD: ".join(" ",@cmd,"\n");
+	    print STDERR "$msg";
 	    $outpage .= ".pdf";
             $fail += ( system( @cmd) ? 1 : 0) unless -f $outpage;
 	    print STDERR "Done $outpage\n";
