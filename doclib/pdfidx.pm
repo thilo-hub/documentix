@@ -827,6 +827,7 @@ sub do_convert_icon
 sub do_tesseract
 {
      my ($image,$outpage)=@_;
+     my $msg;
 	    @cmd = ($tesseract,  $image,$outpage, qw{ -l deu+eng+equ -psm 1 pdf});
 	    $msg .= "CMD: ".join(" ",@cmd,"\n");
 	    print STDERR "$msg";
