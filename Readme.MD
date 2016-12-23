@@ -46,6 +46,11 @@ and add one
  ./run_local.sh perl client_srv.pl 0.0.0.0:8080
 
 
+Alternatively it is possible to
+
+install/install.sh start    --- which installs and starts popfile and the client_server on port 28080
+
+
 
 Connect to the server with the browser (Chrome & Safari are tested)
 
