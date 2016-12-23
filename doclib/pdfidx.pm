@@ -826,8 +826,8 @@ sub do_convert_icon
 #convert single pdf-page to ocr-pdfpage
 sub do_tesseract
 {
-     my ($outim,$outpage)=@_;
-	    @cmd = ($tesseract,  $outim,$outpage, qw{ -l deu+eng+equ -psm 1 pdf});
+     my ($image,$outpage)=@_;
+	    @cmd = ($tesseract,  $image,$outpage, qw{ -l deu+eng+equ -psm 1 pdf});
 	    $msg .= "CMD: ".join(" ",@cmd,"\n");
 	    $outpage .= ".pdf";
             $fail += ( system( @cmd) ? 1 : 0) unless -f $outpage;
