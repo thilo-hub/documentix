@@ -24,6 +24,18 @@ sh install/install.sh
  and only create the database and a drop-direcotry
 
 YOU WILL NEED lots of packages, unfortunatly it is currently a trial-and-error to find all you need
+ - Some I currently recall are:
+	perl, 
+	tesseract (>3.0.4), 
+	libpoppler, 
+	ghostscript, 
+	LibreOffice 
+	and some perl-modules
+	PopFile (currently also copied in the repository)
+        DBD::SQLite 
+	XMLRPC::Lite;
+	Digest::MD5::File   -- don't yell at me, it currently does the job, and should be replaced by SHA256 later
+
 
 
 The trial-and error or
