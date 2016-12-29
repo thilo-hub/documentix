@@ -29,7 +29,8 @@ YOU WILL NEED lots of packages, unfortunatly it is currently a trial-and-error t
 	- tesseract (>3.0.4), 
 	- libpoppler, 
 	- ghostscript, 
-	- LibreOffice 
+	- LibreOffice  
+
 	and some perl-modules
 	- PopFile (currently also copied in the repository)
         - DBD::SQLite 
