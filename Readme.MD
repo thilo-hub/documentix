@@ -19,7 +19,7 @@ Installation:
 
 Typically from the main directory run the script:
 
-sh install/install.sh
+sh install/install.sh 
  --- it is currently at a minimum functionality
  and only create the database and a drop-direcotry
 
@@ -30,27 +30,13 @@ The trial-and error or
 
 HOW TO RUN the tool:
 
-#Start popfile -- it is needed for classification
+sh install/install.sh start
+  -- starts popfile and server
+  --  waits for ^C to terminate both
 
- ./run_local.sh perl start_pop.pl $PWD
-
-
-# Before adding files you must (manually) create at least one bucket in popfile
-connect with the browser to localhost:18080
- navigate to Buckets
-and add one
-
-
-# Then start the server:
-# Start it listening on all interfaces on port 8080
- ./run_local.sh perl client_srv.pl 0.0.0.0:8080
-
-
-Alternatively it is possible to
-
-install/install.sh start    --- which installs and starts popfile and the client_server on port 28080
-
-
+-- Navigate to:
+    http://localhost:28080      <- Search page
+    http://localhost:18080      <- Popfile manager
 
 Connect to the server with the browser (Chrome & Safari are tested)
 
