@@ -15,7 +15,7 @@ It is a perl based server implementation (standalone)
   ---- but this has been abandoned because "important" documents are not always on "some" server,
   ---- and I want it to be run almost stand-alone
 
-Installation:
+# Installation:
 
 Typically from the main directory run the script:
 
@@ -28,9 +28,11 @@ YOU WILL NEED lots of packages, unfortunatly it is currently a trial-and-error t
 
 The trial-and error or
 
-HOW TO RUN the tool:
+# HOW TO RUN the tool:
 
 sh install/install.sh start
+
+
   -- starts popfile and server
   --  waits for ^C to terminate both
 
