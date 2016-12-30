@@ -60,3 +60,7 @@ Drag some pdf or word or ppt to the "drop-box"
 
 ....
 
+Manually load a file into the database:
+perl test_index_pdf.pl {file(s)}
+
+
