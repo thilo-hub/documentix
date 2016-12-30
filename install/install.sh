@@ -41,6 +41,8 @@ case $1 in
 		test -f popuser/popfile.pid ||
 			./run_local.sh perl start_pop.pl $PWD  || exit 96
 		test -f popuser/popfile.pid || exit 95
+		# Add first document....
+		perl tests/test_index_pdf.pl Documentation/FirstRun.pdf   || exit 91
 		./run_local.sh perl client_srv.pl 0.0.0.0:28080 || exit 95
 		;;
 	stop)
@@ -57,6 +59,7 @@ case $1 in
 		;;
 	*)
 		# Check required programms 
+		
                 echo -n "Test for: " ; which unoconv || (echo "Need unoconv from Libreoffice to convert things to PDF" ; false) || ERR=90
                 echo -n "Test for: " ; which tesseract && pkg-config --atleast-version 3.04  tesseract  ||
 								(echo "Need tesseract to OCR  pdfs -- New version 3.04 for pdf creation required " ; false) || ERR=90
