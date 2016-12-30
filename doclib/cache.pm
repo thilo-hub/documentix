@@ -2,7 +2,7 @@ package cache;
 
 use parent DBI;
 use DBI qw(:sql_types);
-print STDERR ">>> cache.pm\n";
+print STDERR ">>> cache.pm\n" if $main::debug>2;
 
 my $db_con;
 

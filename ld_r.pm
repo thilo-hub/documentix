@@ -8,7 +8,7 @@ use Cwd 'abs_path';
 use POSIX;
 use JSON::PP;
 
-print STDERR ">>> ld_r.pm\n";
+print STDERR ">>> ld_r.pm\n" if $main::debug>2;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
 my $docsrv = "ts2.nispuk.com";
 

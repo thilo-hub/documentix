@@ -8,7 +8,6 @@ use Sys::Hostname;
 use File::Temp qw/tempfile tmpnam tempdir/;
 use File::Basename;
 use Cwd 'abs_path';
-print STDERR ">>> pdfidx.pm\n";
 $File::Temp::KEEP_ALL = 1;
 my $mth   = 1;
 my $maxcpu= 8;

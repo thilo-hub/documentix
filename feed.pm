@@ -9,7 +9,7 @@ use HTTP::Date;
 use Cwd 'abs_path';
 
 $ENV{"PATH"} .= ":/usr/bin:/usr/pkg/bin";
-print STDERR ">>> feed.pm\n";
+print STDERR ">>> feed.pm\n" if $main::debug >2;
 
 # Process an HTTP request
 my $pdfidx = pdfidx->new();
