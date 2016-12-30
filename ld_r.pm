@@ -226,7 +226,7 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
         );
     }
 
-    my $dater = join( " ... ", $dh->selectrow_array("select * from drange") ,"");
+    my $dater = join( " ... ", $dh->selectrow_array("select * from drange") || "");
     $classes = $dh->selectall_arrayref($classes);
     $ndata   = $dh->selectrow_array($ndata);
     $stm1    = $dh->prepare($stm1);
