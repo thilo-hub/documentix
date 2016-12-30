@@ -9,7 +9,8 @@ use CGI qw/ :standard /;
 use URI::Escape;
 use Data::Dumper;
 use HTTP::Daemon;
-use HTTP::Daemon::SSL;
+# -- not easy to install.... 
+# Disabled for the time being use HTTP::Daemon::SSL;
 use HTTP::Response;
 use HTTP::Status;
 use POSIX qw/ WNOHANG /;
