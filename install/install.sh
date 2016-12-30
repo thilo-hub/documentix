@@ -1,4 +1,5 @@
 #!/bin/sh
+ERR=0;
 
 test -f client_srv.pl || (echo "start in top-level directory --- ERROR" ;false) || exit 99
 
@@ -55,13 +56,21 @@ case $1 in
 		echo "All databases have been removed"
 		;;
 	*)
-		echo "Documentix ready to be started"
+		# Check required programms 
+                echo -n "Test for: " ; which unoconv || (echo "Need unoconv from Libreoffice to convert things to PDF" ; false) || ERR=90
+                echo -n "Test for: " ; which tesseract && pkg-config --atleast-version 3.04  tesseract  ||
+								(echo "Need tesseract to OCR  pdfs -- New version 3.04 for pdf creation required " ; false) || ERR=90
+                echo -n "Test for: " ; which pdftocairo || (echo "Need pdftocairo from Poppler to help for OCR" ; false) || ERR=90
+                echo -n "Test for: " ; which convert || (echo "Need convert from ImageMagic  to help for OCR" ; false) || ERR=90
+		if [ "$ERR" -eq 0 ]; then
+			echo "Documentix ready to be started"
+		fi
 		;;
 esac
 
 
 
-exit 0
+exit $ERR
 
 #######  UNSUPPORTED currently 
 INSTDIR=/var/db/pdf
