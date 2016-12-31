@@ -1,24 +1,39 @@
 #!/bin/sh
+INSTALL_V="Documentix V0.01 - alpha"
 ERR=0;
 
 test -f client_srv.pl || (echo "start in top-level directory --- ERROR" ;false) || exit 99
 
 # This is defined somewhere else -- you cannot change it yet
 DB_FILE=db/doc_db.db
-test -d $(dirname "$DB_FILE") || mkdir $(dirname "$DB_FILE") || exit 98
-test -f "$DB_FILE" || sqlite3 $DB_FILE < install/doc_db.sql
-test -d incomming || mkdir incomming
+# Skip all lengthy tests if a instsall passed before
+if [ -f .install_ok ] && [ "$(cat .install_ok)" == "$(cat version.txt)" ]; then
+        echo "Skip tests"
+else
+	# Check required programms 
+	
+	echo -n "Test for: " ; which unoconv || (echo "Need unoconv from Libreoffice to convert things to PDF" ; false) || ERR=90
+	echo -n "Test for: " ; which tesseract && pkg-config --atleast-version 3.04  tesseract  ||
+							(echo "Need tesseract to OCR  pdfs -- New version 3.04 for pdf creation required " ; false) || ERR=90
+	echo -n "Test for: " ; which pdftocairo || (echo "Need pdftocairo from Poppler to help for OCR" ; false) || ERR=90
+	echo -n "Test for: " ; which convert || (echo "Need convert from ImageMagic  to help for OCR" ; false) || ERR=90
+	test -d $(dirname "$DB_FILE") || mkdir $(dirname "$DB_FILE") || exit 98
+	test -f "$DB_FILE" || sqlite3 $DB_FILE < install/doc_db.sql
+	test -d incomming || mkdir incomming
+	test -d popuser || ( mkdir popuser && cp install/popuser_default.cfg popuser/popfile.cfg )
 
 echo "check the availability of required perl modules..."
+# Filter out some false negatives
 find . -name '*.p[lm]' -type f | egrep -v './local' | xargs cat | 
-   ./run_local.sh perl -ne '
+   ./run_local.sh perl -Idates  -ne '
+  $main::debug=0;
   BEGIN{
     %dm=( pdfidx =>1);
   }
-  next unless s/^\s*(use|require) ([a-zA-Z0-9_:]+)[\s;].*/require $2/; next if $dm{$2}++; open(STDERR,">/tmp/a.log"); eval($_); print "Failed: $2\n" if $@;'  |
+  next unless s/^\s*(use|require) ([a-zA-Z0-9_:]+)[\s;].*/require $2/; next if $dm{$2}++; open(STDERR,">/tmp/a.log"); eval($_); print "Failed: $2\n" if $@;'  2>/dev/null|
 # These are not really required.. so do not report them
-egrep -v '
-Failed: File::ChangeNotify
+tee a.out |
+egrep -v 'Failed: File::ChangeNotify
 Failed: Email::MIME
 Failed: POPFile::Module
 Failed: POPFile::Loader
@@ -32,8 +47,19 @@ Failed: Classifier::MailParse
 Failed: POPFile::Mutex
 Failed: BerkeleyDB
 Failed: MeCab
-Failed: Text::Kakasi'
+Failed: Text::Kakasi' | tee /tmp/test.install.$$
 
+	if [ -s /tmp/test.install.$$ ]; then
+		ERR=89
+	fi
+	rm -f /tmp/test.install.$$
+
+
+	if [ "$ERR" -eq 0 ]; then
+		echo "Documentix ready to be started"
+		cp version.txt .install_ok
+	fi
+fi
 
 
 case $1 in
@@ -41,7 +67,7 @@ case $1 in
 		test -f popuser/popfile.pid ||
 			./run_local.sh perl start_pop.pl $PWD  || exit 96
 		test -f popuser/popfile.pid || exit 95
-		# Add first document....
+		echo " Add first document...."
 		perl tests/test_index_pdf.pl Documentation/FirstRun.pdf   || exit 91
 		./run_local.sh perl client_srv.pl 0.0.0.0:28080 || exit 95
 		;;
@@ -52,22 +78,13 @@ case $1 in
 	uninstall)
 		test -f popuser/popfile.pid &&
 			kill $(cat popuser/popfile.pid)
-		rm -rf "$(dirname "$DB_FILE")" incomming
+		DB="$(dirname "$DB_FILE")" 
+		test -d "$DB" && rm -rf "$DB"
+		test -d incomming && rm -rf incomming
+		test -d popuser && rm -r popuser
+		rm -f .install_ok
 		rm -f /tmp/doc_cache.db* /tmp/documentix.*.lock
-		rm -rf popuser/popfile.db popuser/messages
 		echo "All databases have been removed"
-		;;
-	*)
-		# Check required programms 
-		
-                echo -n "Test for: " ; which unoconv || (echo "Need unoconv from Libreoffice to convert things to PDF" ; false) || ERR=90
-                echo -n "Test for: " ; which tesseract && pkg-config --atleast-version 3.04  tesseract  ||
-								(echo "Need tesseract to OCR  pdfs -- New version 3.04 for pdf creation required " ; false) || ERR=90
-                echo -n "Test for: " ; which pdftocairo || (echo "Need pdftocairo from Poppler to help for OCR" ; false) || ERR=90
-                echo -n "Test for: " ; which convert || (echo "Need convert from ImageMagic  to help for OCR" ; false) || ERR=90
-		if [ "$ERR" -eq 0 ]; then
-			echo "Documentix ready to be started"
-		fi
 		;;
 esac
 
@@ -75,45 +92,4 @@ esac
 
 exit $ERR
 
-#######  UNSUPPORTED currently 
-INSTDIR=/var/db/pdf
-INSTUSER=documentix
-INSTGROUP=www-data
-
-case $1 in
- install)
-        ( cd tools || exit 99; find . -type l | while read F ; do ln $(which "$F") ./"$F.new" && rm $F && mv "$F.new" "$F" || exit 98;done) || exit 99
-	# cehck requirements:
-	egrep -rah '^use\W.*;\s*$'  . | sort -u  | perl -Idoclib -c - || exit 99
-	sudo mkdir -p  $INSTDIR
-	sudo useradd  -d $INSTDIR $INSTUSER 
-	sudo chsh -s /bin/false $INSTUSER
-	sudo chown $INSTUSER.$INSTGROUP $INSTDIR
-	sudo chmod 3775 $INSTDIR
-	sudo -u $INSTUSER tar xzf install/popfile.tar.gz -C $INSTDIR
-	sudo -u $INSTUSER tar xzf install/popuser.tar.gz -C $INSTDIR
-
-	sudo -u $INSTUSER sqlite3 $INSTDIR/doc_db.db '.read install/doc_db.sql'
-	sudo -u $INSTUSER $INSTDIR/start_pop.pl
-	sudo  -u $INSTUSER perl install/add_user.pl
-	sudo chmod 664 $INSTDIR/doc_db.db 
-
-	echo "Run simple test"
-	sh install/test_1.sh
-	echo "Please configure popfile @http://localhost:8080"
-	if type firefox ; then
-		firefox http://localhost:8080
-	fi
-
-        echo DONE
-	;;
- uninstall)
-	sudo -u $INSTUSE$INSTUSER pkill -U $INSTUSER -f   popfile 
-	sudo userdel $INSTUSER
-	sudo rm -r $INSTDIR
-	;;
-	*)  echo "Usage install|uninstall"
-	false
-	;;
-esac
 
