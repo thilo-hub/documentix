@@ -26,6 +26,7 @@ echo "check the availability of required perl modules..."
 # Filter out some false negatives
 find . -name '*.p[lm]' -type f | egrep -v './local' | xargs cat | 
    ./run_local.sh perl -Idates  -ne '
+  use Docconf;
   $main::debug=0;
   BEGIN{
     %dm=( pdfidx =>1);

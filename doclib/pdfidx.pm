@@ -1,6 +1,7 @@
 package pdfidx;
 use XMLRPC::Lite;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
+use parent Docconf;
 
 use parent DBI;
 use DBI qw(:sql_types);
@@ -9,9 +10,10 @@ use File::Temp qw/tempfile tmpnam tempdir/;
 use File::Basename;
 use Cwd 'abs_path';
 $File::Temp::KEEP_ALL = 1;
-my $mth   = 1;
-my $maxcpu= 8;
-my $debug=1;
+my $maxcpu= $Docconf::config->{number_ocr_threads};
+my $mth   = $maxcpu > 1 ? 1 : 01;
+my $debug=$Docconf::config->{debug};
+
 my $tools = "/usr/pkg/bin";
 $tools = "/home/thilo/documentix/tools" unless -d $tools;
     use Data::Dumper;
@@ -39,10 +41,10 @@ my $cleanup = 0;
 my $db_con;
 
 sub new {
-    my $dbn    = "SQLite";
-    my $d_name = "db/doc_db.db";
-    my $user   = "";
-    my $pass   = "";
+    my $dbn    = $Docconf::config->{database_provider};
+    my $d_name = $Docconf::config->{database};
+    my $user   = $Docconf::config->{database_user};
+    my $pass   = $Docconf::config->{database_pass};
     my $class  = shift;
     # return $db_con if $db_con;
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )

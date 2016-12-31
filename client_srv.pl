@@ -3,7 +3,8 @@
 
 use strict;
 use warnings;
-$ENV{"DISABLE_AUTH"} = 1;
+
+use Docconf;
 
 use CGI qw/ :standard /;
 use URI::Escape;
@@ -19,13 +20,13 @@ use feed;
 use tags;
 use Fcntl qw(:flock SEEK_END);
 use doclib::pdfidx;
-my $nthreads=8;
+my $nthreads=$Docconf::config->{number_server_threads};
 
 use constant HOSTNAME => qx{hostname};
 
-$main::debug = 0;
+$main::debug = $Docconf::config->{debug};
 
-open( my $fhx, ">/tmp/documentix.$$.lock" ) || die "No Open";
+open( my $fhx, ">",$Docconf::config->{lockfile} ) || die "No Open";
 
 sub lock {
     flock( $fhx, LOCK_EX ) or die "Cannot lock mailbox - $!\n";
@@ -35,7 +36,7 @@ sub unlock {
     flock( $fhx, LOCK_UN ) or die "Cannot unlock mailbox - $!\n";
 }
 
-my ( $i, $p ) = split( /:/, $ARGV[0] || "127.0.0.1:8080" );
+my ( $i, $p ) = split( /:/, $ARGV[0] || $Docconf::config->{server_listen_if} );
 
 my %O = (
 

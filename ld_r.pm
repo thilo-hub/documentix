@@ -5,16 +5,15 @@ use warnings;
 use Data::Dumper;
 use doclib::pdfidx;
 use Cwd 'abs_path';
+use Docconf;
 use POSIX;
 use JSON::PP;
 
-print STDERR ">>> ld_r.pm\n" if $main::debug>2;
+print STDERR ">>> ld_r.pm\n" if $Docconf::config->{debug}>2;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
-my $docsrv = "ts2.nispuk.com";
 
 my $__meta_sel;
-my $ncols   = 2;
-my $entries = 10;
+my $entries = $Docconf::config->{results_per_page};
 
 use Sys::Hostname;
 my $myhost=hostname();
