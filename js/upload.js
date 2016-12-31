@@ -1,5 +1,5 @@
       // Tell FileDrop we can deal with iframe uploads using this URL:
-      var options = {iframe: {url: 'upload.cgi'}};
+      var options = {iframe: {url: 'upload'}};
       // Attach FileDrop to an area ('zone' is an ID but you can also give a DOM node):
       var zone = new FileDrop('zone', options);
 
@@ -47,7 +47,7 @@
 	  });
 
           // Send the file:
-          file.sendTo('upload.cgi');
+          file.sendTo('upload');
         });
       });
 

@@ -113,10 +113,10 @@ sub http_child {
     my $tags   = tags->new();
     my $pdfidx = pdfidx->new();
     my @pages  = (
-        { p => '/upload.cgi(/.*)?',          cb => \&do_upload },
+        { p => '/upload(/.*)?',          cb => \&do_upload },
         { p => '/docs/([^/]+)/([^/]+)/(.*)', cb => \&do_feed },
-        { p => '/ldres.cgi',                 cb => \&do_ldres },
-        { p => '/tags.cgi',                  cb => \&do_tags, },
+        { p => '/ldres',                 cb => \&do_ldres },
+        { p => '/tags',                  cb => \&do_tags, },
         { p => '/',                          cb => \&do_index },
         { p => '/+(.*)',                     cb => \&do_anycgi },
     );
@@ -243,7 +243,7 @@ sub http_child {
 
     sub do_feed {
         my $c = shift;
-        print "feed.cgi $1\n" if $main::debug > 0;
+        print "feed $1\n" if $main::debug > 0;
 
         lock();
         my $r = HTTP::Message->new( $feed->feed_m( $2, $1, $3 ) );

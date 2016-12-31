@@ -30,7 +30,7 @@ $(function() {
     });
     // Initial load
     $.ajax({
-        url: "ldres.cgi",
+        url: "ldres",
         dataType: 'json',
         success: function(data) {
             load_result(1, data)
@@ -71,7 +71,7 @@ $(function() {
     $('#tags').tagsInput({
         width: "180px",
         onAddTag: function(elem, elem_tags) {
-            $('#msg').html($.post("tags.cgi", {
+            $('#msg').html($.post("tags", {
                 json_string: JSON.stringify({
                     tag: elem,
                     op: "add",
@@ -83,7 +83,7 @@ $(function() {
             }))
         },
         onRemoveTag: function(elem, elem_tags) {
-            $.post("tags.cgi", {
+            $.post("tags", {
                 json_string: JSON.stringify({
                     tag: elem,
                     op: "rem",
@@ -194,7 +194,7 @@ $(function() {
         }
         tag_in(0);
         $.ajax({
-            url: "ldres.cgi",
+            url: "ldres",
             dataType: 'json',
             data: params,
             success: function(data) {
