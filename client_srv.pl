@@ -88,7 +88,7 @@ while (1) {
             }
             if ($pid) {               # parent
                 $chld{$pid} = 1;
-		print STDERR "Forked $pid\n";
+		print STDERR "Forked server PID:$pid\n";
             }
             else {                    # child
                 $_ = 'DEFAULT' for @SIG{qw/ INT TERM CHLD /};

@@ -47,7 +47,7 @@ sub new {
     # return $db_con if $db_con;
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
-    print STDERR "New pdf conn: $dh\n";
+    print STDERR "New pdf conn: $dh\n" if $main::debug>0;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
     $self->{"setup_db"} = \&setup_db;
     $self->{"dh1"} = $dh;
@@ -422,7 +422,7 @@ sub index_pdf {
 	my $meta=shift;
 	    my $t = $self->pdf_text( $self->{"file"}, $meta->{"md5"} );
 	    if ($t) {
-		$t =~ s/\s+/ /g;
+		$t =~ s/[ \t]+/ /g;
 		$self->ins_e( $self->{"idx"}, "Text", $t );
 		# short version
 		$t =~ m/^\s*(([^\n]*\n){24}).*/s;

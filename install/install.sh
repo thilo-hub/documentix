@@ -32,7 +32,6 @@ find . -name '*.p[lm]' -type f | egrep -v './local' | xargs cat |
   }
   next unless s/^\s*(use|require) ([a-zA-Z0-9_:]+)[\s;].*/require $2/; next if $dm{$2}++; open(STDERR,">/tmp/a.log"); eval($_); print "Failed: $2\n" if $@;'  2>/dev/null|
 # These are not really required.. so do not report them
-tee a.out |
 egrep -v 'Failed: File::ChangeNotify
 Failed: Email::MIME
 Failed: POPFile::Module
@@ -68,7 +67,7 @@ case $1 in
 			./run_local.sh perl start_pop.pl $PWD  || exit 96
 		test -f popuser/popfile.pid || exit 95
 		echo " Add first document...."
-		perl tests/test_index_pdf.pl Documentation/FirstRun.pdf   || exit 91
+		./run_local.sh ./load_documents.pl  Documentation/FirstRun.pdf   || exit 91
 		./run_local.sh perl client_srv.pl 0.0.0.0:28080 || exit 95
 		;;
 	stop)
