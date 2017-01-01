@@ -338,6 +338,25 @@ sub index_pdf {
     $fn =~ s/\.ocr\.pdf$/\.pdf/;
 
     my $md5_f = file_md5_hex($fn);
+    
+    # Hack?
+    # if a source document is not in a writable directory,
+    # we should create a folder in "incomming/{md5}" and have a symbolic link
+    # pointing to the source document.
+    # the incomming, can then hold the OCR and whatever other stuff we need
+    # HACK: I don't see a better way right now
+    if ( $Docconf::config->{link_local} && !($fn =~ /$Docconf::config->{local_storage}/) )
+    {
+        my $f_dir=dirname($fn);
+	my $new=$Docconf::config->{local_storage}."/".$md5_f;
+	mkdir $new 
+		unless -d $new;
+	$new .= "/".basename($fn);
+	symlink $fn,$new
+		or die "Cannot link document... $!";
+	$fn=$new;
+	print STDERR "Doc linked -> $fn\n";
+    }
 
     my ($idx) =
       $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );

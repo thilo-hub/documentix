@@ -18,6 +18,7 @@ $config = {
         number_ocr_threads => 16,
 	browser_start      => 1,
 	local_storage       => "incomming",
+	link_local         => 0,  # symlink files into local_storage
 
 	server_listen_if => "127.0.0.1:8080",
 };
