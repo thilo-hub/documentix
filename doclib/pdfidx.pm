@@ -359,7 +359,7 @@ sub index_pdf {
     $self->{"file"}=$fn;
  die "Bad filename: $fn" if $fn =~ /'/;
     $self->{"idx"}=$idx;
-    chomp(my $type=qx|file --brief  --mime-type  '$self->{file}'|);
+    chomp(my $type=qx|file --dereference --brief  --mime-type  '$self->{file}'|);
     print STDERR "Type: $type\n";
     $meta{"Mime"} = $type;
     my %mime_handler=(
