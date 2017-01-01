@@ -63,8 +63,12 @@ my $d = HTTP::Daemon->new(
 
 print "Started HTTP listener at " . $d->url . "\n";
 
-system("open http://$O{'listen-host'}:$O{'listen-port'}/")
-  if ( $^O =~ /darwin/ );
+if ( $Docconf::config->{browser_start} ) {
+	system("firefox http://$O{'listen-host'}:$O{'listen-port'}/ &")
+	  if ( $^O =~ /linux/ );
+	system("open http://$O{'listen-host'}:$O{'listen-port'}/")
+	  if ( $^O =~ /darwin/ );
+}
 my %chld;
 
 if ( $O{'listen-clients'} ) {

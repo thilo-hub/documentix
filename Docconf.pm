@@ -16,6 +16,7 @@ $config = {
 	results_per_page  => 10,
 	number_server_threads => 16,
         number_ocr_threads => 16,
+	browser_start      => 1,
 
 	server_listen_if => "127.0.0.1:8080",
 };
