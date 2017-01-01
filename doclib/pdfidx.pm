@@ -856,6 +856,9 @@ sub do_pdfunite
 {
     my ($outpdf,@cpages)=@_;
     @cmd = (qw{ pdfunite }, @cpages, $outpdf); 
+    #pdfunite croaks if only a single page is united
+    @cmd = (qw{ cp },@cpages,$outpdf)
+	if ( scalar(@cpages) == 1 );
     print STDERR "CMD: ".join(" ",@cmd,"\n");
     $fail += ( system( @cmd) ? 1 : 0) unless -f $outpdf;
     # die "Failure generating $outpdf" unless -f $outpdf;
