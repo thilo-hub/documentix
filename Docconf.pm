@@ -17,6 +17,7 @@ $config = {
 	number_server_threads => 16,
         number_ocr_threads => 16,
 	browser_start      => 1,
+	local_storage       => "incomming",
 
 	server_listen_if => "127.0.0.1:8080",
 };

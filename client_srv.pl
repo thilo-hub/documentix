@@ -284,7 +284,7 @@ sub http_child {
             }
         }
 
-        my $fn = "incomming";
+        my $fn = $Docconf::config->{local_storage}; 
         mkdir $fn or die "No dir: $fn" unless -d $fn;
         $fn .= "/$digest";
         my $wdir = $fn;
