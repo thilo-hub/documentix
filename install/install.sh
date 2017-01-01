@@ -1,6 +1,7 @@
 #!/bin/sh
 INSTALL_V="Documentix V0.01 - alpha"
 ERR=0;
+OPT="$@"
 
 test -f client_srv.pl || (echo "start in top-level directory --- ERROR" ;false) || exit 99
 
@@ -12,11 +13,13 @@ if [ -f .install_ok ] && [ "$(cat .install_ok)" == "$(cat version.txt)" ]; then
 else
 	# Check required programms 
 	
-	echo -n "Test for: " ; which unoconv || (echo "Need unoconv from Libreoffice to convert things to PDF" ; false) || ERR=90
-	echo -n "Test for: " ; which tesseract && pkg-config --atleast-version 3.04  tesseract  ||
-							(echo "Need tesseract to OCR  pdfs -- New version 3.04 for pdf creation required " ; false) || ERR=90
-	echo -n "Test for: " ; which pdftocairo || (echo "Need pdftocairo from Poppler to help for OCR" ; false) || ERR=90
-	echo -n "Test for: " ; which convert || (echo "Need convert from ImageMagic  to help for OCR" ; false) || ERR=90
+	echo -n "Test for: " ; which unoconv || (echo "FAILED: Need unoconv from Libreoffice to convert things to PDF" ; false) || ERR=90
+	echo -n "Test for: " ; which tesseract && 
+		set X $(tesseract -v 2>&1 | tr -d '.') &&
+		test "$3" -ge 30401  || 
+		(echo "FAILED: Need tesseract to OCR  pdfs -- New version 3.04 for pdf creation required " ; false) || ERR=90
+	echo -n "Test for: " ; which pdftocairo || (echo "FAILED: Need pdftocairo from Poppler to help for OCR" ; false) || ERR=90
+	echo -n "Test for: " ; which convert || (echo "FAILED: Need convert from ImageMagic  to help for OCR" ; false) || ERR=90
 	test -d $(dirname "$DB_FILE") || mkdir $(dirname "$DB_FILE") || exit 98
 	test -f "$DB_FILE" || sqlite3 $DB_FILE < install/doc_db.sql
 	test -d incomming || mkdir incomming
@@ -62,7 +65,7 @@ Failed: Text::Kakasi' | tee /tmp/test.install.$$
 fi
 
 
-case $1 in
+case $OPT in
 	start)
 		test -f popuser/popfile.pid ||
 			./run_local.sh perl start_pop.pl $PWD  || exit 96
