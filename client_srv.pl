@@ -65,7 +65,7 @@ print "Started HTTP listener at " . $d->url . "\n";
 
 if ( $Docconf::config->{browser_start} ) {
 	system("firefox http://$O{'listen-host'}:$O{'listen-port'}/ &")
-	  if ( $^O =~ /linux/ );
+	  if ( $^O =~ /linux/ && $ENV{"DISPLAY"});
 	system("open http://$O{'listen-host'}:$O{'listen-port'}/")
 	  if ( $^O =~ /darwin/ );
 }
