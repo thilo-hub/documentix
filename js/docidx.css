@@ -59,6 +59,13 @@ div.menu {
     width: 100%;
     word-wrap: break-word
 }
+#droplist {
+    border: inset thin blue;
+    float: left;
+    text-align: left;
+    width: 100%;
+    word-wrap: break-word
+}
 
 div.results {
     border: none;

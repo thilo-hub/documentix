@@ -230,7 +230,7 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
     $ndata   = $dh->selectrow_array($ndata);
     $stm1    = $dh->prepare($stm1);
 
-    $stm1->bind_param( 1, $idx0 - 1 );
+    $stm1->bind_param( 1, int($idx0 - 1) );
     $stm1->bind_param( 2, $ppage );
     $stm1->execute();
 
@@ -254,13 +254,13 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
     my $msg = "results: $ndata<br>";
     $msg .= "qidx: $idx<br>" if $idx;
     my $m = { 
-      nresults => $ndata,
-      idx  => $idx0,
-      dates=> $dater,
+      nresults => int($ndata),   # max number of items
+      idx  => int($idx0),        # first item in response
       pageno=> int( ($idx0-1) / $ppage ) + 1 ,
-      next_page => ($idx0+$ppage > $ndata)? $idx0 : $idx0 + $ppage,
+      nitems => int($ppage),
+      
+      dates=> $dater,
       query=> $search,
-      nitems => $ppage,
 
       classes => join("", @$classes),
       msg => $msg,
@@ -270,6 +270,38 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
 
 return $out;
 }
+sub get_rbox_item {
+  my $self = shift;
+  my $md5  = shift;
+  my $dh = $self->{"dh"};
+
+  my $get_item=qq{select s.idx,s.value snippet from hash natural join metadata s where md5 = ? and s.tag = "Content"};
+   $get_item = $dh->prepare($get_item);
+   $get_item->bind_param( 1, $md5);
+    $get_item->execute();
+    my $ndata = qq{ select count(*) from hash };
+    $ndata   = $dh->selectrow_array($ndata);
+
+    my $out = load_results($dh,$get_item);
+    my $msg = "Fetch";
+    my $m = { 
+      nresults => $ndata,
+      # idx  => $idx0,
+      # dates=> $dater,
+      # pageno=> 1;
+      # next_page => 2;
+      # query=> "";
+      nitems => 9999,
+
+      # classes => join("", @$classes),
+      msg => "$ndata items",
+      items => $out,
+    };
+    $out = JSON::PP->new->pretty->encode($m);
+
+return $out;
+}
+  
 
 # print page jumper  bar
 

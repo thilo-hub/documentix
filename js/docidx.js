@@ -105,7 +105,7 @@ $(function() {
             $('#tagedit').hide('slow')
         }
     });
-    function tag_in(e) {
+    function tag_edit(e) {
         if (foc_el && foc_el != e)
             $(foc_el).css("background-color", "");
         if (e)
@@ -115,13 +115,13 @@ $(function() {
         foc_el = e;
     }
     $('#tags_tag_').focusout(function() {
-        tag_in(0);
+        tag_edit(0);
         //$('#tagedit').hide('slow')
     });
     $('.right').click(function(e) {
         var f = e.target;
         if ($(f).hasClass("tagbox")) {
-            tag_in(f);
+            tag_edit(f);
             foc_id = foc_el.id;
             $(foc_el).css("background-color", "yellow");
             $('#tags').importTags($(foc_el).val());
@@ -166,6 +166,8 @@ $(function() {
     }
     // request/save/cache pages to the same result set
     // remove cache if search is different
+
+    // Jump -scroll to page (idx)
     function show_page(idx) {
         if (idx < first_item || idx > last_item)
             return fetch_page(idx);
@@ -177,7 +179,11 @@ $(function() {
 	 update_view();
     }
     // Request page from server
-    function fetch_page(idx) {
+    // idx:  item number
+    //   search & tags are merged in the query
+    //     if the search has changed, drop all cached results
+    //      
+    fetch_page = function (idx) {
         var params = "";
         if (idx > 0) {
             params += "idx=" + idx;
@@ -189,10 +195,12 @@ $(function() {
         }
         if ( sv )
 		params += "&search=" + sv;
+
         if (clname) {
             params += "&class=" + clname;
         }
-        tag_in(0);
+
+        tag_edit(0);
         $.ajax({
             url: "ldres",
             dataType: 'json',
@@ -204,27 +212,45 @@ $(function() {
     }
     //  callback when new data arrive
     // Update page idx with json data
-    function load_result(idx, data) {
-        // We get multiple blocks
-        // a) tags
-        // b) page info
-        // c) query results
-        // console.dir(data);
+    insert_item = function(data) {
         var itm = template.render(data);
-        // update page indicator
-        $('#msg').html("Item:" + idx + "</br>");
+        $('#result').prepend(itm);
         var msg = data.msg;
+	$('#msg').html("Item:" + idx + "</br>");
         if (msg)
             $('#msg').append(msg);
-        var new_last_item = data.next_page;
-        var last_page = (new_last_item == last_item);
-        if ((first_item < last_item) && (idx >= first_item) && (new_last_item <= last_item)) {
-            // nothing
-            return;
-        }
+    }
+    function load_result(idx, data) {
+        var itm = template.render(data);
+
+	if (1) {
+		// Process debug messages
+		$('#msg').html("Item:" + idx + "</br>");
+		var msg = data.msg;
+		if (msg)
+		    $('#msg').append(msg);
+	}
+	if ( idx != data.idx )
+		alert("Stange problem! we did not receive the correct results");
+
+	// first_item .... idx ... next_page ... last_item ... nitems
+        // first_item & last_item indicate what is cached in the browser
+        // idx & next_page is what is in the query result
+	// Check what we need to do with the arrived data
+
+        var next_page = data.idx+data.nitems;
+	if ( next_page > data.nresults ){
+		next_page = data.nresults+1;  // limit
+	}
+        if ( data.idx >= first_item && data.idx > data.nresults ) {
+		// nothing we have everything already
+		return;
+	}
+	var new_last_item = next_page;
         // Update result content
-        if (new_last_item < first_item || idx > last_item) {
-            // reload all
+        // either prepend or append or reset
+        if (next_page < first_item || idx > last_item) {
+            // drop all cached data since it is disjunkt with the new data
             first_item = idx;
             last_item = new_last_item;
             last_e = -1;
@@ -232,30 +258,30 @@ $(function() {
             // Assume classes do not change from page to page
             var tl = data.classes;
             $('#taglist').html(tl);
-        } else if (idx == last_item) {
+        } else if (data.idx == last_item) {
             $('#result').append(itm);
             last_item = new_last_item;
         } else if (new_last_item == first_item) {
             $('#result').prepend(itm);
-            first_idx = idx;
+            first_item = idx;
         }
-	var nitems=parseInt(data.nitems);
-	var n5  = Math.ceil(data.idx/nitems);
+	// do some magice for the current pageno
+	var n5  = Math.ceil(data.idx/data.nitems);
 	var n0  = n5 - 5;
 	if ( n0 < 0 )
 		    n0 = 0;
 	var n10 = n0+10;
 	if (n10*data.nitems > data.nresults)
-		    n10 = data.nresults/nitems;
+		    n10 = data.nresults/data.nitems;
 	$('#result').find('#item_'+idx).find('#pgs').find(':button').each( 
 		function(id,el) {
 			var at="pageno";
-			var idxn=parseInt(data.idx)+nitems*(id-2);
+			var idxn=parseInt(data.idx)+data.nitems*(id-2);
 			var vis = el.value;
 			if ( vis =="<<") idxn=1;
-			else if (vis =="<") idxn= idx-nitems;
-			else if (vis ==">") idxn= idx+nitems;
-			else if (vis ==">>")idxn= data.nresults-nitems;
+			else if (vis =="<") idxn= idx-data.nitems;
+			else if (vis ==">") idxn= idx+data.nitems;
+			else if (vis ==">>")idxn= data.nresults-data.nitems;
 			else 
 			{
 				vis = n0+id-1;
@@ -271,8 +297,7 @@ $(function() {
 			el.id=idxn;
 		}
 	)
-        if (!last_page)
-            no_update_possible = 0;
+        no_update_possible = 0;
         update_view();
     }
 });

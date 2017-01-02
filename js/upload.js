@@ -14,23 +14,26 @@
 		      // if ( win )
 			//       win.focus();
 			downld(itm,"myfile.pdf");
-		      $('#msg').append("<hr>"+itm);
+		      $('#droplist').append("<hr>"+itm);
 	      }
       });
       zone.event('send', function (files) {
         // Depending on browser support files (FileList) might contain multiple items.
         files.each(function (file) {
           // React on successful AJAX upload:
-	  $('#msg').append("<div id=progress>Uploading...</div>");
+	  $('#droplist').append("<div id=progress>Uploading...</div>");
           file.event(
 		'done', function (xhr) {
-	    var p=$('#progress');
+		    var obj = JSON.parse(xhr.response);
+		    if ( obj )
+			    insert_item(obj);
+		    var p=$('#progress');
 		    $(p).remove();
-		    $('#msg').append(this.name+" done<br>")
+		    //$('#droplist').append(this.name+" done<br>");
 		  });
           file.event(
 		  'error', function (xhr,XMLHttpReques) {
-		    $('#msg').append("ERROR: "+XMLHttpRequest.statusText+"<br>")
+		    $('#droplist').append("ERROR: "+XMLHttpRequest.statusText+"<br>")
           });
 	  file.event('progress', function (sentBytes, totalBytes, XMLHttpRequest, eventObject) {
 	    var p=$('#progress');
