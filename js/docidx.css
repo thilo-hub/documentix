@@ -29,7 +29,8 @@ div.header {
     border: thin inset blue;
     text-align: center;
     width: 100%;
-    height: 100%
+    height: 100%;
+    font-size: 22px;
 }
 
 div.menu {
