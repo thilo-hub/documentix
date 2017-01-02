@@ -26,7 +26,6 @@ CREATE TABLE UserGroups (
     accessbit                 char(1) default '0' not null,
     constraint pk_UserGroups primary key (gid,uid)
     );
-CREATE TABLE class2 (idx integer primary key,gid integer);
 CREATE TABLE hash ( idx integer primary key autoincrement, md5 text unique, refcnt integer );
 CREATE TABLE file ( md5 text, file text unique, host text);
 CREATE TABLE ldates ( idx integer, date text, string text,unique  (idx,date));
@@ -90,18 +89,14 @@ CREATE TRIGGER file_ins after insert  on file begin
 CREATE TRIGGER cache_del before delete on cache_lst begin delete 
 		from cache_q where cache_q.qidx = old.qidx ; 
 	end;
+drop trigger if exists hash_delete1;
+drop trigger if exists del2;
 CREATE TRIGGER del2 before delete on hash begin
                                         delete from file where file.md5 = old.md5;
                                         delete from data where data.idx = old.idx;
                                         delete from metadata where metadata.idx=old.idx;
                                         delete from text where docid=old.idx;
                                         delete from mtime where mtime.idx=old.idx;
-                                        delete from class where class.idx=old.idx;
+                                        delete from tags where tags.idx=old.idx;
                                  end;
 CREATE TABLE config (var primary key unique,value);
-CREATE TRIGGER hash_delete1 after delete on hash begin
-        delete from file where file.md5 = old.md5;
-        delete from data where data.idx = old.idx;
-        delete from metadata where metadata.idx=old.idx;
-        delete from tags where tags.idx=old.idx;
-end;
