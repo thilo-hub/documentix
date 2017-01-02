@@ -90,6 +90,9 @@ a.dtags {
     background-color: #ddd
 }
 
+.tagbox.filtered {
+	color: grey;
+}
 .tagbox {
     background-color: transparent;
     border: none;

@@ -240,11 +240,13 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
         map {
             my $ts = $$_[1] / "$ndata.0";
             my $bg = "";    #( $ts < 0.02 ) ? "background: #bbb" : "";
+	    my $filtered="";
             $ts = int( $ts * 40 );
             $ts = 19 if $ts > 19;
             $ts = 9 if $ts < 9;
 	    my $rr=$$_[0];
-	    $_= "<input type='button'  name='button_name' value='$rr' class='tagbox' style='font-size: ${ts}px; $bg ' />";
+	    $filtered = "filtered" if ( $class && $rr !~ /$class/);
+	    $_= "<input type='button'  name='button_name' value='$rr' class='tagbox $filtered' style='font-size: ${ts}px; $bg ' />";
         } @$classes
     ];
 
