@@ -255,7 +255,7 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
       nresults => $ndata,
       idx  => $idx0,
       dates=> $dater,
-      pageno=> int( $idx0 / $ppage ) + 1 ,
+      pageno=> int( ($idx0-1) / $ppage ) + 1 ,
       next_page => ($idx0+$ppage > $ndata)? $idx0 : $idx0 + $ppage,
       query=> $search,
       nitems => $ppage,
