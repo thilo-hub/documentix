@@ -230,8 +230,9 @@ $(function() {
 		if (msg)
 		    $('#msg').append(msg);
 	}
-	if ( idx != data.idx )
-		alert("Stange problem! we did not receive the correct results");
+	if ( idx != data.idx ) {
+		last_item = -1;
+	}
 
 	// first_item .... idx ... next_page ... last_item ... nitems
         // first_item & last_item indicate what is cached in the browser
@@ -249,9 +250,9 @@ $(function() {
 	var new_last_item = next_page;
         // Update result content
         // either prepend or append or reset
-        if (next_page < first_item || idx > last_item) {
+        if (next_page < first_item || data.idx > last_item) {
             // drop all cached data since it is disjunkt with the new data
-            first_item = idx;
+            first_item = data.idx;
             last_item = new_last_item;
             last_e = -1;
             $('#result').html(itm);
@@ -263,7 +264,7 @@ $(function() {
             last_item = new_last_item;
         } else if (new_last_item == first_item) {
             $('#result').prepend(itm);
-            first_item = idx;
+            first_item = data.idx;
         }
 	// do some magice for the current pageno
 	var n5  = Math.ceil(data.idx/data.nitems);
@@ -273,14 +274,14 @@ $(function() {
 	var n10 = n0+10;
 	if (n10*data.nitems > data.nresults)
 		    n10 = data.nresults/data.nitems;
-	$('#result').find('#item_'+idx).find('#pgs').find(':button').each( 
+	$('#result').find('#item_'+data.idx).find('#pgs').find(':button').each( 
 		function(id,el) {
 			var at="pageno";
 			var idxn=parseInt(data.idx)+data.nitems*(id-2);
 			var vis = el.value;
 			if ( vis =="<<") idxn=1;
-			else if (vis =="<") idxn= idx-data.nitems;
-			else if (vis ==">") idxn= idx+data.nitems;
+			else if (vis =="<") idxn= data.idx-data.nitems;
+			else if (vis ==">") idxn= data.idx+data.nitems;
 			else if (vis ==">>")idxn= data.nresults-data.nitems;
 			else 
 			{
