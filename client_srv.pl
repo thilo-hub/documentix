@@ -121,6 +121,7 @@ sub http_child {
         { p => '/docs/([^/]+)/([^/]+)/(.*)', cb => \&do_feed },
         { p => '/ldres',                 cb => \&do_ldres },
         { p => '/tags',                  cb => \&do_tags, },
+        { p => '/config',                  cb => \&do_conf, },
         { p => '/',                          cb => \&do_index },
         { p => '/+(.*)',                     cb => \&do_anycgi },
     );
@@ -152,6 +153,7 @@ sub http_child {
         if ( $r->uri->as_iri =~ /\?(.*)/ ) {
             foreach ( split( /&/, $1 ) ) {
                 my ( $k, $v ) = split( /=/, $_, 2 );
+		next unless $k;
 	        $v = uri_unescape($v);
                 $arg->{$k} = $v;
             }
@@ -207,6 +209,17 @@ sub http_child {
             )
         );
     }
+
+    sub do_conf {
+        my $c = shift;
+        my $r = shift;
+        my $a = $c->{"args"};
+
+        my $m = Docconf::getset( $c->{"args"} );
+
+        return $m;
+    }
+
 
     sub do_tags {
         my $c = shift;

@@ -6,6 +6,7 @@ delme
 h
 *.swp
 *.bak
+Docconf.js
 db/*
 lib/build/*
 Documents/*
