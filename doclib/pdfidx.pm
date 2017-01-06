@@ -388,6 +388,7 @@ sub index_pdf {
 	    "application/vnd.openxmlformats-officedocument.presentationml.presentation" => \&tp_any,
 	    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => \&tp_any,
 	    "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => \&tp_any,
+	    "application/epub+zip" => \&tp_ebook,
 	    "application/vnd.ms-powerpoint" => \&tp_any
 	    );
 
@@ -426,6 +427,18 @@ sub index_pdf {
             my $of=$Docconf::config->{local_storage}."/". $meta->{"hash"};
 	    $self->{"file"} = $of."/".basename($i).".pdf";
 	    do_unopdf($i,$self->{file});
+	    my $type = do_file($self->{file});
+	    return $type;
+    }
+    sub tp_ebook
+    {
+	    my $self=shift;
+	    my $meta=shift;
+	    my $i = $self->{"file"};
+	    # Output will generally be created in the local_storage (and kept)
+            my $of=$Docconf::config->{local_storage}."/". $meta->{"hash"};
+	    $self->{"file"} = $of."/".basename($i).".pdf";
+	    do_calibrepdf($i,$self->{file});
 	    my $type = do_file($self->{file});
 	    return $type;
     }
@@ -895,6 +908,18 @@ sub do_pdftotext
     print STDERR "CMD: ".join(" ",@cmd,"\n");
     my $txt=qx( @cmd );
 return $txt;
+}
+sub do_calibrepdf
+{
+  my ($in,$out)=@_;
+	    $in = abs_path($in);
+	    $out = abs_path($out);
+	    print STDERR "convert: $in\n";
+	    main::lock();
+	    qx|ebook-convert "$in" "$out"|;
+	    main::unlock();
+	    die "failed: calibre: ebook-convert $in $out" unless -f $out;
+return
 }
 sub do_unopdf
 {
