@@ -388,6 +388,8 @@ sub index_pdf {
 	    "application/vnd.ms-powerpoint" => \&tp_any
 	    );
 
+    $meta{"mtime"}   = ( stat($fn) )[9];
+    $meta{"hash"}    = $md5_f;
     $type =~ s/;.*//;
     $type = $mime_handler{$type}($self,\%meta)
 	    while $mime_handler{$type};
@@ -396,8 +398,6 @@ sub index_pdf {
 
 
 
-    $meta{"mtime"}   = ( stat($fn) )[9];
-    $meta{"hash"}    = $md5_f;
     $meta{"Image"}   = '<img src="?type=thumb&send=#hash#">';
     ( $meta{"PopFile"}, $meta{"Class"} ) =
       ( $self->pdf_class_file( $fn, \$meta{"Text"}, $meta{"hash"},undef ) );
@@ -417,13 +417,13 @@ sub index_pdf {
     sub tp_any
     {
 	    my $self=shift;
+	    my $meta=shift;
 	    my $i = $self->{"file"};
-	    $self->{"fh"} = File::Temp->new(SUFFIX => '.pdf');
-	    $self->{"file"} = $self->{"fh"}->filename;
-	    $self->{"file"} = $wdir."/$1.pdf" if ( defined($wdir) && -d $wdir && $i =~ /([^\/]*$)/);
+	    # Output will generally be created in the local_storage (and kept)
+            my $of=$Docconf::config->{local_storage}."/". $meta->{"hash"};
+	    $self->{"file"} = $of."/".basename($i).".pdf";
 	    do_unopdf($i,$self->{file});
 	    my $type = do_file($self->{file});
-	    close $self->{"fh"};
 	    return $type;
     }
     sub tp_gzip
