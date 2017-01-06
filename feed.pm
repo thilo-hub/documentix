@@ -7,6 +7,8 @@ use doclib::cache;
 use HTTP::Message;
 use HTTP::Date;
 use Cwd 'abs_path';
+use File::Basename;
+
 
 $ENV{"PATH"} .= ":/usr/bin:/usr/pkg/bin";
 print STDERR ">>> feed.pm\n" if $Docconf::config->{debug} >2;
@@ -51,6 +53,7 @@ sub dfeed {
 
     my $sz;
     my $res;
+    $hash =~ s/[^0-9a-fA-F]//g;
     # return from doc "hash" the info "type"
     # Extra can contain things like [pageno]
     # or????
@@ -66,42 +69,44 @@ sub dfeed {
     return ("text/text","Error")
 	unless $f && -r $f;
     my $m = $self->{pdfidx}->get_meta("Mime",$hash);
-    if ( $tpe eq "raw" || $tpe eq "pdf") {
-       if ( $m =~ /pdf/ ) {
-       $f = $1 . ".ocr.pdf"
-          if ( $f =~ /^(.*)\.pdf$/
-            && -r $1 . ".ocr.pdf"
-            && ( $sz = ( stat(_) )[7] ) > 0 );
-        $res  = slurp($f);
-       } else {
-	if ( $tpe eq "pdf" )
-	{
-		( $m, $res ) = $self->{cache}->get_cache( $f, "$hash-$tpe", 
-			sub {
-				my ( $item, $idx, $mtime ) = @_;
-				my $ntime = ( stat($item) )[9];
-				$mtime = 0 unless $mtime;
-				print STDERR "$item - $idx $mtime <> $ntime\n" if ($main::debug>1);
-				return undef if ( $mtime && -r $item && $ntime < $mtime );
-				print STDERR "OK\n" if ($main::debug>=0);
-				#return undef unless $idx-- > 0;
-				print STDERR "REDO\n" if ($main::debug >=0);
-				my $fn=abs_path(${item});
-				my $res =qq{unoconv -o /tmp/$$.pdf ${fn} 2>&1};
-				$res = qx{$res};
-				if (!-f "/tmp/$$.pdf" || $?) {
-				    return ( 'text/text', $res );
-				} else {
-					$res=slurp("/tmp/$$.pdf");
-				}
-				return ( 'application/pdf', $res );
-			}
-			 );
-	} else {
-	$res = slurp($f);
+    # Raw type returns raw data and mime-type
+    if ( $tpe eq "raw" )
+    {
+	    $res=slurp($f);
+    } elsif ( $tpe eq "pdf") {
+	my $ext = dirname($f);
+	$ext =~ s/^.*\.//;
+	my $bn=$Docconf::config->{local_storage}."/".$hash."/". basename($f);
+	my $fn;
+        foreach $fn ( $bn.".ocr.pdf", $bn.".pdf", $bn."$ext.pdf", $f ) {
+		next unless -r $fn;
+		last unless $fn =~ /\.pdf$/;
+		my $res=slurp($fn);
+		return ( "application/pdf", $res );
 	}
-      }
-     
+	# Need to convert file.....
+	{
+	( $m, $res ) = $self->{cache}->get_cache( $f, "$hash-$tpe", 
+		sub {
+			my ( $item, $idx, $mtime ) = @_;
+			my $ntime = ( stat($item) )[9];
+			$mtime = 0 unless $mtime;
+			print STDERR "$item - $idx $mtime <> $ntime\n" if ($main::debug>1);
+			return undef if ( $mtime && -r $item && $ntime < $mtime );
+			print STDERR "OK\n" if ($main::debug>=0);
+			my $fn=abs_path(${item});
+			my $res =qq{unoconv -o /tmp/$$.pdf ${fn} 2>&1};
+			$res = qx{$res};
+			if (!-f "/tmp/$$.pdf" || $?) {
+			    return ( 'text/text', $res );
+			} else {
+				$res=slurp("/tmp/$$.pdf");
+				unlink("/tmp/$$.pdf");
+			}
+			return ( 'application/pdf', $res );
+		}
+		 );
+	}
        
     } elsif ( $converter->{$tpe}) {
 	( $m, $res ) = $self->{cache}->get_cache( $f, "$hash-$tpe", $converter->{$tpe} );
@@ -125,7 +130,7 @@ sub dfeed {
 	my $ntime = ( stat($item) )[9];
 	$mtime = 0 unless $mtime;
 	print STDERR "$item - $idx $mtime <> $ntime\n" if ($main::debug>1);
-	return undef if ( $mtime && -r $item && $ntime < $mtime );
+	    return undef if ( $mtime && -r $item && $ntime < $mtime );
 	print STDERR "OK\n" if ($main::debug>1);
 	return undef unless $idx-- > 0;
 	print STDERR "REDO\n" if ($main::debug>1);
