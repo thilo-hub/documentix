@@ -5,7 +5,7 @@ RUN apt-get update &&  apt-get install -y sqlite3 libdbd-sqlite3-perl  \
 	 libxmlrpc-lite-perl\
 	 tesseract-ocr tesseract-ocr-deu tesseract-ocr-equ \
 	 imagemagick unoconv poppler-utils
-RUN apt-get -y calibre-bin
+RUN apt-get install -y calibre-bin
 
 # Either use git
 # RUN apt-get -y install git 
