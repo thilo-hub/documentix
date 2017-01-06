@@ -1,13 +1,6 @@
 On a fresh Ubuntu you might need to run:
 
-sudo apt-get install sqlite3 libdbd-sqlite3-perl  \
-	 libhtml-template-perl  libdigest-md5-file-perl \
-	 libxmlrpc-lite-perl\
-	 tesseract-ocr tesseract-ocr-deu tesseract-ocr-equ \
-	 imagemagick unoconv
-
-install/install.sh start
-
+-- see Instructions in Dockerfile
 
 To get things running.
 
