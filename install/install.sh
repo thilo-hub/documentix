@@ -8,7 +8,7 @@ test -f client_srv.pl || (echo "start in top-level directory --- ERROR" ;false) 
 # This is defined somewhere else -- you cannot change it yet
 DB_FILE=db/doc_db.db
 # Skip all lengthy tests if a instsall passed before
-if [ -f .install_ok ] && [ "$(cat .install_ok)" == "$(cat version.txt)" ]; then
+if [ -f .install_ok ] && [ "$(cat .install_ok)" = "$(cat version.txt)" ]; then
         echo "Skip tests"
 else
 	# Check required programms 
