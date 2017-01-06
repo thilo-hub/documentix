@@ -3,6 +3,8 @@ use doclib::pdfidx;
 use Data::Dumper;
 
 my $pdfidx = pdfidx->new();
+sub lock {}
+sub unlock {}
 
 # my ($tmpdir,$outpdf,$inpdf,@htmls)=@_;
 # ARGS:  file-name  working-directory

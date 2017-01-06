@@ -24,15 +24,17 @@
 	  $('#droplist').append("<div id=progress>Uploading...</div>");
           file.event(
 		'done', function (xhr) {
+		    var p=$('#progress');
+		    $(p).remove();
 		    var obj = JSON.parse(xhr.response);
 		    if ( obj )
 			    insert_item(obj);
-		    var p=$('#progress');
-		    $(p).remove();
 		    //$('#droplist').append(this.name+" done<br>");
 		  });
           file.event(
 		  'error', function (xhr,XMLHttpReques) {
+		    var p=$('#progress');
+		    $(p).remove();
 		    $('#droplist').append("ERROR: "+XMLHttpRequest.statusText+"<br>")
           });
 	  file.event('progress', function (sentBytes, totalBytes, XMLHttpRequest, eventObject) {
