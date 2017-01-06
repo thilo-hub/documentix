@@ -13,7 +13,8 @@ if [ -f .install_ok ] && [ "$(cat .install_ok)" == "$(cat version.txt)" ]; then
 else
 	# Check required programms 
 	
-	echo -n "Test for: " ; which unoconv || (echo "FAILED: Need unoconv from Libreoffice to convert things to PDF" ; false) || ERR=90
+	echo -n "Test for: " ; which unoconv || (echo "Disable unoconv - no extra conversion available"; ./conf_op.pl unoconv_enabled 0  )
+	echo -n "Test for: " ; which ebook-convert  || (echo "Disable ebook-convert  - no extra conversion available"; ./conf_op.pl ebook_convert_enabled  0  )
 	echo -n "Test for: " ; which tesseract && 
 		set X $(tesseract -v 2>&1 | tr -d '.') &&
 		test "$3" -ge 30401  || 

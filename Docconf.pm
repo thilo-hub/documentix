@@ -23,6 +23,9 @@ $config = {
 	browser_start      => 1,
 	local_storage       => "incomming",
 	link_local         => 0,  # symlink files into local_storage
+	ebook_convert_enabled    => 1,
+        unoconv_enabled    => 1,
+        
 
 	server_listen_if => "127.0.0.1:8080",
 };
@@ -42,10 +45,10 @@ sub getset {
 
     $json_text = uri_unescape($json_text);
 
- print STDERR Dumper($json_text);
+ # print STDERR Dumper($json_text);
     my $perl_scalar = $json->decode($json_text);
   foreach (keys %$config) {
-        next unless my $v=$perl_scalar->{$_};
+        next unless defined(my $v=$perl_scalar->{$_});
 
 	$config->{$_} = $v;
   }
