@@ -422,6 +422,7 @@ sub index_pdf {
     {
 	    my $self=shift;
 	    my $meta=shift;
+	    return "FAILED" unless $Docconf::config->{unoconv_enabled};
 	    my $i = $self->{"file"};
 	    # Output will generally be created in the local_storage (and kept)
             my $of=$Docconf::config->{local_storage}."/". $meta->{"hash"};
@@ -434,6 +435,7 @@ sub index_pdf {
     {
 	    my $self=shift;
 	    my $meta=shift;
+	    return "FAILED" unless $Docconf::config->{ebook_convert_enabled};
 	    my $i = $self->{"file"};
 	    # Output will generally be created in the local_storage (and kept)
             my $of=$Docconf::config->{local_storage}."/". $meta->{"hash"};
