@@ -385,6 +385,9 @@ sub index_pdf {
 	    "application/x-gzip" => \&tp_gzip,
 	    "application/pdf"    => \&tp_pdf,
 	    "application/msword" => \&tp_any,
+	    "application/vnd.openxmlformats-officedocument.presentationml.presentation" => \&tp_any,
+	    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => \&tp_any,
+	    "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => \&tp_any,
 	    "application/vnd.ms-powerpoint" => \&tp_any
 	    );
 
