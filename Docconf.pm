@@ -25,6 +25,7 @@ $config = {
 	link_local         => 0,  # symlink files into local_storage
 	ebook_convert_enabled    => 1,
         unoconv_enabled    => 1,
+	index_html => "index.html",
         
 
 	server_listen_if => "127.0.0.1:8080",

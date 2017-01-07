@@ -265,7 +265,7 @@ sub http_child {
 
     sub do_feed {
         my $c = shift;
-        print "feed $1\n" if $main::debug > 0;
+        print "feed $1\n" if $Docconf::config->{debug} > 0;
 
         lock();
         my $r = HTTP::Message->new( $feed->feed_m( $2, $1, $3 ) );
@@ -277,7 +277,7 @@ sub http_child {
 
     sub do_index {
         my $c = shift;
-        $c->{"c"}->send_file_response("index.html");
+        $c->{"c"}->send_file_response($Docconf::config->{"index_html"});
         return undef;
     }
 
