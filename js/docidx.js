@@ -303,6 +303,8 @@ $(function() {
     }
 });
 
+//$(document).ready(function() { $("#config").hide(); });
+
 
 
 

@@ -9,6 +9,35 @@ div.top {
     height: 40px
 }
 
+div#configbtn {
+    background: red;
+    position: absolute;
+    z-index: 20;
+
+}
+div#config {
+    position: absolute;
+    background: #b28d13;
+    width: 100%;
+    //height: 300px;
+    border: black;
+    border-width: thick;
+    z-index: 9;
+    display: none;
+}
+.config { 
+    list-style-type: none
+}
+.confvalue { 
+    // color:green;
+    // width: 300px;
+}
+.confkey {
+    // color: brown;
+    width:100px;
+}
+
+
 div.left {
     position: fixed;
     padding: 0px;

@@ -39,13 +39,13 @@ sub getset {
   #die "Upsi here" .Dumper(\@_);
   my $json_text  = $args->{"set"};;
 
+  print STDERR "getset... ".Dumper($args) if $Docconf::config->{"debug"}>0;
   my $json        = JSON::PP->new->utf8;
   if ( $json_text) {
 
 
     $json_text = uri_unescape($json_text);
 
- # print STDERR Dumper($json_text);
     my $perl_scalar = $json->decode($json_text);
   foreach (keys %$config) {
         next unless defined(my $v=$perl_scalar->{$_});
@@ -58,6 +58,7 @@ sub getset {
 	print $fh $json->pretty->encode( $config );
 	close( $fh);
   }
+  $json = $json->canonical(1);
   my $rv= $json->encode($config);
   return $rv;
 }

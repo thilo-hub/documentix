@@ -7,12 +7,17 @@
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
         <link rel="stylesheet" href="js/upload.css" type="text/css"></link>
         <link rel="stylesheet" href="js/docidx.css" type="text/css"></link>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
         <script src="js/3rd/jquery/jquery.min.js" type="text/javascript"></script>
         <script src="js/3rd/jquery/jquery-ui.min.js" type="text/javascript"></script>
         <script src="js/3rd/jquery.tagsinput.js" type="text/javascript"></script>
         <script src="js/3rd/jsrender.js" type="text/javascript"></script>
         <script src="js/docidx.js" type="text/javascript"></script>
+        <script src="js/config.js" type="text/javascript"></script>
         <script type="text/javascript" src="js/3rd/filedrop.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+
     </head>
     <body>
         <script type="text/javascript" src="js/3rd/wz_tooltip.js"></script>
@@ -25,8 +30,31 @@
         <div>
             <div class="left">
                 <div id="left" class="menu">
+		<div id="xitem" style="float: right">
+		<div id="configbtn" class="_config"> 
+			 <span class="glyphicon glyphicon-cog"></span>
+		 </div>
+		</div>
+		<div id="config" class="config"> 
+<h1>Configuration</h1>
+  <form>
+<script id="template_stuff" type="text/x-jsrender">
+    <div class="input-group">
+      <span class="input-group-addon">{{:k}}</span>
+      <input id="{{:k}}" type="text" class="form-control" name="{{:k}}" placeholder="empty" value="{{:v}}"> 
+    </div>
+</script>
+
+
+</div>
                     <div id="pageno" class="pageno"></div>
-                    Search: <input id="search" size="15%"/>
+		    <div class="input-group">
+		      <span class="input-group-addon"><i>
+			                 <span class="glyphicon glyphicon-search"></span>
+					</i>
+					</span>
+		      <input id="search" type="text" class="form-control" name="{{:k}}" placeholder="empty"> 
+		    </div>
                     <div id="set_page" class="pageno"> </div>
                     <div id="taglist"></div>
                     <div id="tagedit" size="15%">
