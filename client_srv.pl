@@ -22,6 +22,7 @@ use Fcntl qw(:flock SEEK_END);
 use doclib::pdfidx;
 my $nthreads=$Docconf::config->{number_server_threads};
 
+setpgrp(0,0);
 use constant HOSTNAME => qx{hostname};
 
 $main::debug = $Docconf::config->{debug};
@@ -86,6 +87,7 @@ while (1) {
 
         # prefork all at once
         for ( scalar( keys %chld ) .. $O{'listen-clients'} - 1 ) {
+	    Docconf::get_config();
             my $pid = fork;
 
             if ( !defined $pid ) {    # error

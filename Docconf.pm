@@ -57,18 +57,26 @@ sub getset {
 	open(my $fh,">Docconf.js");
 	print $fh $json->pretty->encode( $config );
 	close( $fh);
-  }
+        local $SIG{"HUP"} = "IGNORE";
+	print STDERR "Try restarting ... -$$\n";
+        kill HUP , - getpgrp($$) ;
+               # snazzy writing of: kill("HUP", -$$)
+   }
   $json = $json->canonical(1);
   my $rv= $json->encode($config);
   return $rv;
 }
-if ( -r "Docconf.js" ) {
-   open(my $fh,"<Docconf.js");
-   local $/;
-   my $js;
-   $js->{"set"}=<$fh>;
-   close($fh);
-   getset($js);
+get_config();
+sub get_config
+{
+    if ( -r "Docconf.js" ) {
+       open(my $fh,"<Docconf.js");
+       local $/;
+       my $js;
+       $js->{"set"}=<$fh>;
+       close($fh);
+       getset($js);
+    }
 }
 
 1;
