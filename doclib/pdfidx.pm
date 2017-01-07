@@ -49,7 +49,7 @@ sub new {
     # return $db_con if $db_con;
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
-    print STDERR "New pdf conn: $dh\n" if $main::debug>0;
+    print STDERR "New pdf conn: $dh\n" if $Docconf::config->{debug}>0;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
     $self->{"setup_db"} = \&setup_db;
     $self->{"dh1"} = $dh;

@@ -22,7 +22,6 @@ use Fcntl qw(:flock SEEK_END);
 use doclib::pdfidx;
 my $nthreads=$Docconf::config->{number_server_threads};
 
-setpgrp(0,0);
 use constant HOSTNAME => qx{hostname};
 
 $main::debug = $Docconf::config->{debug};
@@ -81,6 +80,10 @@ if ( $O{'listen-clients'} ) {
         }
     };
 }
+$SIG{WINCH}= sub { 
+            print STDERR "Update configuration\n" if $Docconf::config->{debug} > 0;
+	    Docconf::get_config();
+};
 
 while (1) {
     if ( $O{'listen-clients'} ) {

@@ -36,6 +36,7 @@ use Data::Dumper;
 use URI::Escape;
 sub getset {
   my $args=shift;
+  my $conf_changed=0;
   #die "Upsi here" .Dumper(\@_);
   my $json_text  = $args->{"set"};;
 
@@ -50,16 +51,17 @@ sub getset {
   foreach (keys %$config) {
         next unless defined(my $v=$perl_scalar->{$_});
 
+	$conf_changed++ if $config->{$_} ne $v;
 	$config->{$_} = $v;
   }
   }
-  if ( $args->{"save"} ) {
+  if ( $conf_changed && $args->{"save"} ) {
 	open(my $fh,">Docconf.js");
 	print $fh $json->pretty->encode( $config );
 	close( $fh);
-        local $SIG{"HUP"} = "IGNORE";
+        local $SIG{"WINCH"} = "IGNORE";
 	print STDERR "Try restarting ... -$$\n";
-        kill HUP , - getpgrp($$) ;
+        kill "WINCH" , - getpgrp($$) ;
                # snazzy writing of: kill("HUP", -$$)
    }
   $json = $json->canonical(1);
