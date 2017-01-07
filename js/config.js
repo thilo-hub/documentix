@@ -26,9 +26,9 @@ x_load_result = function(data) {
             var d = { "k":k, "v":data[k]};
 	    var itm = template.render(d);
 	    
-	    $("#config").append(itm);  // .onclick(alert('hi'));
+	    $("#configdata").append(itm);  // .onclick(alert('hi'));
 	}
-$('#config').keypress(function (e) {
+$('#configdata').keypress(function (e) {
   if (e.which == 13) {
     var new_conf={};
     new_conf[e.target.id]= e.target.value;
