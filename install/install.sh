@@ -13,14 +13,14 @@ if [ -f .install_ok ] && [ "$(cat .install_ok)" = "$(cat version.txt)" ]; then
 else
 	# Check required programms 
 	
-	echo -n "Test for: " ; which unoconv || (echo "Disable unoconv - no extra conversion available"; ./conf_op.pl unoconv_enabled 0  )
-	echo -n "Test for: " ; which ebook-convert  || (echo "Disable ebook-convert  - no extra conversion available"; ./conf_op.pl ebook_convert_enabled  0  )
-	echo -n "Test for: " ; which tesseract && 
+	/bin/echo -n "Test for: " ; which unoconv || (echo "Disable unoconv - no extra conversion available"; ./conf_op.pl unoconv_enabled 0  )
+	/bin/echo -n "Test for: " ; which ebook-convert  || (echo "Disable ebook-convert  - no extra conversion available"; ./conf_op.pl ebook_convert_enabled  0  )
+	/bin/echo -n "Test for: " ; which tesseract && 
 		set X $(tesseract -v 2>&1 | tr -d '.') &&
 		test "$3" -ge 30401  || 
 		(echo "FAILED: Need tesseract to OCR  pdfs -- New version 3.04 for pdf creation required " ; false) || ERR=90
-	echo -n "Test for: " ; which pdftocairo || (echo "FAILED: Need pdftocairo from Poppler to help for OCR" ; false) || ERR=90
-	echo -n "Test for: " ; which convert || (echo "FAILED: Need convert from ImageMagic  to help for OCR" ; false) || ERR=90
+	/bin/echo -n "Test for: " ; which pdftocairo || (echo "FAILED: Need pdftocairo from Poppler to help for OCR" ; false) || ERR=90
+	/bin/echo -n "Test for: " ; which convert || (echo "FAILED: Need convert from ImageMagic  to help for OCR" ; false) || ERR=90
 	test -d $(dirname "$DB_FILE") || mkdir $(dirname "$DB_FILE") || exit 98
 	test -f "$DB_FILE" || sqlite3 $DB_FILE < install/doc_db.sql
 	test -d incomming || mkdir incomming
