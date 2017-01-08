@@ -25,6 +25,7 @@ $config = {
 	link_local         => 0,  # symlink files into local_storage
 	ebook_convert_enabled    => 1,
         unoconv_enabled    => 1,
+        cgi_enabled        => 0,  # Security risk
 	index_html => "index.html",
         
 

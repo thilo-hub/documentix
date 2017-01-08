@@ -4,20 +4,22 @@
 use strict;
 use warnings;
 
-use Docconf;
+use Docconf; 
 
 use CGI qw/ :standard /;
 use URI::Escape;
 use Data::Dumper;
 use HTTP::Daemon;
-# -- not easy to install.... 
-# Disabled for the time being use HTTP::Daemon::SSL;
+# Disabled for the time being  seems hard to compile
+#use HTTP::Daemon::SSL;
 use HTTP::Response;
 use HTTP::Status;
+use JSON::PP;
 use POSIX qw/ WNOHANG /;
 use ld_r;
 use feed;
 use tags;
+use dirlist;
 use Fcntl qw(:flock SEEK_END);
 use doclib::pdfidx;
 my $nthreads=$Docconf::config->{number_server_threads};
@@ -120,6 +122,7 @@ sub http_child {
     my $ld_r   = ld_r->new();
     my $feed   = feed->new();
     my $tags   = tags->new();
+    my $dirlist= dirlist->new();
     my $pdfidx = pdfidx->new();
     my @pages  = (
         { p => '/upload(/.*)?',          cb => \&do_upload },
@@ -127,6 +130,7 @@ sub http_child {
         { p => '/ldres',                 cb => \&do_ldres },
         { p => '/tags',                  cb => \&do_tags, },
         { p => '/config',                  cb => \&do_conf, },
+        { p => '/dir',                  cb => \&do_fbrowser, },
         { p => '/',                          cb => \&do_index },
         { p => '/+(.*)',                     cb => \&do_anycgi },
     );
@@ -229,7 +233,6 @@ sub http_child {
     sub do_tags {
         my $c = shift;
         my $r = shift;
-        my $a = $c->{"args"};
 
         lock();
         my $m = $tags->add_tag( $c->{"args"} );
@@ -240,14 +243,27 @@ sub http_child {
 
     sub do_anycgi {
         my $c = shift;
-
-        #print  Dumper($c);
         my $f = "." . $c->{request}->uri->path;
-        return HTTP::Message->parse(qx{$f})->content()
-          if ( $f =~ /\.cgi$/ && -x $f );
-        return "Failed $f" unless ( -f $f );
-        $c->{"c"}->send_file_response($f);
-        return undef;
+
+	# TODO:  make files more secure
+	# Restrict files to certain paths
+        # Make file an absolute path,
+        # return readable files from eq www
+        # executables only from eq cgi
+
+	if ( $f =~ /\.(html|js|css)$/ && -r $f ) { # Standard files that can be returned
+		$c->{"c"}->send_file_response($f);
+	} elsif ( $f =~ /\.(sh|pm|pl|cgi)$/ && -x $f ) {
+		  if ($Docconf::config->{"cgi_enabled"} ) {
+			#print  Dumper($c);
+			my $json        = JSON::PP->new->utf8;
+			my $rv= $json->encode({"args"=> $c->{"args"}});
+			$ENV{"ARGS"}=$rv;
+			return HTTP::Message->parse(qx{$f})->content();
+		}
+		return "Failed: cgi scripts are disabled"; 
+	}
+	return "Failed $f"; 
     }
 
     sub do_ldres {
@@ -322,5 +338,13 @@ sub http_child {
         unlock();
         return $m;
         return "OK";
+    }
+    sub do_fbrowser {
+        my $c = shift;
+        my $r = shift;
+        my $a = $c->{"args"};
+
+        my $m = $dirlist->list($c->{"args"});
+        return $m;
     }
 }
