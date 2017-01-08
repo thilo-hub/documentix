@@ -1,8 +1,8 @@
 #!/usr/bin/perl
 
 use Docconf;
-my $r                          = $Docconf::config->{ $ARGV[0] };
-$Docconf::config->{ $ARGV[0] } = $ARGV[1] if ( scalar(@ARGV) > 1);
-$e->{"save"}                   = 1;
+my $r = $Docconf::config->{ $ARGV[0] };
+$Docconf::config->{ $ARGV[0] } = $ARGV[1] if ( scalar(@ARGV) > 1 );
+$e->{"save"} = 1;
 Docconf::getset($e);
 print "$r";

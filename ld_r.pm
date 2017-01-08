@@ -1,4 +1,5 @@
 package ld_r;
+
 #!/usr/bin/perl
 use strict;
 use warnings;
@@ -9,16 +10,16 @@ use Docconf;
 use POSIX;
 use JSON::PP;
 
-print STDERR ">>> ld_r.pm\n" if $Docconf::config->{debug}>2;
+print STDERR ">>> ld_r.pm\n" if $Docconf::config->{debug} > 2;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
 
 my $__meta_sel;
 my $entries = $Docconf::config->{results_per_page};
 
 use Sys::Hostname;
-my $myhost=hostname();
-# my $pdfidx = pdfidx->new();
+my $myhost = hostname();
 
+# my $pdfidx = pdfidx->new();
 
 # print pages
 my $ANY = "*ANY*";
@@ -26,52 +27,49 @@ my $ANY = "*ANY*";
 # my $dh = $pdfidx->{"dh"};
 
 sub new {
-	my $class = shift;
+    my $class = shift;
 
-	my $self = {};
-        $self->{pd}= pdfidx->new();
-        $self->{dh}= $self->{pd}->{dh};
-	setup_db($self->{dh});
-	update_caches($self);
-	return bless $self, $class;
+    my $self = {};
+    $self->{pd} = pdfidx->new();
+    $self->{dh} = $self->{pd}->{dh};
+    setup_db( $self->{dh} );
+    update_caches($self);
+    return bless $self, $class;
 }
 
 #
 # Update search results for new documents
-sub update_caches
-{
-    my $self=shift;
-    my $dh=$self->{"dh"};
+sub update_caches {
+    my $self = shift;
+    my $dh   = $self->{"dh"};
 
-    my @sql=(
-    q{ create table if not exists config (var primary key unique,value)},
-    q{ create temporary table cache_q1 as
+    my @sql = (
+        q{ create table if not exists config (var primary key unique,value)},
+        q{ create temporary table cache_q1 as
     select a.*,b.docid idx,snippet(text) snippet  from cache_lst a,text b 
            where text match a.query and idx > 
                      (select value from config where var="max_idx") ;},
-    q{ create temporary table cache_q2 as select qidx,count(*) n from cache_q1 group by qidx;},
-    q{ insert or replace into cache_q (qidx,idx,snippet) select qidx,idx,snippet from cache_q1;},
-    q{ insert or replace into cache_lst (qidx,query,nresults,last_used) select qidx,query,nresults+n,last_used 
+q{ create temporary table cache_q2 as select qidx,count(*) n from cache_q1 group by qidx;},
+q{ insert or replace into cache_q (qidx,idx,snippet) select qidx,idx,snippet from cache_q1;},
+q{ insert or replace into cache_lst (qidx,query,nresults,last_used) select qidx,query,nresults+n,last_used 
 	from cache_lst natural join cache_q2;},
-    q{ insert or replace  into config (var,value) select "max_idx",max(idx) from hash;},
-    q{drop table cache_q1},
-    q{drop table cache_q2},
+q{ insert or replace  into config (var,value) select "max_idx",max(idx) from hash;},
+        q{drop table cache_q1},
+        q{drop table cache_q2},
     );
 
     $dh->do("begin exclusive transaction");
-    foreach (@sql)
-    {
-	#print "$_\n";
-	$dh->do($_) or die "Error $_";
+    foreach (@sql) {
+
+        #print "$_\n";
+        $dh->do($_) or die "Error $_";
     }
     $dh->do("commit");
 
-
 }
-  
 
 sub trace_db {
-    my $dh=shift;
+    my $dh = shift;
     open( TRC, ">>/tmp/db.trace" );
 
     sub trace_it {
@@ -84,22 +82,22 @@ sub trace_db {
 }
 
 sub setup_db {
-    my $dh=shift;
-	$dh->do(
-	q{ create table if not exists cache_lst ( qidx integer primary key autoincrement,
+    my $dh = shift;
+    $dh->do(
+q{ create table if not exists cache_lst ( qidx integer primary key autoincrement,
 			query text unique, nresults integer, last_used integer )}
-	);
-	$dh->do(
-	q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text, unique(qidx,idx))}
-	);
+    );
+    $dh->do(
+q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text, unique(qidx,idx))}
+    );
 
-	$dh->do(
-	    q{
+    $dh->do(
+        q{
 		CREATE TRIGGER if not exists cache_del before delete on cache_lst begin delete 
 			from cache_q where cache_q.qidx = old.qidx ; 
 		end;
 		}
-	);
+    );
 }
 
 my $s1 = q{select qidx from cache_lst where query = ?};
@@ -108,12 +106,13 @@ my $s3 = q{insert or ignore into cache_q ( qidx,idx,snippet ) select
 		qidx,docid,snippet(text) 
 		from cache_lst, text  join hash on (docid=idx) natural join file where qidx = ? and text match query and host is not NULL
 	};
+
 # my $s4 = q{delete from cache_q  where idx in ( select idx from cache_q join hash using(idx)  natural join file where qidx=? and host is NULL )};
 # qidx,idx,rowid,snippet from cache_q_tmp
 
 sub ldres {
-    my $self=shift;
-    my $dh = $self->{"dh"};
+    my $self = shift;
+    my $dh   = $self->{"dh"};
 
     my ( $class, $idx0, $ppage, $search ) = @_;
     $search =~ s/\s+$// if defined($search);
@@ -127,7 +126,6 @@ sub ldres {
 
     $class =~ s/:\d+$// if $class;
     undef $class if defined($class) && $class eq $ANY;
-
 
     my $idx = $dh->selectrow_array( $s1, undef, $search );
     my ( $dmin, $dmax );
@@ -146,13 +144,16 @@ s/\s*daterange:\s*(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d\s*)//i
 
         # create cached results table
         $dh->do( $s2, undef, $search );
-        $idx=$dh->last_insert_id( undef, undef, undef, undef );
+        $idx = $dh->last_insert_id( undef, undef, undef, undef );
         my $nres = $dh->do( $s3, undef, $idx );
-	# my $unavail = $dh->do( $s4, undef, $idx);
+
+        # my $unavail = $dh->do( $s4, undef, $idx);
         # print STDERR "nres/unavail: $nres $unavail\n";
         #$dh->do($s3_fin,undef,);
-        $dh->do( 'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?',
-            undef, $nres, $idx );
+        $dh->do(
+'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?',
+            undef, $nres, $idx
+        );
     }
 
     my $subsel = "";
@@ -182,15 +183,16 @@ q{create temporary table docids as select distinct(idx) idx  from cls natural jo
 qq{create temporary table resl as select * from $subsel cache_q where qidx = ?};
 
         $dh->do( $rest, undef, $idx );
+
         # print TRC "Tm: $dmin ... $dmax\n";
         if ($dmin) {
             my $drest =
 
               # print TRC "Delete timerangs\n";
-            $dh->do(
+              $dh->do(
 qq{create temporary table subd as select distinct(idx) idx  from dates where date between ? and ?},
                 undef, $dmin, $dmax
-            );
+              );
             $dh->do(
                 qq{ delete from resl where idx not in ( select idx from subd ) }
             );
@@ -225,12 +227,13 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
         );
     }
 
-    my $dater = join( " ... ", $dh->selectrow_array("select * from drange") || "");
+    my $dater =
+      join( " ... ", $dh->selectrow_array("select * from drange") || "" );
     $classes = $dh->selectall_arrayref($classes);
     $ndata   = $dh->selectrow_array($ndata);
     $stm1    = $dh->prepare($stm1);
 
-    $stm1->bind_param( 1, int($idx0 - 1) );
+    $stm1->bind_param( 1, int( $idx0 - 1 ) );
     $stm1->bind_param( 2, $ppage );
     $stm1->execute();
 
@@ -239,74 +242,77 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
     $classes = [
         map {
             my $ts = $$_[1] / "$ndata.0";
-            my $bg = "";    #( $ts < 0.02 ) ? "background: #bbb" : "";
-	    my $filtered="";
+            my $bg       = "";    #( $ts < 0.02 ) ? "background: #bbb" : "";
+            my $filtered = "";
             $ts = int( $ts * 40 );
             $ts = 19 if $ts > 19;
             $ts = 9 if $ts < 9;
-	    my $rr=$$_[0];
-	    $filtered = "filtered" if ( $class && $rr !~ /$class/);
-	    $_= "<input type='button'  name='button_name' value='$rr' class='tagbox $filtered' style='font-size: ${ts}px; $bg ' />";
+            my $rr = $$_[0];
+            $filtered = "filtered" if ( $class && $rr !~ /$class/ );
+            $_ =
+"<input type='button'  name='button_name' value='$rr' class='tagbox $filtered' style='font-size: ${ts}px; $bg ' />";
         } @$classes
     ];
 
-    my $out = load_results($dh,$stm1);
+    my $out = load_results( $dh, $stm1 );
     my $msg = "results: $ndata<br>";
     $msg .= "qidx: $idx<br>" if $idx;
-    my $m = { 
-      nresults => int($ndata),   # max number of items
-      idx  => int($idx0),        # first item in response
-      pageno=> int( ($idx0-1) / $ppage ) + 1 ,
-      nitems => int($ppage),
-      
-      dates=> $dater,
-      query=> $search,
+    my $m = {
+        nresults => int($ndata),                        # max number of items
+        idx      => int($idx0),                         # first item in response
+        pageno   => int( ( $idx0 - 1 ) / $ppage ) + 1,
+        nitems   => int($ppage),
 
-      classes => join("", @$classes),
-      msg => $msg,
-      items => $out,
+        dates => $dater,
+        query => $search,
+
+        classes => join( "", @$classes ),
+        msg     => $msg,
+        items   => $out,
     };
     $out = JSON::PP->new->pretty->encode($m);
 
-return $out;
+    return $out;
 }
-sub get_rbox_item {
-  my $self = shift;
-  my $md5  = shift;
-  my $dh = $self->{"dh"};
 
-  my $get_item=qq{select s.idx,s.value snippet from hash natural join metadata s where md5 = ? and s.tag = "Content"};
-   $get_item = $dh->prepare($get_item);
-   $get_item->bind_param( 1, $md5);
+sub get_rbox_item {
+    my $self = shift;
+    my $md5  = shift;
+    my $dh   = $self->{"dh"};
+
+    my $get_item =
+qq{select s.idx,s.value snippet from hash natural join metadata s where md5 = ? and s.tag = "Content"};
+    $get_item = $dh->prepare($get_item);
+    $get_item->bind_param( 1, $md5 );
     $get_item->execute();
     my $ndata = qq{ select count(*) from hash };
-    $ndata   = $dh->selectrow_array($ndata);
+    $ndata = $dh->selectrow_array($ndata);
 
-    my $out = load_results($dh,$get_item);
+    my $out = load_results( $dh, $get_item );
     my $msg = "Fetch";
-    my $m = { 
-      nresults => $ndata,
-      # idx  => $idx0,
-      # dates=> $dater,
-      # pageno=> 1;
-      # next_page => 2;
-      # query=> "";
-      nitems => 9999,
+    my $m   = {
+        nresults => $ndata,
 
-      # classes => join("", @$classes),
-      msg => "$ndata items",
-      items => $out,
+        # idx  => $idx0,
+        # dates=> $dater,
+        # pageno=> 1;
+        # next_page => 2;
+        # query=> "";
+        nitems => 9999,
+
+        # classes => join("", @$classes),
+        msg   => "$ndata items",
+        items => $out,
     };
     $out = JSON::PP->new->pretty->encode($m);
 
-return $out;
+    return $out;
 }
-  
 
 # print page jumper  bar
 
 sub get_meta {
-    my $dh = shift;
+    my $dh  = shift;
     my $tag = shift;
     $__meta_sel = $dh->prepare(q{select * from metadata where idx=?})
       unless $__meta_sel;
@@ -316,20 +322,21 @@ sub get_meta {
 }
 
 sub get_cell {
-    my $dh = shift;
+    my $dh   = shift;
     my ($r)  = @_;
-    my $meta = get_meta($dh, $r->{"idx"} );
+    my $meta = get_meta( $dh, $r->{"idx"} );
     my $md5  = $meta->{"hash"}->{"value"};
-    my $s = 0;
-    my $p = "1";
-    my $d = $r->{"date"} || "--";
+    my $s    = 0;
+    my $p    = "1";
+    my $d    = $r->{"date"} || "--";
     if ( my $mpdf = $meta->{"pdfinfo"}->{"value"} ) {
         $s = $1 if $mpdf =~ /File size\s*<\/td><td>\s*(\d+)/;
         $p = $1 if $mpdf =~ /Pages\s*<\/td><td>\s*(\d+)\s*<\/td>/;
         $d = $1 if $mpdf =~ /CreationDate\s*<\/td><td>(.*?)<\/td>/;
     }
     $p = 1 unless $p;
-    my $tags = "select tagname from hash natural join tags natural join tagname where md5=\"$md5\"";
+    my $tags =
+"select tagname from hash natural join tags natural join tagname where md5=\"$md5\"";
     $tags = $dh->selectall_hashref( $tags, 'tagname' );
     $tags = join( ",", sort keys %$tags );
     my $short_name = $meta->{"Docname"}->{"value"};
@@ -340,29 +347,29 @@ sub get_cell {
     $tip =~ s/["']/&quot;/g;
     $tip =~ s/\n/<br>/g;
 
-  # $meta->{PopFile}
+    # $meta->{PopFile}
     my $day = $d;
     $day =~ s/\s+\d+:\d+:\d+\s+/ /;
-    my $vals={
-      md5 => $md5,
-      doc => $short_name,
-      tip => $tip,
-      pg => $p,
-      sz => $s,
-      dt => $day,
-      tg => $tags,
+    my $vals = {
+        md5 => $md5,
+        doc => $short_name,
+        tip => $tip,
+        pg  => $p,
+        sz  => $s,
+        dt  => $day,
+        tg  => $tags,
     };
     return $vals;
 }
 
 sub load_results {
-    my $dh=shift;
+    my $dh         = shift;
     my ($stmt_hdl) = @_;
-    my $t0 = 0;
+    my $t0         = 0;
     my @outrow;
     my @out;
     while ( my $r = $stmt_hdl->fetchrow_hashref ) {
-	push @out, get_cell($dh,$r);
+        push @out, get_cell( $dh, $r );
     }
     return \@out;
 }

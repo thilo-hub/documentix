@@ -4,12 +4,13 @@
 use strict;
 use warnings;
 
-use Docconf; 
+use Docconf;
 
 use CGI qw/ :standard /;
 use URI::Escape;
 use Data::Dumper;
 use HTTP::Daemon;
+
 # Disabled for the time being  seems hard to compile
 #use HTTP::Daemon::SSL;
 use HTTP::Response;
@@ -22,13 +23,13 @@ use tags;
 use dirlist;
 use Fcntl qw(:flock SEEK_END);
 use doclib::pdfidx;
-my $nthreads=$Docconf::config->{number_server_threads};
+my $nthreads = $Docconf::config->{number_server_threads};
 
 use constant HOSTNAME => qx{hostname};
 
 $main::debug = $Docconf::config->{debug};
 
-open( my $fhx, ">",$Docconf::config->{lockfile} ) || die "No Open";
+open( my $fhx, ">", $Docconf::config->{lockfile} ) || die "No Open";
 
 sub lock {
     flock( $fhx, LOCK_EX ) or die "Cannot lock mailbox - $!\n";
@@ -47,29 +48,29 @@ my %O = (
     # 'listen-host'              => '127.0.0.1',
     'listen-port' => $p,
 
-
     'listen-max-req-per-child' => 100,
 );
-     $O{'listen-clients'}=  $ENV{"THREADS"} || $nthreads
-	unless $ENV{"NOTHREADS"};
+$O{'listen-clients'} = $ENV{"THREADS"} || $nthreads
+  unless $ENV{"NOTHREADS"};
 
 my $d = HTTP::Daemon->new(
-# my $d = HTTP::Daemon::SSL->new(
-    LocalAddr => $O{'listen-host'},
-    LocalPort => $O{'listen-port'},
-    SSL_cert_file => 'server-cert.pem',
-    SSL_key_file => 'server-key.pem',
 
-    Reuse     => 1,
+    # my $d = HTTP::Daemon::SSL->new(
+    LocalAddr     => $O{'listen-host'},
+    LocalPort     => $O{'listen-port'},
+    SSL_cert_file => 'server-cert.pem',
+    SSL_key_file  => 'server-key.pem',
+
+    Reuse => 1,
 ) or die "Can't start http listener at $O{'listen-host'}:$O{'listen-port'}";
 
 print "Started HTTP listener at " . $d->url . "\n";
 
 if ( $Docconf::config->{browser_start} ) {
-	system("firefox http://$O{'listen-host'}:$O{'listen-port'}/ &")
-	  if ( $^O =~ /linux/ && $ENV{"DISPLAY"});
-	system("open http://$O{'listen-host'}:$O{'listen-port'}/")
-	  if ( $^O =~ /darwin/ );
+    system("firefox http://$O{'listen-host'}:$O{'listen-port'}/ &")
+      if ( $^O =~ /linux/ && $ENV{"DISPLAY"} );
+    system("open http://$O{'listen-host'}:$O{'listen-port'}/")
+      if ( $^O =~ /darwin/ );
 }
 my %chld;
 
@@ -82,9 +83,9 @@ if ( $O{'listen-clients'} ) {
         }
     };
 }
-$SIG{WINCH}= sub { 
-            print STDERR "Update configuration\n" if $Docconf::config->{debug} > 0;
-	    Docconf::get_config();
+$SIG{WINCH} = sub {
+    print STDERR "Update configuration\n" if $Docconf::config->{debug} > 0;
+    Docconf::get_config();
 };
 
 while (1) {
@@ -92,7 +93,7 @@ while (1) {
 
         # prefork all at once
         for ( scalar( keys %chld ) .. $O{'listen-clients'} - 1 ) {
-	    Docconf::get_config();
+            Docconf::get_config();
             my $pid = fork;
 
             if ( !defined $pid ) {    # error
@@ -100,7 +101,7 @@ while (1) {
             }
             if ($pid) {               # parent
                 $chld{$pid} = 1;
-		print STDERR "Forked server PID:$pid\n";
+                print STDERR "Forked server PID:$pid\n";
             }
             else {                    # child
                 $_ = 'DEFAULT' for @SIG{qw/ INT TERM CHLD /};
@@ -118,19 +119,19 @@ while (1) {
 }
 
 sub http_child {
-    my $d      = shift;
-    my $ld_r   = ld_r->new();
-    my $feed   = feed->new();
-    my $tags   = tags->new();
-    my $dirlist= dirlist->new();
-    my $pdfidx = pdfidx->new();
-    my @pages  = (
-        { p => '/upload(/.*)?',          cb => \&do_upload },
+    my $d       = shift;
+    my $ld_r    = ld_r->new();
+    my $feed    = feed->new();
+    my $tags    = tags->new();
+    my $dirlist = dirlist->new();
+    my $pdfidx  = pdfidx->new();
+    my @pages   = (
+        { p => '/upload(/.*)?',              cb => \&do_upload },
         { p => '/docs/([^/]+)/([^/]+)/(.*)', cb => \&do_feed },
-        { p => '/ldres',                 cb => \&do_ldres },
-        { p => '/tags',                  cb => \&do_tags, },
-        { p => '/config',                  cb => \&do_conf, },
-        { p => '/dir',                  cb => \&do_fbrowser, },
+        { p => '/ldres',                     cb => \&do_ldres },
+        { p => '/tags',                      cb => \&do_tags, },
+        { p => '/config',                    cb => \&do_conf, },
+        { p => '/dir',                       cb => \&do_fbrowser, },
         { p => '/',                          cb => \&do_index },
         { p => '/+(.*)',                     cb => \&do_anycgi },
     );
@@ -156,14 +157,14 @@ sub http_child {
         foreach ( split( /&/, $r->content ) ) {
             my ( $k, $v ) = split( /=/, $_, 2 );
             next unless $k;
-	    $v = uri_unescape($v);
+            $v = uri_unescape($v);
             $arg->{$k} = $v;
         }
         if ( $r->uri->as_iri =~ /\?(.*)/ ) {
             foreach ( split( /&/, $1 ) ) {
                 my ( $k, $v ) = split( /=/, $_, 2 );
-		next unless $k;
-	        $v = uri_unescape($v);
+                next unless $k;
+                $v = uri_unescape($v);
                 $arg->{$k} = $v;
             }
         }
@@ -212,7 +213,7 @@ sub http_child {
 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0',
                     'Pragma'  => 'no-cache',
                     'Expires' => 'Thu, 01 Dec 1994 16:00:00 GMT',
-                     'Access-Control-Allow-Origin' => "*",
+                    'Access-Control-Allow-Origin' => "*",
                 ],
                 join( "\n", @_ ),
             )
@@ -229,7 +230,6 @@ sub http_child {
         return $m;
     }
 
-
     sub do_tags {
         my $c = shift;
         my $r = shift;
@@ -245,25 +245,28 @@ sub http_child {
         my $c = shift;
         my $f = "." . $c->{request}->uri->path;
 
-	# TODO:  make files more secure
-	# Restrict files to certain paths
+        # TODO:  make files more secure
+        # Restrict files to certain paths
         # Make file an absolute path,
         # return readable files from eq www
         # executables only from eq cgi
 
-	if ( $f =~ /\.(html|js|css)$/ && -r $f ) { # Standard files that can be returned
-		$c->{"c"}->send_file_response($f);
-	} elsif ( $f =~ /\.(sh|pm|pl|cgi)$/ && -x $f ) {
-		  if ($Docconf::config->{"cgi_enabled"} ) {
-			#print  Dumper($c);
-			my $json        = JSON::PP->new->utf8;
-			my $rv= $json->encode({"args"=> $c->{"args"}});
-			$ENV{"ARGS"}=$rv;
-			return HTTP::Message->parse(qx{$f})->content();
-		}
-		return "Failed: cgi scripts are disabled"; 
-	}
-	return "Failed $f"; 
+        if ( $f =~ /\.(html|js|css)$/ && -r $f )
+        {    # Standard files that can be returned
+            $c->{"c"}->send_file_response($f);
+        }
+        elsif ( $f =~ /\.(sh|pm|pl|cgi)$/ && -x $f ) {
+            if ( $Docconf::config->{"cgi_enabled"} ) {
+
+                #print  Dumper($c);
+                my $json = JSON::PP->new->utf8;
+                my $rv = $json->encode( { "args" => $c->{"args"} } );
+                $ENV{"ARGS"} = $rv;
+                return HTTP::Message->parse(qx{$f})->content();
+            }
+            return "Failed: cgi scripts are disabled";
+        }
+        return "Failed $f";
     }
 
     sub do_ldres {
@@ -293,7 +296,7 @@ sub http_child {
 
     sub do_index {
         my $c = shift;
-        $c->{"c"}->send_file_response($Docconf::config->{"index_html"});
+        $c->{"c"}->send_file_response( $Docconf::config->{"index_html"} );
         return undef;
     }
 
@@ -318,7 +321,7 @@ sub http_child {
             }
         }
 
-        my $fn = $Docconf::config->{local_storage}; 
+        my $fn = $Docconf::config->{local_storage};
         mkdir $fn or die "No dir: $fn" unless -d $fn;
         $fn .= "/$digest";
         my $wdir = $fn;
@@ -333,18 +336,18 @@ sub http_child {
         $ld_r->update_caches();
 
         lock();
-        my $m =
-          $ld_r->get_rbox_item($digest);
+        my $m = $ld_r->get_rbox_item($digest);
         unlock();
         return $m;
         return "OK";
     }
+
     sub do_fbrowser {
         my $c = shift;
         my $r = shift;
         my $a = $c->{"args"};
 
-        my $m = $dirlist->list($c->{"args"});
+        my $m = $dirlist->list( $c->{"args"} );
         return $m;
     }
 }
