@@ -20,6 +20,9 @@ ADD . documentix
 RUN  documentix/run_local.sh install/install.sh 
 ENTRYPOINT documentix/run_local.sh install/install.sh start
 
+VOLUME incomming:/documentix/incomming
+VOLUME database:/documentix/db
+
 EXPOSE 18080
 EXPOSE 28080
 
