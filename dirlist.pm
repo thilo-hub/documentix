@@ -1,7 +1,8 @@
 package dirlist;
 use HTML::Entities;
+use Cwd;
 
-my $root = "/Users/thilo/NoBackup/delme/documentix/";
+my $root = getcwd();
 
 #----------------------------------------------------------
 
