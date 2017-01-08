@@ -6,6 +6,7 @@ package Docconf;
 # The actual config might come from Docconfjs
 # and will overwrite the defaults
 #
+my $config_file= $ENV{"DOCUMENTIX_CONF"} or "Docconf.js";
 $config = {
 	database_provider => "SQLite",
 	database          => "db/doc_db.db",
@@ -58,7 +59,7 @@ sub getset {
   }
   }
   if ( $conf_changed && $args->{"save"} ) {
-	open(my $fh,">Docconf.js");
+	open(my $fh,">",$config_file);
 	print $fh $json->pretty->encode( $config );
 	close( $fh);
         local $SIG{"WINCH"} = "IGNORE";
