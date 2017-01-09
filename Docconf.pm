@@ -77,8 +77,8 @@ sub getset {
 get_config();
 
 sub get_config {
-    if ( -r "Docconf.js" ) {
-        open( my $fh, "<Docconf.js" );
+    if ( -r $config_file ) {
+        open( my $fh, $config_file );
         local $/;
         my $js;
         $js->{"set"} = <$fh>;
