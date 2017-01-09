@@ -80,7 +80,7 @@ sub dfeed {
         my $ext = dirname($f);
         $ext =~ s/^.*\.//;
         my $bn =
-          $Docconf::config->{local_storage} . "/" . $hash . "/" . basename($f);
+          $Docconf::config->{local_storage} . "/" . $hash . "/" . basename($f,".pdf");
         my $fn;
         foreach $fn ( $bn . ".ocr.pdf", $bn . ".pdf", $bn . "$ext.pdf", $f ) {
             next unless -r $fn;
