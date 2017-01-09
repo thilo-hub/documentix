@@ -24,6 +24,8 @@ use dirlist;
 use Fcntl qw(:flock SEEK_END);
 use doclib::pdfidx;
 my $nthreads = $Docconf::config->{number_server_threads};
+my $doc_re="html|css|js|png|jpeg|jpg|gif";
+my $cgi_re="sh|pm|pl|cgi";
 
 use constant HOSTNAME => qx{hostname};
 
@@ -251,11 +253,11 @@ sub http_child {
         # return readable files from eq www
         # executables only from eq cgi
 
-        if ( $f =~ /\.(html|js|css)$/ && -r $f )
+        if ( $f =~ /\.($doc_re)$/ && -r $f )
         {    # Standard files that can be returned
             $c->{"c"}->send_file_response($f);
         }
-        elsif ( $f =~ /\.(sh|pm|pl|cgi)$/ && -x $f ) {
+        elsif ( $f =~ /\.($cgi_re)$/ && -x $f ) {
             if ( $Docconf::config->{"cgi_enabled"} ) {
 
                 #print  Dumper($c);
