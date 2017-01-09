@@ -1,5 +1,5 @@
-From ubuntu:latest
-maintainer thilo-hub@nispuk.com
+FROM ubuntu:latest
+MAINTAINER thilo-hub@nispuk.com
 RUN apt-get update &&  apt-get install -y sqlite3 libdbd-sqlite3-perl  \
 	 libhtml-template-perl  libdigest-md5-file-perl \
 	 libxmlrpc-lite-perl\
@@ -17,6 +17,7 @@ RUN apt-get install -y calibre-bin
 # OR local directory
 ADD . documentix
 
+ENV DOCUMENTIX_CONF=db/config.js
 RUN  documentix/run_local.sh install/install.sh 
 ENTRYPOINT documentix/run_local.sh install/install.sh start
 
