@@ -864,7 +864,7 @@ sub do_convert_icon {
   # my @cmd = ( $convert, "'${fn}[$pn]'", qw{-trim -normalize -thumbnail 100} );
     my $out = $tmpdir . "/out";
     my @cmd = (
-        $pdftocairo, qw{-scale-to  100 -jpeg -singlefile -f },
+        $pdftocairo, "-scale-to", $Docconf::config->{icon_size}, "-jpeg", "-singlefile","-f",
         $pn, "-l", $pn, "'$fn'", $out
     );
 
