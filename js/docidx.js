@@ -301,14 +301,3 @@ $(function() {
         no_update_possible = 0;
         update_view();
     }
-
-//$(document).ready(function() { $("#config").hide(); });
- $('#menu1').fileTree({ root: '/',script: "/dir",multiFolder: false }, function(file) {
-        alert(file);
-    });
-});
-
-
-
-
-
