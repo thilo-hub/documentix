@@ -1,3 +1,5 @@
+$(function() {
+
 //$(document).ready(function() { $("#config").hide(); });
 // $('#tree1').tree({data: data});
 $.getJSON(
@@ -26,6 +28,6 @@ $('#tree1').bind(
     }
 );
 
+
+
 });
-
-

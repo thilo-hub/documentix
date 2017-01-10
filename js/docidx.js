@@ -301,3 +301,4 @@ $(function() {
         no_update_possible = 0;
         update_view();
     }
+});
