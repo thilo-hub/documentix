@@ -17,7 +17,7 @@ RUN apt-get install -y calibre-bin
 # OR local directory
 ADD . documentix
 
-ENV DOCUMENTIX_CONF=db/config.js
+ENV DOCUMENTIX_CONF=db/config.json
 RUN  documentix/run_local.sh install/install.sh 
 ENTRYPOINT documentix/run_local.sh install/install.sh start
 
