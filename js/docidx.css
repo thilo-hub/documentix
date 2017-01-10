@@ -224,6 +224,10 @@ input {
   overflow-y: scroll;
   user-select: none;
 }
+#configdata {
+  height: 400px;
+  overflow-y: scroll;
+}
 
 #classes {
     display: none;
