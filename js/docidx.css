@@ -219,6 +219,12 @@ input {
     border: inset red
 }
 
+#tree1 {
+  height: 400px;
+  overflow-y: scroll;
+  user-select: none;
+}
+
 #classes {
     display: none;
     border: blue
