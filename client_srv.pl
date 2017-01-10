@@ -135,7 +135,7 @@ sub http_child {
         { p => '/config',                    cb => \&do_conf, },
         { p => '/dir',                       cb => \&do_fbrowser, },
         { p => '/',                          cb => \&do_index },
-        { p => '/+(.*)',                     cb => \&do_anycgi },
+        { p => '/([^\?]+)',                  cb => \&do_anycgi },
     );
 
     my $i;
