@@ -264,7 +264,7 @@ sub http_child {
                 my $json = JSON::PP->new->utf8;
                 my $rv = $json->encode( { "args" => $c->{"args"} } );
                 $ENV{"ARGS"} = $rv;
-                return HTTP::Message->parse(qx{$f})->content();
+                return HTTP::Message->parse(scalar(qx{$f}))->content();
             }
             return "Failed: cgi scripts are disabled";
         }
