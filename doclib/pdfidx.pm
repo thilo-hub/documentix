@@ -365,7 +365,7 @@ sub index_pdf {
 
    #return $idx if $idx;   # already indexed -- TODO:potentially check timestamp
 
-    # $dh->do("begin exclusive transaction");
+    $dh->do("begin exclusive transaction");
     $dh->prepare("insert or ignore into file (md5,file,host) values(?,?,?)")
       ->execute( $md5_f, $fn, hostname() );
 
@@ -421,6 +421,8 @@ sub index_pdf {
     # $dh->do("commit");
     #$meta{"thumb"} = \$thumb;
     #$meta{"ico"}   = \$ico;
+    
+    $dh->do($type == "FAILED" ? "rollback" : "commit");
     return $idx, \%meta;
 
     sub tp_any {
