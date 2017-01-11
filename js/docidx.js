@@ -1,3 +1,4 @@
+var debug_lvl=0;
 var no_update_possible = 0;
 // indicates update possible
 var first_item = -1;
@@ -304,4 +305,9 @@ $(function() {
         no_update_possible = 0;
         update_view();
     }
+    dbg_msg = function(msg) {
+	if ( debug_lvl > 0)
+		$("#fmsg").show().prepend(msg);
+    }
+	
 });

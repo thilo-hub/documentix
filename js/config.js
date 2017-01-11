@@ -21,6 +21,7 @@ $(function() {
 	var template = $.templates("template_stuff", {
 	    markup: "#template_stuff"
 	});
+	debug_lvl = data.debug_js;
 	// data.sort(function(a, b) { return a.localeCompare(b); });
 	    for( k in data ) {
 		var d = { "k":k, "v":data[k]};

@@ -81,6 +81,10 @@ div.menu {
     _disabled_height: 120px
 }
 
+#fmsg {
+  height: 400px;
+  overflow-y: scroll;
+}
 #msg {
     border: inset thin blue;
     height: 30%;
