@@ -23,14 +23,14 @@ $config = {
     number_server_threads => 16,
     number_ocr_threads    => 16,
     browser_start         => 1,
-    local_storage         => "incomming",
+    local_storage         => "Documents/incomming",
     link_local            => 0,              # symlink files into local_storage
     ebook_convert_enabled => 1,
     unoconv_enabled       => 1,
     cgi_enabled           => 0,              # Security risk
     index_html            => "index.html",
     icon_size             => 100,
-    root_dir              => ".",
+    root_dir              => "Documents",
 
     server_listen_if => "127.0.0.1:8080",
 };

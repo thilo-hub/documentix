@@ -21,9 +21,10 @@ ENV DOCUMENTIX_CONF=db/config.json
 RUN  documentix/run_local.sh install/install.sh 
 ENTRYPOINT documentix/run_local.sh install/install.sh start
 
-VOLUME incomming:/documentix/incomming
+VOLUME Documents:/documentix/Documents
+VOLUME incomming:/documentix/Documents/incomming
 VOLUME database:/documentix/db
 
-EXPOSE 18080
-EXPOSE 28080
+EXPOSE 18080  # popfile management interface
+EXPOSE 28080  # Main GUI interface
 
