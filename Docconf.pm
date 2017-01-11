@@ -29,6 +29,7 @@ $config = {
     cgi_enabled           => 0,              # Security risk
     index_html            => "index.html",
     icon_size             => 100,
+    root_dir              => ".",
 
     server_listen_if => "127.0.0.1:8080",
 };

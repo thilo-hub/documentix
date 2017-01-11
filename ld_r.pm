@@ -304,9 +304,7 @@ qq{select s.idx,s.value snippet from hash natural join metadata s where md5 = ? 
         msg   => "$ndata items",
         items => $out,
     };
-    $out = JSON::PP->new->pretty->encode($m);
-
-    return $out;
+    return $m;
 }
 
 # print page jumper  bar

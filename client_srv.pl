@@ -23,6 +23,7 @@ use tags;
 use dirlist;
 use Fcntl qw(:flock SEEK_END);
 use doclib::pdfidx;
+use Digest::MD5;
 my $nthreads = $Docconf::config->{number_server_threads};
 my $doc_re="html|css|js|png|jpeg|jpg|gif";
 my $cgi_re="sh|pm|pl|cgi";
@@ -134,6 +135,7 @@ sub http_child {
         { p => '/tags',                      cb => \&do_tags, },
         { p => '/config',                    cb => \&do_conf, },
         { p => '/dir',                       cb => \&do_fbrowser, },
+        { p => '/import(/.*)?',              cb => \&do_import, },
         { p => '/',                          cb => \&do_index },
         { p => '/([^\?]+)',                  cb => \&do_anycgi },
     );
@@ -302,12 +304,50 @@ sub http_child {
         return undef;
     }
 
+    sub do_import {
+        my $c = shift;
+        my $r = $c->{request};
+	my $rv={status => "Failed"};
+        my $ctx = Digest::MD5->new();
+	my $f=$Docconf::config->{"root_dir"}.$c->{"args"}->{"file"};
+	print STDERR " Read: $f\n" if $Docconf::config->{"debug"} >0;
+	if ( $f && -f $f && open (my $fh,"<",$f) ){
+		$ctx->addfile($fh);
+		close($fh);
+		my $digest = $ctx->hexdigest;
+		$rv->{"md5"}= $digest;
+		print STDERR "OK\n" if $Docconf::config->{"debug"} >0;
+		my $nfh = $pdfidx->get_file($digest);
+		unless ($nfh) {
+			my $wdir=get_store($digest);
+
+			my $txt = $pdfidx->index_pdf( $f, $wdir );
+			$ld_r->update_caches();
+		}
+		lock();
+		$rv = $ld_r->get_rbox_item($digest);
+		unlock();
+		$rv-> {"status"} = "OK";
+	}
+	print STDERR Dumper($rv) if $Docconf::config->{"debug"} >2;
+	my $json = JSON::PP->new->utf8;
+	$rv = $json->encode( $rv );
+	return $rv;
+    }
+
+    sub get_store {
+	my $digest=shift;
+	my $wdir = $Docconf::config->{local_storage};
+	mkdir $wdir or die "No dir: $wdir" unless -d $wdir;
+	$wdir .= "/$digest";
+	mkdir $wdir or die "No dir: $wdir" unless -d $wdir;
+	return $wdir;
+    }
     sub do_upload {
         my $c = shift;
         my $r = $c->{request};
 
         #print Dumper($c);
-        use Digest::MD5;
         my $ctx = Digest::MD5->new();
         $ctx->add( $r->content() );
         my $digest = $ctx->hexdigest;
@@ -322,17 +362,13 @@ sub http_child {
                 return "duplicate";
             }
         }
-
-        my $fn = $Docconf::config->{local_storage};
-        mkdir $fn or die "No dir: $fn" unless -d $fn;
-        $fn .= "/$digest";
-        my $wdir = $fn;
-        mkdir $fn or die "No dir: $fn" unless -d $fn;
-        $fn .= "/$n";
+	my $wdir = get_store($digest);
+        my $fn = "$wdir/$n";
 
         open( my $f, ">", $fn ) or die "No open $fn";
         print $f $r->content();
         close($f);
+
         print "File: " . $r->header("x-file-name") . "\n";
         my $txt = $pdfidx->index_pdf( $fn, $wdir );
         $ld_r->update_caches();
@@ -340,8 +376,8 @@ sub http_child {
         lock();
         my $m = $ld_r->get_rbox_item($digest);
         unlock();
-        return $m;
-        return "OK";
+	my $out = JSON::PP->new->pretty->encode($m);
+	return $out;
     }
 
     sub do_fbrowser {
