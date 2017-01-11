@@ -18,6 +18,7 @@ $config = {
     cache_db_pass         => "",
     lockfile              => "db/db.lock",
     debug                 => 0,
+    debug_js              => 1,
     results_per_page      => 10,
     number_server_threads => 16,
     number_ocr_threads    => 16,
