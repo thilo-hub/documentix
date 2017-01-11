@@ -29,7 +29,7 @@ sub dlist {
 
     my @out;
 
-    my $fullDir = $root . $dir;
+    my $fullDir = $Docconf::config->{"root_dir"} . $dir;
 
     exit if !-e $fullDir;
 
