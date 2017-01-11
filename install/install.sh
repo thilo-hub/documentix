@@ -6,7 +6,8 @@ OPT="$@"
 test -f client_srv.pl || (echo "start in top-level directory --- ERROR" ;false) || exit 99
 
 # This is defined somewhere else -- you cannot change it yet
-DB_FILE=db/doc_db.db
+DB_FILE="$(./conf_op.pl database)"
+INDIR="$(./conf_op.pl local_storage)"
 # Skip all lengthy tests if a instsall passed before
 if [ -f .install_ok ] && [ "$(cat .install_ok)" = "$(cat version.txt)" ]; then
         echo "Skip tests"
@@ -23,7 +24,7 @@ else
 	/bin/echo -n "Test for: " ; which convert || (echo "FAILED: Need convert from ImageMagic  to help for OCR" ; false) || ERR=90
 	test -d $(dirname "$DB_FILE") || mkdir $(dirname "$DB_FILE") || exit 98
 	test -f "$DB_FILE" || sqlite3 $DB_FILE < install/doc_db.sql
-	test -d incomming || mkdir incomming
+	test -d "$INDIR" || mkdir -p "$INDIR"
 	test -d popuser || ( mkdir popuser && cp install/popuser_default.cfg popuser/popfile.cfg )
 
 echo "check the availability of required perl modules..."
@@ -84,7 +85,7 @@ case $OPT in
 			kill $(cat popuser/popfile.pid)
 		DB="$(dirname "$DB_FILE")" 
 		test -d "$DB" && rm -rf "$DB"
-		test -d incomming && rm -rf incomming
+		test -d "$INDIR" && rm -rf "$INDIR"
 		test -d popuser && rm -r popuser
 		rm -f .install_ok
 		rm -f /tmp/doc_cache.db* /tmp/documentix.*.lock
