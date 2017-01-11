@@ -220,7 +220,7 @@ $(function() {
         var itm = template.render(data);
         $('#result').prepend(itm);
         var msg = data.msg;
-	$('#msg').html("Item:" + idx + "</br>");
+	$('#msg').html("Item:" + data.doc + "</br>");
         if (msg)
             $('#msg').append(msg);
     }
