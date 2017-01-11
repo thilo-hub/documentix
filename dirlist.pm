@@ -1,6 +1,7 @@
 package dirlist;
 use HTML::Entities;
 use Cwd;
+use Docconf;
 
 my $root = getcwd();
 
@@ -23,7 +24,7 @@ sub dlist {
 
     my $out = "";    # "Content-type: text/html\n\n";
 
-    my $fullDir = $root . $dir;
+    my $fullDir = $Docconf::config->{root_dir} . $dir;
 
     exit if !-e $fullDir;
 
