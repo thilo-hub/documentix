@@ -213,6 +213,9 @@ $(function() {
     //  callback when new data arrive
     // Update page idx with json data
     insert_item = function(data) {
+        var dup= $("#"+data.items[0].md5);
+	if (dup)
+		dup.remove();
         var itm = template.render(data);
         $('#result').prepend(itm);
         var msg = data.msg;
