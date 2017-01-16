@@ -352,7 +352,8 @@ sub http_child {
         $ctx->add( $r->content() );
         my $digest = $ctx->hexdigest;
         my $n      = $r->header("x-file-name");
-        $n =~ s/[^a-zA-Z0-9._\-]/_/g;
+        $n = uri_unescape($n);
+        $n =~ s/[^a-zA-Z0-9. _\-]/_/g;
 
         my $nfh = $pdfidx->get_file($digest);
         if ($nfh) {
