@@ -422,7 +422,7 @@ sub index_pdf {
     #$meta{"thumb"} = \$thumb;
     #$meta{"ico"}   = \$ico;
     
-    $dh->do($type == "FAILED" ? "rollback" : "commit");
+    $dh->do($type eq "FAILED" ? "rollback" : "commit");
     return $idx, \%meta;
 
     sub tp_any {
