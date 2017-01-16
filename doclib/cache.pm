@@ -7,10 +7,10 @@ print STDERR ">>> cache.pm\n" if $Docconf::config->{debug} > 2;
 my $db_con;
 
 sub new {
-    my $dbn    = "SQLite";
-    my $d_name = "/tmp/doc_cache.db";
-    my $user   = "";
-    my $pass   = "";
+    my $dbn    = $Docconf::config->{cache_db_provider};
+    my $d_name = $Docconf::config->{cache_db};
+    my $user   = $Docconf::config->{cache_db_user};
+    my $pass   = $Docconf::config->{cache_db_pass};
     my $class  = shift;
 
     # return $db_con if $db_con;
