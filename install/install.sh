@@ -74,7 +74,7 @@ case $OPT in
 		test -f popuser/popfile.pid || exit 95
 		echo " Add first document...."
 		./run_local.sh ./load_documents.pl  Documentation/FirstRun.pdf   || exit 91
-		./run_local.sh perl client_srv.pl 0.0.0.0:28080 || exit 95
+		./run_local.sh perl client_srv.pl || exit 95
 		;;
 	stop)
 		test -f popuser/popfile.pid &&
