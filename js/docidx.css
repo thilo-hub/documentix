@@ -2,6 +2,11 @@ div.snippet {
     background: yello;
     display: none
 }
+span.glyphicon {
+    font-size: 20px;  
+    width: 10px;
+}
+
 
 div.top {
     padding: 0px;
@@ -143,7 +148,8 @@ a.dtags {
 
 img.thumb {
     width: 100%;
-    padding-right: 10px
+    max-height: 115px;
+    padding-right: 5px;
 }
 
 a.thumb {
@@ -261,7 +267,7 @@ unsel {
 .rbox {
     border: inset #CCC;
     width: 300px;
-    height: 200px;
+    height: 120px;
     float: left;
     list-style-type: none
 }

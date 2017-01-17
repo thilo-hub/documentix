@@ -36,18 +36,15 @@
         <div>
             <div class="left">
   <ul class="nav nav-tabs">
-    <li class="active"><a data-toggle="tab" href="#home">Home</a></li>
-    <li><a data-toggle="tab" href="#menu1">Files</a>
-</li>
-    <li><a data-toggle="tab" href="#menu3">
-			 <span class="glyphicon glyphicon-cog"></span>Config
-</a></li>
+    <li class="active"><a data-toggle="tab" href="#home"><span class="glyphicon glyphicon-home"></span></a></li>
+    <li><a data-toggle="tab" href="#menu1"><span class="glyphicon glyphicon-folder-open"></span></a> </li>
+    <li><a data-toggle="tab" href="#menu3"> <span class="glyphicon glyphicon-cog"></span> </a></li>
   </ul>
 
 
   <div class="tab-content">
     <div id="home" class="tab-pane fade in active">
-	<h3>Documentix</h3>
+<hr>
 		<div id="pageno" class="pageno"></div>
 		<div class="input-group">
 		  <span class="input-group-addon"><i>
@@ -79,7 +76,7 @@
 	<div id="fmsg"></div>
     </div>
     <div id="menu3" class="tab-pane fade">
-      <h3>Configuration</h3>
+<hr>
 		<div class="config"> 
 		    <form id=configdata>
 			<script id="template_stuff" type="text/x-jsrender">
@@ -140,20 +137,15 @@
 			</a>
 		    </div>
 		    <div class="descr">
-			<a href target="_popfile">
-			</a>
-			<br />
 			<a class="doclink" href="docs/raw/{{:md5}}/{{:doc}}" target="docpage">{{:doc}}
 			</a>
-			<br />
 			<a class="dtags">
 			    <p class="tagfield">
 				<input class="tagbox" id="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
 			    </p>
 			</a>
-			<br>{{:dt}}
-			<br> Pages: {{:pg}} 
-			<br>{{:sz}}
+			{{:dt}}
+			<br> Pages: {{:pg}} / {{:sz}}
 		    </div>
 		</div>
 	    </td>
