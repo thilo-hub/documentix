@@ -17,14 +17,25 @@ RUN apt-get install -y calibre-bin
 # OR local directory
 ADD . documentix
 
-ENV DOCUMENTIX_CONF=db/config.json
-RUN  documentix/run_local.sh install/install.sh 
-ENTRYPOINT documentix/run_local.sh install/install.sh start
+WORKDIR /documentix
+ENV DOCUMENTIX_CONF=/documentix/db/config.json
+
+LABEL version="0.9"
+LABEL description="documentix provides a document management system\
+ connect the port 80 of this docker to any port you want \
+ Add persistent volume for the database and the documents, optionally the upload folder can be mounted elsewhere"
+
+
+RUN ./run_local.sh install/install.sh 
+RUN ./conf_op.pl server_listen_if 0.0.0.0:80
+ENTRYPOINT ./run_local.sh install/install.sh start
 
 VOLUME Documents:/documentix/Documents
 VOLUME incomming:/documentix/Documents/incomming
 VOLUME database:/documentix/db
 
-EXPOSE 18080  # popfile management interface
-EXPOSE 28080  # Main GUI interface
+# popfile management interface
+EXPOSE 18080  
+  # Main GUI interface
+EXPOSE 80
 
