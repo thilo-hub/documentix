@@ -324,7 +324,7 @@ sub get_cell {
     my ($r)  = @_;
     my $meta = get_meta( $dh, $r->{"idx"} );
     my $md5  = $meta->{"hash"}->{"value"};
-    my $s    = 0;
+    my $s    = undef;
     my $p    = "1";
     my $d    = $r->{"date"} || "--";
     if ( my $mpdf = $meta->{"pdfinfo"}->{"value"} ) {
@@ -346,6 +346,13 @@ sub get_cell {
     $tip =~ s/\n/<br>/g;
 
     # $meta->{PopFile}
+    $s = $meta->{"size"}->{"value"}
+		unless defined($s);
+    $s = sprintf("%3.1fMb",$s/1024/1024) if $s > 1024*1024;
+    $s = sprintf("%3.1fKb",$s/1024) if $s > 1024;
+    $s = "--" unless defined($s);
+    $d = scalar(localtime($meta->{"mtime"}->{"value"}))
+		unless $d =~ /:.*:/;
     my $day = $d;
     $day =~ s/\s+\d+:\d+:\d+\s+/ /;
     my $vals = {

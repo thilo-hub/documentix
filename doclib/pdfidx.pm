@@ -398,6 +398,7 @@ sub index_pdf {
         "application/vnd.ms-powerpoint" => \&tp_any
     );
 
+    $meta{"size"} = ( stat($fn) )[7];
     $meta{"mtime"} = ( stat($fn) )[9];
     $meta{"hash"}  = $md5_f;
     $type =~ s/;.*//;
