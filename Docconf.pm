@@ -6,7 +6,7 @@ package Docconf;
 # The actual config might come from Docconfjs
 # and will overwrite the defaults
 #
-my $config_file = $ENV{"DOCUMENTIX_CONF"} or "Docconf.js";
+my $config_file = $ENV{"DOCUMENTIX_CONF"} ||  "Docconf.js";
 $config = {
     database_provider     => "SQLite",
     database              => "db/doc_db.db",
