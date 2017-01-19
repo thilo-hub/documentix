@@ -27,8 +27,12 @@
 		    var p=$('#progress');
 		    $(p).remove();
 		    var obj = JSON.parse(xhr.response);
-		    if ( obj )
+		    if ( obj.items )
 			    insert_item(obj);
+		    else if ( obj.msg )
+			$('#msg').append(obj.msg);
+		    else
+			$('#msg').append(xhr.responseText);
 		    //$('#droplist').append(this.name+" done<br>");
 		  });
           file.event(

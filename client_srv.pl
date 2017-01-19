@@ -360,19 +360,22 @@ sub http_child {
             print STDERR "File known\n";
             if ( -r $nfh ) {
                 print STDERR "File available ($nfh)\n";
-                return "duplicate";
+                #return '{"msg":"duplicate"}';
             }
         }
-	my $wdir = get_store($digest);
-        my $fn = "$wdir/$n";
+	else
+	{
+		my $wdir = get_store($digest);
+		my $fn = "$wdir/$n";
 
-        open( my $f, ">", $fn ) or die "No open $fn";
-        print $f $r->content();
-        close($f);
+		open( my $f, ">", $fn ) or die "No open $fn";
+		print $f $r->content();
+		close($f);
 
-        print "File: " . $r->header("x-file-name") . "\n";
-        my $txt = $pdfidx->index_pdf( $fn, $wdir );
-        $ld_r->update_caches();
+		print "File: " . $r->header("x-file-name") . "\n";
+		my $txt = $pdfidx->index_pdf( $fn, $wdir );
+		$ld_r->update_caches();
+	}
 
         lock();
         my $m = $ld_r->get_rbox_item($digest);
