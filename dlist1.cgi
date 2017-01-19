@@ -8,6 +8,7 @@ use JSON::PP;
 use URI::Escape;
 use Docconf;
 
+my $valid= qr{\.(pdf|doc|ppt|docx|pptx)$};
 my $json        = JSON::PP->new->utf8;
 $json_text = uri_unescape($ENV{"ARGS"});
 my $perl_scalar = $json->decode($json_text);
@@ -22,6 +23,7 @@ $data = dlist($d);
 my $r= $json->encode($data);
 print "\n$r";
 exit(0);
+
 
 #==================
 sub dlist {
@@ -40,7 +42,7 @@ sub dlist {
         if ( -d "$fullDir/$file" ) {
 	    push @out, { name => $file, id=>"$dir/$file", load_on_demand=>1, is_dir=>1};
         }
-        else {
+        elsif ( $file =~ /$valid/ ) {
 	    push @fout, { name => $file, id=>"$dir/$file", load_on_demand=>0, is_dir=>0};
         }
     }
