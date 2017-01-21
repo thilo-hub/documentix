@@ -216,13 +216,14 @@ $(function() {
     insert_item = function(data) {
         var dup= $("#"+data.items[0].md5);
 	if (dup)
-		dup.remove();
+		dup.parents("li").remove();
         var itm = template.render(data);
-        $('#result').prepend(itm);
+        var rv=$('#result').prepend(itm);
         var msg = data.msg;
 	$('#msg').html("Item:" + data.doc + "</br>");
         if (msg)
             $('#msg').append(msg);
+	return itm;
     }
     function load_result(idx, data) {
         var itm = template.render(data);
