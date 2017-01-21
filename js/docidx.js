@@ -311,4 +311,32 @@ $(function() {
 		$("#fmsg").show().prepend(msg);
     }
 	
+    Showpdf = function(u) {
+	    var p=$('#pdfview');
+	    if ( p[0] ) {
+		    var r=$("#result");
+		    var h=r.width() * 1.42;
+		    p.height("100%");
+		    r.hide();
+		    p.show();
+		    if ( u )
+			    p.prop("src",u);
+
+		    $('.left').click(function() { 
+			p.hide();
+			r.show(); 
+			});
+		    $('.top').click(function() { 
+			p.hide();
+			r.show(); 
+			});
+			return false;
+		}
+		else
+		{
+			if ( !(u) )
+				u=event.target.src;
+			window.open(u,"pdfviewer");
+		}
+	}
 });

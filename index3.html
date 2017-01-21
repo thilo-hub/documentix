@@ -98,6 +98,7 @@
 	    </div>
 	</div>
 	<div class="right">
+	    <iframe width="100%" id="pdf" name="docpage" src="" style="display:none"></iframe>
 	    <div id="result" class="results">
 		Results
 <script id="template_result" type="text/x-jsrender">
@@ -128,10 +129,12 @@
 		<div class="rcell" >
 		    <div class="thumb">
 			<a class="thumb" 
-	    href="web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}.pdf" 
+				href='web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}.pdf'
+			        target="docpage"
+				onclick="Showpdf()" 
 				ondragstart="Dropit('{{:md5}}','{{:doc}}')"
 				onmouseout="UnTip()" 
-				onmouseover="Tip('{{:tip}}')" target="docpage"
+				onmouseover="Tip('{{:tip}}')"
 			    >
 			    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}" />
 			</a>

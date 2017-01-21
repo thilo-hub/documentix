@@ -27,13 +27,19 @@
 		    var p=$('#progress');
 		    $(p).remove();
 		    var obj = JSON.parse(xhr.response);
+ 		    var rv;
 		    if ( obj.items )
-			    insert_item(obj);
+			    rv=insert_item(obj);
 		    else if ( obj.msg )
 			$('#msg').append(obj.msg);
 		    else
 			$('#msg').append(xhr.responseText);
 		    //$('#droplist').append(this.name+" done<br>");
+		    if ( rv ) {
+			    var u= $(rv).find("a.thumb").prop("href");
+			    Showpdf(u);
+			}
+		    
 		  });
           file.event(
 		  'error', function (xhr,XMLHttpReques) {
