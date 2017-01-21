@@ -258,6 +258,7 @@ sub http_child {
         if ( $f =~ /\.($doc_re)$/ && -r $f )
         {    # Standard files that can be returned
             $c->{"c"}->send_file_response($f);
+	    print STDERR " + ";
         }
         elsif ( $f =~ /\.($cgi_re)$/ && -x $f ) {
             if ( $Docconf::config->{"cgi_enabled"} ) {
@@ -266,10 +267,12 @@ sub http_child {
                 my $json = JSON::PP->new->utf8;
                 my $rv = $json->encode( { "args" => $c->{"args"} } );
                 $ENV{"ARGS"} = $rv;
+	       print STDERR " + ";
                 return HTTP::Message->parse(scalar(qx{$f}))->content();
             }
             return "Failed: cgi scripts are disabled";
         }
+        print STDERR " - ";
         return "Failed $f";
     }
 
