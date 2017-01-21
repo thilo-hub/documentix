@@ -348,9 +348,10 @@ sub get_cell {
     # $meta->{PopFile}
     $s = $meta->{"size"}->{"value"}
 		unless defined($s);
-    $s = sprintf("%3.1fMb",$s/1024/1024) if $s > 1024*1024;
-    $s = sprintf("%3.1fKb",$s/1024) if $s > 1024;
-    $s = "--" unless defined($s);
+    my $so=$s;
+    $so = sprintf("%3.1fMb",$s/1024/1024) if $s > 1024*1024;
+    $so = sprintf("%3.1fKb",$s/1024) if $s > 1024;
+    $so = "--" unless defined($s);
     $d = scalar(localtime($meta->{"mtime"}->{"value"}))
 		unless $d =~ /:.*:/;
     my $day = $d;
@@ -360,7 +361,7 @@ sub get_cell {
         doc => $short_name,
         tip => $tip,
         pg  => $p,
-        sz  => $s,
+        sz  => $so,
         dt  => $day,
         tg  => $tags,
     };
