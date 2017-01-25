@@ -335,7 +335,7 @@ $(function() {
 		else
 		{
 			if ( !(u) )
-				u=event.target.src;
+				u=(event.target).parent()[0].href;
 			window.open(u,"pdfviewer");
 		}
 	}
