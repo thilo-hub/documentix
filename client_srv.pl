@@ -10,6 +10,7 @@ use CGI qw/ :standard /;
 use URI::Escape;
 use Data::Dumper;
 use HTTP::Daemon;
+use Date::Parse;
 
 # Disabled for the time being  seems hard to compile
 #use HTTP::Daemon::SSL;
@@ -350,13 +351,16 @@ sub http_child {
         my $c = shift;
         my $r = $c->{request};
 
-        #print Dumper($c);
+	open (LOG,">logfile");
+        print Dumper($r->{_headers});
+	close LOG;
         my $ctx = Digest::MD5->new();
         $ctx->add( $r->content() );
         my $digest = $ctx->hexdigest;
-        my $n      = $r->header("x-file-name");
+        my $n      = $r->header("x-file-name") || "Unknown";
         $n = uri_unescape($n);
         $n =~ s/[^a-zA-Z0-9. _\-]/_/g;
+
 
         my $nfh = $pdfidx->get_file($digest);
         if ($nfh) {
@@ -369,13 +373,21 @@ sub http_child {
 	else
 	{
 		my $wdir = get_store($digest);
+		# Now store the file
 		my $fn = "$wdir/$n";
 
 		open( my $f, ">", $fn ) or die "No open $fn";
 		print $f $r->content();
 		close($f);
+		if ( my $file_time=$r->header("x-file-date") ) {
+			# If the client sent the time, use it
+			$file_time = str2time($file_time);
+			# print STDERR "Time: ".localtime($file_time)."\n";
 
-		print "File: " . $r->header("x-file-name") . "\n";
+			utime ($file_time,$file_time,$f);
+		}
+
+		print "File: $n\n";
 		my $txt = $pdfidx->index_pdf( $fn, $wdir );
 		$ld_r->update_caches();
 	}
