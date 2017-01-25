@@ -334,9 +334,11 @@ $(function() {
 		}
 		else
 		{
-			if ( !(u) )
-				u=(event.target).parent()[0].href;
-			window.open(u,"pdfviewer");
+			if ( (u) ){
+				window.open(u,"pdfviewer");
+				return false;
+			}
 		}
+		return true;
 	}
 });
