@@ -26,10 +26,10 @@ LABEL description="documentix provides a document management system\
  Add persistent volume for the database and the documents, optionally the upload folder can be mounted elsewhere"
 
 
-RUN ./run_local.sh install/install.sh 
-RUN ./conf_op.pl server_listen_if 0.0.0.0:80
-RUN ./conf_op.pl cgi_enabled 1
-RUN ./conf_op.pl "index_html" "index3.html"
+RUN ./run_local.sh install/install.sh  ;\
+	 ./conf_op.pl server_listen_if 0.0.0.0:80 ;\
+	 ./conf_op.pl cgi_enabled 1 ;\
+	 ./conf_op.pl "index_html" "index3.html"
 ENTRYPOINT ./run_local.sh install/install.sh start
 
 VOLUME Documents:/documentix/Documents
