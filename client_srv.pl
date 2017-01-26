@@ -182,6 +182,13 @@ sub http_child {
                 $ENV{'PATH_INFO'} = $1;
                 $ro->{"g"}        = $g;
                 $ro->{"c"}        = $c;
+		my $ct=$r->header('content-type');
+		if ($ct && $ct =~ m|multipart/form-data|) {
+			my @p=$r->parts;
+			die "Can only handle single multi parts"
+				if ( scalar(@p) > 1);
+			$ro->{"part"}=$p[0];
+		}
                 my $rv = $g->{"cb"}($ro);
                 _http_response( $c,
                     { content_type => 'text/html', charset => 'utf-8' }, $rv )
@@ -350,12 +357,13 @@ sub http_child {
     sub do_upload {
         my $c = shift;
         my $r = $c->{request};
+	my $content = $c->{part} ? \$c->{part}->content : \$r->content;
 
 	open (LOG,">logfile");
         print Dumper($r->{_headers});
 	close LOG;
         my $ctx = Digest::MD5->new();
-        $ctx->add( $r->content() );
+        $ctx->add( $$content );
         my $digest = $ctx->hexdigest;
         my $n      = $r->header("x-file-name") || "Unknown";
         $n = uri_unescape($n);
@@ -377,7 +385,7 @@ sub http_child {
 		my $fn = "$wdir/$n";
 
 		open( my $f, ">", $fn ) or die "No open $fn";
-		print $f $r->content();
+		print $f $$content;
 		close($f);
 		if ( my $file_time=$r->header("x-file-date") ) {
 			# If the client sent the time, use it
