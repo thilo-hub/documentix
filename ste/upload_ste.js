@@ -4,7 +4,7 @@ Dropzone.autoDiscover = false;
 $("div#dropzone").dropzone({ 
 	url: "upload",
 	method: "POST",
-	maxFiles: 1,
+	maxFiles: 10,
 	maxfilesexceeded: function(file) {
         this.removeAllFiles();
         this.addFile(file);
@@ -20,6 +20,9 @@ $("div#dropzone").dropzone({
 		}),
 		
 		this.on("success", function(file, xhr){
+		    var obj = JSON.parse(xhr);
+		    if ( obj.items )
+			    insert_item(obj);
 			;
 			//this.removeAllFiles();
 		})
