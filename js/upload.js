@@ -19,6 +19,7 @@
       });
       zone.event('send', function (files) {
         // Depending on browser support files (FileList) might contain multiple items.
+	var drop_count=files.length;
         files.each(function (file) {
           // React on successful AJAX upload:
 	  $('#droplist').append("<div id=progress>Uploading...</div>");
@@ -35,7 +36,7 @@
 		    else
 			$('#msg').append(xhr.responseText);
 		    //$('#droplist').append(this.name+" done<br>");
-		    if ( rv ) {
+		    if ( rv && drop_count === 1) {
 			    var u= $(rv).find("a.thumb").prop("href");
 			    Showpdf(u);
 			}

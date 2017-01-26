@@ -313,13 +313,13 @@ $(function() {
 	
     Showpdf = function(u) {
 	    var p=$('#pdfview');
-	    if ( p[0] ) {
+	    if ( p.length ) {
 		    var r=$("#result");
 		    var h=r.width() * 1.42;
 		    p.height("100%");
 		    r.hide();
 		    p.show();
-		    if ( u )
+		    if ( u !== undefined )
 			    p.prop("src",u);
 
 		    $('.left').click(function() { 
@@ -334,7 +334,7 @@ $(function() {
 		}
 		else
 		{
-			if ( (u) ){
+			if ( u !== undefined ){
 				window.open(u,"pdfviewer");
 				return false;
 			}
