@@ -31,6 +31,7 @@ $config = {
     index_html            => "index.html",
     icon_size             => 100,
     root_dir              => "Documents",
+    auth_disable          => 1,   #   Not finalized 
 
     server_listen_if => "127.0.0.1:8080",
 };

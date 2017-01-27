@@ -5,12 +5,14 @@ use strict;
 use warnings;
 
 use Docconf;
+my $auth={"update"=>0};;
 
 use CGI qw/ :standard /;
 use URI::Escape;
 use Data::Dumper;
 use HTTP::Daemon;
 use Date::Parse;
+use HTTP::Cookies;
 
 # Disabled for the time being  seems hard to compile
 #use HTTP::Daemon::SSL;
@@ -25,13 +27,21 @@ use dirlist;
 use Fcntl qw(:flock SEEK_END);
 use doclib::pdfidx;
 use Digest::MD5;
+my $session="/tmp/doc.sessions";
+my $session_time=24*3600; # seconds valid
+my $login_timeout=60; # seconds valid
 my $nthreads = $Docconf::config->{number_server_threads};
 my $doc_re="html|css|js|png|jpeg|jpg|gif";
 my $cgi_re="sh|pm|pl|cgi";
 
+my $ids= {
+	"Thilo" => "XXX"
+};
+
 use constant HOSTNAME => qx{hostname};
 
 $main::debug = $Docconf::config->{debug};
+my $last_check = 0;
 
 open( my $fhx, ">", $Docconf::config->{lockfile} ) || die "No Open";
 
@@ -135,6 +145,7 @@ sub http_child {
         { p => '/ldres',                     cb => \&do_ldres },
         { p => '/tags',                      cb => \&do_tags, },
         { p => '/config',                    cb => \&do_conf, },
+        { p => '/auth.*',                    cb => \&do_auth, },
         { p => '/dir',                       cb => \&do_fbrowser, },
         { p => '/import(/.*)?',              cb => \&do_import, },
         { p => '/',                          cb => \&do_index },
@@ -174,7 +185,11 @@ sub http_child {
             }
         }
         my $ro;
+	my $uid=guid(16);
+	my $cookie  = ($r->header("cookie") or "WE=$uid");
+	$ro->{"ID"}      = $1 if ( $cookie =~ m|WE=([0-9A-Za-z+/]+)| );
         $ro->{"request"} = $r;
+        $ro->{"cookie"} = $cookie;
         $ro->{"args"}    = $arg;
         $ro->{"q"}       = $r->uri->as_iri . "&" . $r->content;
         foreach my $g (@pages) {
@@ -189,9 +204,13 @@ sub http_child {
 				if ( scalar(@p) > 1);
 			$ro->{"part"}=$p[0];
 		}
-                my $rv = $g->{"cb"}($ro);
+	
+		# Only do auth unless session is known
+		my $srvr = auth_check($ro->{"ID"}) ? $g : { cb => \&do_auth };
+
+                my $rv = $srvr->{"cb"}($ro);
                 _http_response( $c,
-                    { content_type => 'text/html', charset => 'utf-8' }, $rv )
+                    { content_type => 'text/html', charset => 'utf-8', cookie => $cookie , ID=>$ro->{"ID"} }, $rv)
                   if $rv;
                 $matches++;
                 last;
@@ -213,8 +232,9 @@ sub http_child {
     sub _http_response {
         my $c       = shift;
         my $options = shift;
-
-        $c->send_response(
+        my $co = $options->{cookie};
+	$co .= ";Expires=".HTTP::Date::time2isoz(auth_check($options->{"ID"})+ $login_timeout)."\n";
+	my $res =
             HTTP::Response->new(
                 RC_OK, undef,
                 [
@@ -226,10 +246,14 @@ sub http_child {
                     'Pragma'  => 'no-cache',
                     'Expires' => 'Thu, 01 Dec 1994 16:00:00 GMT',
                     'Access-Control-Allow-Origin' => "*",
+
                 ],
                 join( "\n", @_ ),
-            )
-        );
+            );
+	$res->header( "Set-Cookie" => $co )
+		if $co;
+	# $co->add_cookie_header($res) if (0 && $co);
+        $c->send_response($res);
     }
 
     sub do_conf {
@@ -314,6 +338,34 @@ sub http_child {
         $c->{"c"}->send_file_response( $Docconf::config->{"index_html"} );
         return undef;
     }
+    sub do_auth {
+        my $c = shift;
+	my $resp = "auth.html";
+	my $a=$c->{"args"};
+
+	return ($c->{"c"}->send_redirect("auth",RC_TEMPORARY_REDIRECT), undef)
+		unless $c->{"g"}->{"p"} =~ m|/auth|;
+
+	if ( $a && (my $u=$a->{"user"}) && (my $p=$a->{"pass"}) ) {
+		print "User: $u\nPass: $p\n";
+		if ( auth_check($c->{ID},$u,$p) ) {
+			return $c->{"g"}->{"cb"}($c)
+				unless ( $c->{"g"}->{"cb"} == \&do_auth);
+			$c->{"c"}->send_redirect("");
+			return undef;
+		}
+	}
+	{
+		local $/;
+		open(my $f,"<",$resp);
+		my $r=<$f>;
+		close($f);
+		return $r;
+	}
+        $c->{"c"}->send_file_response( $resp);
+        return undef;
+     }
+
 
     sub do_import {
         my $c = shift;
@@ -415,4 +467,50 @@ sub http_child {
         my $m = $dirlist->list( $c->{"args"} );
         return $m;
     }
+    sub guid {
+      my $l=shift;
+      my $o="";
+      for my $i ( 0 ... $l  ) 
+      { 
+	    $o.=chr(rand(64)+48) 
+      } 
+      $o =~  tr#:-@[-`#p-z+/#; 
+      return $o;
+    }
+}
+
+# Check if ID is known
+sub auth_check {
+	my ($ID,$u,$p)=@_;
+	return time() if $Docconf::config->{"auth_disable"};
+	if ( defined($u) && defined($p) && 
+		$ids->{$u} && $ids->{$u} eq $p ) {
+			my $s= $auth->{$ID}=time()+ $session_time;
+			$auth->{"update"}=time();
+			#lock();
+			open(FH,">/tmp/doc.sessions");
+			print FH Dumper($auth);
+			#close(FH);
+			unlock();
+			print STDERR "Updated session data\n";
+			return $s;
+	}
+	if ( my $s=$auth->{$ID} ) {
+		return $s if $s > time();
+		delete $auth->{$ID};
+		return 0 unless ( $last_check < time() );
+	}
+	print STDERR "Check session\n";
+	$last_check = time();
+	my $mt=(stat("/tmp/doc.sessions"))[9] ||0;
+	if ( $mt > $auth->{"update"} ) {
+		print STDERR "Update session data\n";
+		my $VAR1;
+		#lock();
+		$auth= do $session;
+		#unlock();
+		$auth->{"update"}=time();
+		print STDERR Dumper($auth);
+	}
+	return $auth->{$ID} || 0;
 }
