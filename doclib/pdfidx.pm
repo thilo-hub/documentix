@@ -388,6 +388,7 @@ sub index_pdf {
         "application/x-gzip" => \&tp_gzip,
         "application/pdf"    => \&tp_pdf,
         "application/msword" => \&tp_any,
+        "image/jpeg"         => \&tp_jpg,
 "application/vnd.openxmlformats-officedocument.presentationml.presentation"
           => \&tp_any,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" =>
@@ -423,6 +424,7 @@ sub index_pdf {
     #$meta{"thumb"} = \$thumb;
     #$meta{"ico"}   = \$ico;
     
+    $idx = $type if ($type eq "FAILED");
     $dh->do($type eq "FAILED" ? "rollback" : "commit");
     return $idx, \%meta;
 
@@ -436,6 +438,18 @@ sub index_pdf {
         my $of = $Docconf::config->{local_storage} . "/" . $meta->{"hash"};
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
         do_unopdf( $i, $self->{file} );
+        my $type = do_file( $self->{file} );
+        return $type;
+    }
+    sub tp_jpg {
+        my $self = shift;
+        my $meta = shift;
+        my $i = $self->{"file"};
+
+        # Output will generally be created in the local_storage (and kept)
+        my $of = $Docconf::config->{local_storage} . "/" . $meta->{"hash"};
+        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
+        do_convert_pdf( $i, $self->{file} );
         my $type = do_file( $self->{file} );
         return $type;
     }
@@ -849,6 +863,16 @@ sub do_convert_ocr {
     $msg .= "CMD: " . join( " ", @cmd, "\n" );
     $fail += ( system(@cmd) ? 1 : 0 );
     return $fail;
+}
+
+sub do_convert_pdf {
+    my ( $in, $out ) = @_;
+    $in  = abs_path($in);
+    $out = abs_path($out);
+    print STDERR "convert: $in $out\n";
+    qx|convert "$in" "$out"|;
+    die "failed: convert: $in $out" unless -f $out;
+    return;
 }
 
 sub do_convert_thumb {
