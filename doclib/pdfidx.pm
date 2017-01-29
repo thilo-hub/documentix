@@ -388,6 +388,7 @@ sub index_pdf {
         "application/x-gzip" => \&tp_gzip,
         "application/pdf"    => \&tp_pdf,
         "application/msword" => \&tp_any,
+        "image/png"         => \&tp_jpg,
         "image/jpeg"         => \&tp_jpg,
 "application/vnd.openxmlformats-officedocument.presentationml.presentation"
           => \&tp_any,
