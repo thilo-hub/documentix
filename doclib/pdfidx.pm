@@ -390,6 +390,7 @@ sub index_pdf {
         "application/msword" => \&tp_any,
         "image/png"         => \&tp_jpg,
         "image/jpeg"         => \&tp_jpg,
+	"text/plain"	     => \&tp_ascii,
 "application/vnd.openxmlformats-officedocument.presentationml.presentation"
           => \&tp_any,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" =>
@@ -451,6 +452,19 @@ sub index_pdf {
         my $of = $Docconf::config->{local_storage} . "/" . $meta->{"hash"};
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
         do_convert_pdf( $i, $self->{file} );
+        my $type = do_file( $self->{file} );
+        return $type;
+    }
+
+    sub tp_ascii {
+        my $self = shift;
+        my $meta = shift;
+        my $i = $self->{"file"};
+
+        # Output will generally be created in the local_storage (and kept)
+        my $of = $Docconf::config->{local_storage} . "/" . $meta->{"hash"};
+        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
+        do_ascii2pdf( $i, $self->{file} );
         my $type = do_file( $self->{file} );
         return $type;
     }
@@ -971,6 +985,16 @@ sub do_calibrepdf {
     qx|ebook-convert "$in" "$out"|;
     main::unlock();
     die "failed: calibre: ebook-convert $in $out" unless -f $out;
+    return;
+}
+
+sub do_ascii2pdf {
+    my ( $in, $out ) = @_;
+    $in  = abs_path($in);
+    $out = abs_path($out);
+    print STDERR "ascii 2 pdf: $in\n";
+    qx{a2ps -o - "$in" | ps2pdf - "$out"};
+    die "failed: -o $out $in" unless -f $out;
     return;
 }
 
