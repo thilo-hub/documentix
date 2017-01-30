@@ -240,8 +240,7 @@ sub http_child {
                 [
                     'Content-Type' => $options->{content_type},
                     'charset' => 'utf-8',
-                    'Cache-Control' =>
-'no-store, no-cache, must-revalidate, post-check=0, pre-check=0',
+                    'Cache-Control' => 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0',
                     'Pragma'  => 'no-cache',
                     'Expires' => 'Thu, 01 Dec 1994 16:00:00 GMT',
                     'Access-Control-Allow-Origin' => "*",
