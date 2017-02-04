@@ -33,6 +33,7 @@ my $login_timeout=60; # seconds valid
 my $nthreads = $Docconf::config->{number_server_threads};
 my $doc_re="html|css|js|png|jpeg|jpg|gif";
 my $cgi_re="sh|pm|pl|cgi";
+my $pwfile=".htpasswd";
 
 my $ids= {
 	"Thilo" => "XXX"
@@ -480,18 +481,20 @@ sub http_child {
 # Check if ID is known
 sub auth_check {
 	my ($ID,$u,$p)=@_;
-	return time() if $Docconf::config->{"auth_disable"};
-	if ( defined($u) && defined($p) && 
-		$ids->{$u} && $ids->{$u} eq $p ) {
+	if ( defined($u) && defined($p) ) {
+		$u =~ s/[^a-zA-Z0-9_@.]//g;
+		open(my $ph,"|-",qw{htpasswd -i -v},$pwfile,$u); print $ph "$p\n"; close($ph); 
+		unless ( $? ) {
 			my $s= $auth->{$ID}=time()+ $session_time;
 			$auth->{"update"}=time();
 			#lock();
 			open(FH,">/tmp/doc.sessions");
 			print FH Dumper($auth);
-			#close(FH);
-			unlock();
+			close(FH);
+			#unlock();
 			print STDERR "Updated session data\n";
 			return $s;
+		}
 	}
 	if ( my $s=$auth->{$ID} ) {
 		return $s if $s > time();
