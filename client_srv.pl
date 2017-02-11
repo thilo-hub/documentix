@@ -481,6 +481,7 @@ sub http_child {
 # Check if ID is known
 sub auth_check {
 	my ($ID,$u,$p)=@_;
+	return 1 if $Docconf::config->{auth_disable};
 	if ( defined($u) && defined($p) ) {
 		$u =~ s/[^a-zA-Z0-9_@.]//g;
 		open(my $ph,"|-",qw{htpasswd -i -v},$pwfile,$u); print $ph "$p\n"; close($ph); 
