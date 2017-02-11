@@ -155,6 +155,7 @@ sub http_child {
         { p => '/auth.*',                    cb => \&do_auth, },
         { p => '/dir',                       cb => \&do_fbrowser, },
         { p => '/import(/.*)?',              cb => \&do_import, },
+        { p => '/importtree(.*)?',           cb => \&do_importtree },
         { p => '/',                          cb => \&do_index },
         { p => '/([^\?]+)',                  cb => \&do_anycgi },
     );
@@ -402,6 +403,59 @@ sub http_child {
 	$rv = $json->encode( $rv );
 	return $rv;
     }
+    sub do_importtree {
+        my $c = shift;
+	my $otxt;
+	my $txt;
+
+	my $f=$Docconf::config->{"root_dir"}.$c->{"args"}->{"dir"};
+	$f =~ s|/\.|/|g;
+	return "Empty directory" unless $c->{"args"}->{"dir"};
+
+# die ">>> $f" .Dumper($c);
+	return "Failed" unless -d $f;
+	open(FD,"find $f -name '*.pdf'|");
+	my $i;
+
+	my $out = slurp("data");
+
+	my $nfun = sub {
+		# get next file to process
+		my $f = <FD>;
+		print STDERR "File: $i : $f";
+		$i++;
+		return undef unless $f;
+
+		chomp($f);
+		my $m= "-- Bad: $f --";
+		if ( -r $f ) {
+		     eval { ($otxt,$txt) = $pdfidx->index_pdf( $f, "/tmp" )};
+		    my $c = substr( $txt->{"Content"}, 0, 150 );
+		    $c =~ s/[\r\n]+/\n     /g;
+		    $m= " $txt->{Mime} :\n $c ...\n";
+		}
+	# This is chunked transfer
+	# So each returned chunk should create some visual result 
+	my $r = <<EOM;
+$out
+<div id="mtext">
+	<table><tr><td><img src="docs/ico/$txt->{hash}/thumb.jpg"></td><td>
+	<pre>$m<pre>
+	</td></tr></table>
+</div>
+<script type="text/javascript">myfun('$f','#mtext','$txt->{"hash"}');</script>
+EOM
+		$out="";
+		return $r if $m;
+	return undef;
+	};
+
+	my $rn=HTTP::Response -> new ( RC_OK, undef,undef, $nfun);
+	$c->{c}->send_response($rn);
+	return undef;
+
+
+    };
 
     sub get_store {
 	my $digest=shift;
@@ -411,6 +465,13 @@ sub http_child {
 	mkdir $wdir or die "No dir: $wdir" unless -d $wdir;
 	return $wdir;
     }
+    sub slurp {
+        local $/;
+        open( my $fh, "<" . shift )
+          or return "File ?";
+        return <$fh>;
+    };
+
     sub do_upload {
         my $c = shift;
         my $r = $c->{request};

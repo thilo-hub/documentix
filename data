@@ -1,0 +1,23 @@
+<html> <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script> 
+<script type="text/javascript"> 
+var fn="--";
+   myfun = function(f,u,hash) { 
+	v=$(u);
+	$('#out').prepend( $('#test').html());
+	if ( fn !== f ) {
+		$('#test').html("--");
+		$('#fname').html(f);
+		// $('#img').attr("src", "docs/ico/"+hash+"/thumb.jpg");
+		$('#out').prepend($('#img'));
+	}
+	$('#test').append(v.html()); 
+	$('#test').append("<hr>");
+	v.remove();
+	fn = f;
+};  
+ </script>
+<hr><div id=fname>----</div> 
+<hr><div id=test>output</div> 
+<hr> <div id=out style="color: grey">  XXXXXXX <hr></div>
+</html>
+
