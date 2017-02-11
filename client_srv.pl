@@ -133,13 +133,19 @@ while (1) {
 
 }
 
+{
+    my $ld_r;
+    my $feed;
+    my $tags;
+    my $dirlist;
+    my $pdfidx;
 sub http_child {
     my $d       = shift;
-    my $ld_r    = ld_r->new();
-    my $feed    = feed->new();
-    my $tags    = tags->new();
-    my $dirlist = dirlist->new();
-    my $pdfidx  = pdfidx->new();
+    $ld_r    = ld_r->new();
+    $feed    = feed->new();
+    $tags    = tags->new();
+    $dirlist = dirlist->new();
+    $pdfidx  = pdfidx->new();
     my @pages   = (
         { p => '/upload(/.*)?',              cb => \&do_upload },
         { p => '/docs/([^/]+)/([^/]+)/(.*)', cb => \&do_feed },
@@ -476,6 +482,7 @@ sub http_child {
       $o =~  tr#:-@[-`#p-z+/#; 
       return $o;
     }
+}
 }
 
 # Check if ID is known
