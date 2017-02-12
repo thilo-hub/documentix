@@ -373,32 +373,40 @@ sub http_child {
      }
 
 
-    sub do_import {
-        my $c = shift;
-        my $r = $c->{request};
-	my $rv={status => "Failed"};
-        my $ctx = Digest::MD5->new();
-	my $f=$Docconf::config->{"root_dir"}.$c->{"args"}->{"file"};
+    sub load_file {
+	my ($rv,$f)=@_;
 	print STDERR " Read: $f\n" if $Docconf::config->{"debug"} >0;
 	if ( $f && -f $f && open (my $fh,"<",$f) ){
+		my $ctx = Digest::MD5->new();
 		$ctx->addfile($fh);
 		close($fh);
 		my $digest = $ctx->hexdigest;
-		$rv->{"md5"}= $digest;
+		$$rv->{"md5"}= $digest;
 		print STDERR "OK\n" if $Docconf::config->{"debug"} >0;
 		my $nfh = $pdfidx->get_file($digest);
 		unless ($nfh) {
 			my $wdir=get_store($digest);
 
-			my $txt = $pdfidx->index_pdf( $f, $wdir );
+			my ($otxt,$txt);
+			eval { ($otxt,$txt) = $pdfidx->index_pdf( $f, $wdir )};
 			$ld_r->update_caches();
+			rmdir $wdir;  # if is is not empty the rmdir will fail - which is intended
 		}
 		lock();
-		$rv = $ld_r->get_rbox_item($digest);
+		$$rv = $ld_r->get_rbox_item($digest);
 		unlock();
-		$rv-> {"status"} = "OK";
+		$$rv-> {"status"} = "OK";
 	}
 	print STDERR Dumper($rv) if $Docconf::config->{"debug"} >2;
+	return $rv;
+    }
+
+    sub do_import {
+        my $c = shift;
+        my $r = $c->{request};
+	my $rv={status => "Failed"};
+	my $f=$Docconf::config->{"root_dir"}.$c->{"args"}->{"file"};
+	load_file(\$rv,$f);
 	my $json = JSON::PP->new->utf8;
 	$rv = $json->encode( $rv );
 	return $rv;
@@ -410,47 +418,37 @@ sub http_child {
 
 	my $f=$Docconf::config->{"root_dir"}.$c->{"args"}->{"dir"};
 	$f =~ s|/\.|/|g;
+	print STDERR Dumper($c->{"args"});
 	return "Empty directory" unless $c->{"args"}->{"dir"};
 
 # die ">>> $f" .Dumper($c);
 	return "Failed" unless -d $f;
 	open(FD,"find $f -name '*.pdf'|");
-	my $i;
+	my $i=0;
 
 	my $out = slurp("data");
 
-	my $nfun = sub {
-		# get next file to process
-		my $f = <FD>;
-		print STDERR "File: $i : $f";
-		$i++;
-		return undef unless $f;
+	my $rn=HTTP::Response -> new ( RC_OK,
+		{ content_type => 'text/html', charset => 'utf-8'},undef,
+		    sub {
+			    # get next file to process
+			    my $f = <FD>;
+			    $i++;
+			    print STDERR "File: $i : " . ( $f ? $f : "END\n");
+			    #sleep 10;
+			    return undef unless $f;
 
-		chomp($f);
-		my $m= "-- Bad: $f --";
-		if ( -r $f ) {
-		     eval { ($otxt,$txt) = $pdfidx->index_pdf( $f, "/tmp" )};
-		    my $c = substr( $txt->{"Content"}, 0, 150 );
-		    $c =~ s/[\r\n]+/\n     /g;
-		    $m= " $txt->{Mime} :\n $c ...\n";
-		}
-	# This is chunked transfer
-	# So each returned chunk should create some visual result 
-	my $r = <<EOM;
-$out
-<div id="mtext">
-	<table><tr><td><img src="docs/ico/$txt->{hash}/thumb.jpg"></td><td>
-	<pre>$m<pre>
-	</td></tr></table>
-</div>
-<script type="text/javascript">myfun('$f','#mtext','$txt->{"hash"}');</script>
-EOM
-		$out="";
-		return $r if $m;
-	return undef;
-	};
+			    chomp($f);
+			    my $m= "-- Bad: $f --";
+			    my $rv={ status => "Error" };
+			    load_file( \$rv,$f);
+			    my $json = JSON::PP->new->utf8;
+			    $rv = $json->encode( $rv );
+			    $rv =~ s/\|/-/g;
 
-	my $rn=HTTP::Response -> new ( RC_OK, undef,undef, $nfun);
+			    return $rv."|";
+		    });
+
 	$c->{c}->send_response($rn);
 	return undef;
 
