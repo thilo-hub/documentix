@@ -165,9 +165,9 @@ sub get_file {
     my $q = "select file from file where md5=?";
 
     # print STDERR "$q : $md5\n";
-    $dh->do("begin exclusive transaction");
+    # $dh->do("begin exclusive transaction");
     my $fn = $dh->selectcol_arrayref( $q, undef, $md5 );
-    $dh->do("commit");
+    # $dh->do("commit");
     foreach (@$fn) {
 
         # return the first readable
