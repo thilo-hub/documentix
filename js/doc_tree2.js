@@ -19,7 +19,13 @@ var process_node = function (node) {
 	    dbg_msg("Scanning: "+node.name+"<br>");
 	      var xhr = new XMLHttpRequest();
 	      var old_len=0;
+	      $('#folders').hide();
+	      $('#loading').show();
 
+	      function updateEnd (e) {
+		  $('#folders').show();
+		  $('#loading').hide();
+	      }
 	      function updateProgress (e) {
 		    var newdata=e.currentTarget.response.substr(old_len);
 		    old_len=e.currentTarget.response.length;
@@ -43,6 +49,7 @@ var process_node = function (node) {
 	      }
 
 	      xhr.addEventListener("progress", updateProgress, false);
+	      xhr.addEventListener("load", updateEnd, false);
 	      xhr.open("post", "importtree", true);
 	      xhr.send("dir="+node.id);
 	}
