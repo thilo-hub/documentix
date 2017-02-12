@@ -319,11 +319,11 @@ sub http_child {
         my $r = shift;
         my $a = $c->{"args"};
 
-        lock();
+        # lock();
         my $m =
           $ld_r->ldres( $a->{"class"}, $a->{"idx"}, $a->{"ppages"},
             $a->{"search"} );
-        unlock();
+        # unlock();
         return $m;
     }
 
@@ -331,9 +331,9 @@ sub http_child {
         my $c = shift;
         print "feed $1\n" if $Docconf::config->{debug} > 0;
 
-        lock();
+        # lock();
         my $r = HTTP::Message->new( $feed->feed_m( $2, $1, $3 ) );
-        unlock();
+        # unlock();
         my $rp = HTTP::Response->new( RC_OK, undef, $r->headers, $r->content );
         $c->{"c"}->send_response($rp);
         return undef;
@@ -392,9 +392,9 @@ sub http_child {
 			$ld_r->update_caches();
 			rmdir $wdir;  # if is is not empty the rmdir will fail - which is intended
 		}
-		lock();
+		# lock();
 		$$rv = $ld_r->get_rbox_item($digest);
-		unlock();
+		# unlock();
 		$$rv-> {"status"} = "OK";
 	}
 	print STDERR Dumper($rv) if $Docconf::config->{"debug"} >2;
@@ -513,9 +513,9 @@ sub http_child {
 		$ld_r->update_caches();
 	}
 
-        lock();
+        # lock();
         my $m = $ld_r->get_rbox_item($digest);
-        unlock();
+        # unlock();
 	my $out = JSON::PP->new->pretty->encode($m);
 	return $out;
     }
