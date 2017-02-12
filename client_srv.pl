@@ -212,7 +212,7 @@ sub http_child {
 				if ( scalar(@p) > 1);
 			$ro->{"part"}=$p[0];
 		}
-	
+
 		# Only do auth unless session is known
 		my $srvr = auth_check($ro->{"ID"}) ? $g : { cb => \&do_auth };
 
@@ -475,9 +475,6 @@ sub http_child {
         my $r = $c->{request};
 	my $content = $c->{part} ? \$c->{part}->content : \$r->content;
 
-	open (LOG,">logfile");
-        print Dumper($r->{_headers});
-	close LOG;
         my $ctx = Digest::MD5->new();
         $ctx->add( $$content );
         my $digest = $ctx->hexdigest;
@@ -534,11 +531,11 @@ sub http_child {
     sub guid {
       my $l=shift;
       my $o="";
-      for my $i ( 0 ... $l  ) 
-      { 
-	    $o.=chr(rand(64)+48) 
-      } 
-      $o =~  tr#:-@[-`#p-z+/#; 
+      for my $i ( 0 ... $l  )
+      {
+	    $o.=chr(rand(64)+48)
+      }
+      $o =~  tr#:-@[-`#p-z+/#;
       return $o;
     }
 }
@@ -550,7 +547,7 @@ sub auth_check {
 	return 1 if $Docconf::config->{auth_disable};
 	if ( defined($u) && defined($p) ) {
 		$u =~ s/[^a-zA-Z0-9_@.]//g;
-		open(my $ph,"|-",qw{htpasswd -i -v},$pwfile,$u); print $ph "$p\n"; close($ph); 
+		open(my $ph,"|-",qw{htpasswd -i -v},$pwfile,$u); print $ph "$p\n"; close($ph);
 		unless ( $? ) {
 			my $s= $auth->{$ID}=time()+ $session_time;
 			$auth->{"update"}=time();
