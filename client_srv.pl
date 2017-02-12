@@ -24,6 +24,7 @@ use ld_r;
 use feed;
 use tags;
 use dirlist;
+use File::Basename;
 use Fcntl qw(:flock SEEK_END);
 use doclib::pdfidx;
 use Digest::MD5;
@@ -374,7 +375,7 @@ sub http_child {
 
 
     sub load_file {
-	my ($rv,$f)=@_;
+	my ($rv,$f,$class)=@_;
 	print STDERR " Read: $f\n" if $Docconf::config->{"debug"} >0;
 	if ( $f && -f $f && open (my $fh,"<",$f) ){
 		my $ctx = Digest::MD5->new();
@@ -387,10 +388,20 @@ sub http_child {
 		unless ($nfh) {
 			my $wdir=get_store($digest);
 
-			my ($otxt,$txt);
-			eval { ($otxt,$txt) = $pdfidx->index_pdf( $f, $wdir )};
-			$ld_r->update_caches();
+			my ($otxt,$meta);
+			eval { ($otxt,$meta) = $pdfidx->index_pdf( $f, $wdir )};
 			rmdir $wdir;  # if is is not empty the rmdir will fail - which is intended
+			$ld_r->update_caches();
+
+			if( $class && $class ne $meta->{"Class"}  ) {
+			    $pdfidx->pdf_class_md5( $digest, "-". $meta->{"Class"} );
+			    $pdfidx->pdf_class_md5( $digest, $class );
+			    print STDERR "Force class $meta->{Class} -> ";
+			    $meta->{Class}=$class;
+
+			}
+			print STDERR "class $meta->{Class}\n";
+
 		}
 		# lock();
 		$$rv = $ld_r->get_rbox_item($digest);
@@ -416,14 +427,14 @@ sub http_child {
 	my $otxt;
 	my $txt;
 
-	my $f=$Docconf::config->{"root_dir"}.$c->{"args"}->{"dir"};
-	$f =~ s|/\.|/|g;
+	my $dpath=$Docconf::config->{"root_dir"}.$c->{"args"}->{"dir"};
+	$dpath =~ s|/\.|/|g;
 	print STDERR Dumper($c->{"args"});
 	return "Empty directory" unless $c->{"args"}->{"dir"};
 
-# die ">>> $f" .Dumper($c);
-	return "Failed" unless -d $f;
-	open(FD,"find $f -name '*.pdf'|");
+# die ">>> $dpath" .Dumper($c);
+	return "Failed" unless -d $dpath;
+	open(FD,"find $dpath -name '*.pdf'|");
 	my $i=0;
 
 	my $out = slurp("data");
@@ -437,11 +448,15 @@ sub http_child {
 			    print STDERR "File: $i : " . ( $f ? $f : "END\n");
 			    #sleep 10;
 			    return undef unless $f;
+			    my $fp=lc(dirname($f));
+			    $fp =~ s|\Q$dpath\E(.*/)?||i;
+			    print STDERR "FP: $fp\n";
+			    undef $fp if $fp =~ /$Docconf::config->{"unclassified_folder"}/i;
 
 			    chomp($f);
 			    my $m= "-- Bad: $f --";
 			    my $rv={ status => "Error" };
-			    load_file( \$rv,$f);
+			    load_file( \$rv,$f,$fp);
 			    my $json = JSON::PP->new->utf8;
 			    $rv = $json->encode( $rv );
 			    $rv =~ s/\|/-/g;

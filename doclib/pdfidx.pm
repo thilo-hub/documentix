@@ -798,7 +798,7 @@ sub pdf_class_file {
     my $fn    = shift;    #optional file-name
     my $rtxt  = shift;    # text to classify
     my $md5   = shift;
-    my $class = shift;    # undef returns class else set class
+    my $class = shift;    # undef returns class else set class a '-' as the first char removes the class
 
     my $rv;
     my $ln;
