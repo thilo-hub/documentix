@@ -307,21 +307,20 @@ sub ocrpdf {
     $errs += w_load(0) if $mth;
     print STDERR "Done Errs:$errs\n";
 
-    return undef unless @outpages;
+    my $txt = undef;
+    if (@outpages) {
 
-    my @cpages;
-    foreach (@outpages) {
-        push @cpages, $_ if -f $_;
+	my @cpages;
+	foreach (@outpages) {
+	    push @cpages, $_ if -f $_;
+	}
+	if ( @cpages ) {
+
+	    $fail += do_pdfunite( $outpdf, @cpages );
+	    $txt = do_pdftotext($outpdf);
+	}
+	unlink(@outpages) unless $debug > 2;
     }
-    return undef unless @cpages;
-
-    $fail += do_pdfunite( $outpdf, @cpages );
-    unlink(@outpages) unless $debug > 2;
-
-    my $tmp = "$tmpdir/out.pdf";
-    symlink( $outpdf, $tmp );
-    my $txt = do_pdftotext("$tmp");
-    unlink $tmp   unless $debug > 2;
     rmdir $tmpdir unless $debug > 2;
     return $txt;
 }
@@ -497,7 +496,7 @@ sub index_pdf {
     sub tp_pdf {
         my $self = shift;
         my $meta = shift;
-        my $t    = $self->pdf_text( $self->{"file"}, $meta->{"md5"} );
+        my $t    = $self->pdf_text( $self->{"file"}, $meta->{"hash"} );
         if ($t) {
             $t =~ s/[ \t]+/ /g;
             $self->ins_e( $self->{"idx"}, "Text", $t );
@@ -530,26 +529,35 @@ sub ins_e {
       unless $self->{"new_e"}->execute;
 }
 
+#
+# try to get text from document
+#  in order local_storage...ocr.pdf orig...ocr.pdf   orig.pdf
 sub pdf_totext {
     my $self = shift;
     my $fn   = shift;
+    my $md5   = shift;
     print STDERR " pdf_totext $fn\n" if $debug > 1;
+    my $f_path = dirname(abs_path($fn))."/";
+    my $f_base = basename($fn,(".pdf",".ocr.pdf"));
 
-    $fn = abs_path($fn);
-    $fn =~ s/\.ocr\.pdf$/.pdf/;
-    my $ocrpdf = $fn;
-    $ocrpdf =~ s/\.pdf$/.ocr.pdf/;
+    my $lcl_store =
+          $Docconf::config->{local_storage} . "/" . $md5 . "/" . $f_base;
     die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
-
-    undef $ocrpdf if $ocrpdf eq $fn;
-    if ( -r $ocrpdf ) {
-        $fn = $ocrpdf;
+    foreach $fn ( $lcl_store.".ocr.pdf", $f_path .$f_base.".ocr.pdf", $fn ) {
+	last if -r $fn;
     }
-    $txt = do_pdftotext($fn);
-    return $txt if length($txt) > 100;
-    return $txt if ( -r $ocrpdf );
+    # Should not happen....
+    die "Cannot read: $fn" unless -r $fn;
 
-    return $self->ocrpdf( $fn, $ocrpdf );
+    # extract text-stream from pdf
+    $txt = do_pdftotext($fn);
+    # return if some text is found
+    return $txt if length($txt) > 100;
+    # give up if we already use an ocr version
+    return $txt if ( $fn =~ /.ocr.pdf$/);
+
+    # do the ocr conversion
+    return $self->ocrpdf( $fn, $lcl_store .".ocr.pdf" );
 }
 
 sub pdf_text {
@@ -568,12 +576,7 @@ q{select value from hash natural join metadata where md5=? and tag="Text"},
     );
     return $txt if $txt;
 
-    my $dir = dirname($fn);
-
-    $ofn =~ s/\.pdf$/.txt/;
-    $ofn = tempname() unless -w $dir;
-
-    return $self->pdf_totext( $fn, $ofn );
+    return $self->pdf_totext( $fn, $md5 );
 }
 
 sub pdf_thumb {
@@ -961,18 +964,21 @@ sub do_pdfunite {
     print STDERR "CMD: " . join( " ", @cmd, "\n" );
     $fail += ( system(@cmd) ? 1 : 0 ) unless -f $outpdf;
 
+    print STDERR "Unite into: $outpdf\n" if $debug>1;
     # die "Failure generating $outpdf" unless -f $outpdf;
     return $fail;
 }
 
 sub do_pdftotext {
-    my ($tmp) = @_;
-
-    # symlink($outpdf,$tmp);
+    my ($pdfin) = @_;
+    # pdftotext has issues with spaces in the name
+    my $tmp=tmpnam().".pdf";
+    symlink(abs_path($pdfin),$tmp);
     @cmd = ( $pdftotext, $tmp, "-" );
 
-    print STDERR "CMD: " . join( " ", @cmd, "\n" );
+    print STDERR "CMD: '" . join( "' '", @cmd). "'\n" ;
     my $txt = qx( @cmd );
+    unlink $tmp;
     return $txt;
 }
 
@@ -1022,14 +1028,5 @@ sub do_ungzip {
     return;
 }
 
-sub do_pdftotext {
-    my ($in) = @_;
-    my $tmp = tmpnam() . ".pdf";
-    symlink( $in, $tmp );
-    @cmd = ( $pdftotext, $tmp, "-" );
-    my $txt = qx( @cmd );
-    unlink $tmp unless $debug > 2;
-    return $txt;
-}
 
 1;

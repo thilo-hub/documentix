@@ -79,6 +79,8 @@ sub dfeed {
     elsif ( $tpe eq "pdf" ) {
         my $ext = dirname($f);
         $ext =~ s/^.*\.//;
+	# Get first file in order:
+	#  local_storage...ocr.pdf local_storage...pdf ???  orig....pdf
         my $bn =
           $Docconf::config->{local_storage} . "/" . $hash . "/" . basename($f,".pdf");
         my $fn;
