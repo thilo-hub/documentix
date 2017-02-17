@@ -3,21 +3,14 @@ package tags;
 use strict;
 use warnings;
 use Data::Dumper;
-use doclib::pdfidx;
 use Cwd 'abs_path';
 use JSON::PP;
 use Encode;
 use URI::Escape;
 
+use doclib::pdfidx;
+
 my $__meta_sel;
-
-my $pdfidx = pdfidx->new();
-
-my $dh = $pdfidx->{"dh"};
-
-# print $q->header( -charset => 'utf-8' )    # , -cookie=> \@mycookies),, ;
-# print STDERR Dumper(\%ENV);
-# my $json_text = $q->param('json_string');
 
 sub new {
     my $class = shift;
@@ -69,3 +62,4 @@ sub add_tag {
    "
 
 }
+1;

@@ -64,7 +64,7 @@ my %O = (
     # 'listen-host'              => '127.0.0.1',
     'listen-port' => $p,
 
-    'listen-max-req-per-child' => 100,
+    'listen-max-req-per-child' => 1000,
 );
 $O{'listen-clients'} = $ENV{"THREADS"} || $nthreads
   unless $ENV{"NOTHREADS"};
@@ -277,9 +277,9 @@ sub http_child {
         my $c = shift;
         my $r = shift;
 
-        lock();
+	# lock();
         my $m = $tags->add_tag( $c->{"args"} );
-        unlock();
+	# unlock();
 
         return $m;
     }

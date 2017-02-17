@@ -3,27 +3,16 @@ package feed;
 #!/usr/bin/perl
 use strict;
 use warnings;
-use doclib::pdfidx;
-use doclib::cache;
 use HTTP::Message;
 use HTTP::Date;
 use Cwd 'abs_path';
 use File::Basename;
 
+use doclib::pdfidx;
+use doclib::cache;
+
 $ENV{"PATH"} .= ":/usr/bin:/usr/pkg/bin";
 print STDERR ">>> feed.pm\n" if $Docconf::config->{debug} > 2;
-
-# Process an HTTP request
-my $pdfidx = pdfidx->new();
-my $dh     = $pdfidx->{"dh"};
-my $md5;
-my $t;
-
-my ( $f, $ext );
-
-my $pi = $ENV{'PATH_INFO'};
-
-# feed($md5,$t,$pi);
 
 sub new {
     my $class = shift;
@@ -42,9 +31,6 @@ sub feed_m {
         Content_type => $t,
         Expires      => $exp
     );
-
-    #$h->content_type($t);
-    #$response->header('Expires')
     return ( $h, $m );
 }
 
@@ -123,23 +109,23 @@ sub dfeed {
     }
     elsif ( $converter->{$tpe} ) {
         ( $m, $res ) =
-          $self->{cache}->get_cache( $f, "$hash-$tpe", $converter->{$tpe} );
+          $self->{cache}->get_cache( $f, "$hash-$tpe", $converter->{$tpe},$self );
     }
     return ( $m, $res );
 
     # cache call-back
     sub mk_lowres {
-        my ( $item, $idx, $mtime ) = @_;
+        my ( $self,$item, $idx, $mtime ) = @_;
         my $htm = $item;
         $htm =~ s/\.pdf$/.ocr.html/;
-        my $rv = $pdfidx->mk_pdf( undef, $item, $htm );
+        my $rv = $self->{pdfidx}->mk_pdf( undef, $item, $htm );
 
         # print STDERR "mk_lowres...\n";
         return ( 'application/pdf', $rv );
     }
 
     sub mk_page {
-        my ( $item, $idx, $mtime ) = @_;
+        my ( $self,$item, $idx, $mtime ) = @_;
 
         # client want a single page (we asume -resize 20
         my $ntime = ( stat($item) )[9];
@@ -168,7 +154,7 @@ sub dfeed {
     }
 
     sub mk_ico {
-        my ( $item, $idx, $mtime ) = @_;
+        my ( $self,$item, $idx, $mtime ) = @_;
         my $ntime = ( stat($item) )[9];
         $mtime = 0 unless $mtime;
         my $pg  = undef;
@@ -180,21 +166,21 @@ sub dfeed {
         # $rot = 180 if $idx =~ s/^U-//;
         print STDERR "mk_ico...\n" if ( $main::debug > 1 );
         return undef if ( $mtime && -r $item && $ntime < $mtime );
-        my ( $typ, $out ) = $pdfidx->pdf_icon( $item, $pg, $rot );
+        my ( $typ, $out ) = $self->{pdfidx}->pdf_icon( $item, $pg, $rot );
         return undef unless $out;
         print STDERR "     ...new cache\n" if ( $main::debug > 1 );
         return ( $typ, $out );
     }
 
     sub mk_thumb {
-        my ( $item, $idx, $mtime ) = @_;
+        my ( $self,$item, $idx, $mtime ) = @_;
         my $pg = undef;
         print STDERR "mk_thumb...\n" if ( $main::debug > 1 );
         $pg = $1 if $idx =~ /(\d+)/;
         my $ntime = ( stat($item) )[9];
         $mtime = 0 unless $mtime;
         return undef if ( $mtime && -r $item && $ntime < $mtime );
-        my ( $typ, $out ) = $pdfidx->pdf_thumb( $item, $pg );
+        my ( $typ, $out ) = $self->{pdfidx}->pdf_thumb( $item, $pg );
         return undef unless $out;
         print STDERR "     ...new cache\n" if ( $main::debug > 1 );
         return ( $typ,, $out );

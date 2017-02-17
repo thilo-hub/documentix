@@ -4,11 +4,13 @@ package ld_r;
 use strict;
 use warnings;
 use Data::Dumper;
-use doclib::pdfidx;
 use Cwd 'abs_path';
-use Docconf;
 use POSIX;
 use JSON::PP;
+use Sys::Hostname;
+
+use Docconf;
+use doclib::pdfidx;
 
 print STDERR ">>> ld_r.pm\n" if $Docconf::config->{debug} > 2;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
@@ -16,15 +18,9 @@ $ENV{"PATH"} .= ":/usr/pkg/bin";
 my $__meta_sel;
 my $entries = $Docconf::config->{results_per_page};
 
-use Sys::Hostname;
 my $myhost = hostname();
 
-# my $pdfidx = pdfidx->new();
-
-# print pages
 my $ANY = "*ANY*";
-
-# my $dh = $pdfidx->{"dh"};
 
 sub new {
     my $class = shift;
@@ -58,13 +54,13 @@ q{ insert or replace  into config (var,value) select "max_idx",max(idx) from has
         q{drop table cache_q2},
     );
 
-    $dh->do("begin exclusive transaction");
+    # $dh->do("begin exclusive transaction");
     foreach (@sql) {
 
         #print "$_\n";
         $dh->do($_) or die "Error $_";
     }
-    $dh->do("commit");
+    # $dh->do("commit");
 
 }
 

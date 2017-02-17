@@ -1,4 +1,9 @@
 package Docconf;
+use JSON::PP;
+use Encode;
+use Data::Dumper;
+use URI::Escape;
+
 
 # Comments are OK
 # Valid perl-code
@@ -36,11 +41,6 @@ $config = {
 
     server_listen_if => "127.0.0.1:8080",
 };
-
-use JSON::PP;
-use Encode;
-use Data::Dumper;
-use URI::Escape;
 
 sub getset {
     my $args         = shift;

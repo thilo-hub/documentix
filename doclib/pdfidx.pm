@@ -9,6 +9,7 @@ use Sys::Hostname;
 use File::Temp qw/tempfile tmpnam tempdir/;
 use File::Basename;
 use Cwd 'abs_path';
+use Data::Dumper;
 $File::Temp::KEEP_ALL = 1;
 my $maxcpu = $Docconf::config->{number_ocr_threads};
 my $mth    = $maxcpu > 1 ? 1 : 01;
@@ -16,7 +17,6 @@ my $debug  = $Docconf::config->{debug};
 
 my $tools = "/usr/pkg/bin";
 $tools = "/home/thilo/documentix/tools" unless -d $tools;
-use Data::Dumper;
 
 $tools = "/usr/bin"       unless -d $tools;
 $tools = "/usr/local/bin" unless -d $tools;
@@ -40,7 +40,6 @@ my $pdftocairo = "pdftocairo";
 
 my $cleanup = 0;
 
-my $db_con;
 
 sub new {
     my $dbn    = $Docconf::config->{database_provider};
@@ -49,7 +48,6 @@ sub new {
     my $pass   = $Docconf::config->{database_pass};
     my $class  = shift;
 
-    # return $db_con if $db_con;
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
     print STDERR "New pdf conn: $dh\n" if $Docconf::config->{debug} > 0;
@@ -57,7 +55,6 @@ sub new {
     $self->{"setup_db"} = \&setup_db;
     $self->{"dh1"}      = $dh;
     setup_db($self);
-    $db_con = $self;
     return $self;
 }
 

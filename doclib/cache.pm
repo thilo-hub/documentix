@@ -4,7 +4,6 @@ use parent DBI;
 use DBI qw(:sql_types);
 print STDERR ">>> cache.pm\n" if $Docconf::config->{debug} > 2;
 
-my $db_con;
 
 sub new {
     my $dbn    = $Docconf::config->{cache_db_provider};
@@ -13,7 +12,6 @@ sub new {
     my $pass   = $Docconf::config->{cache_db_pass};
     my $class  = shift;
 
-    # return $db_con if $db_con;
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
     print STDERR "New cache conn: $dh\n" if $Docconf::config->{debug} > 0;
@@ -22,7 +20,6 @@ sub new {
     # $self->{"setup_db"} = \&setup_db;
     $self->setup_db();
     setup_db($self);
-    $db_con = $self;
     return $self;
 }
 
@@ -50,12 +47,12 @@ q{create table if not exists cache (ref primary key unique,date,type text,data b
 }
 
 sub get_cache {
-    my ( $self, $item, $idx, $callback ) = @_;
+    my ( $self, $item, $idx, $callback,$p1 ) = @_;
     my $ref = "$idx-$item";
     $self->{"fetch"}->execute($ref);
     my $q = $self->{"fetch"}->fetch;
 
-    my ( $type, $data ) = $callback->( $item, $idx, @$q[0] );
+    my ( $type, $data ) = $callback->( $p1,$item, $idx, @$q[0] );
     return ( @$q[1], @$q[2] ) if @$q[2] && !$data;
     return ( "text/text", "ERROR" ) unless $data;
 
