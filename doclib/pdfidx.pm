@@ -187,12 +187,12 @@ sub get_meta {
     my $self = shift;
     my $dh   = $self->{"dh"};
     my ( $typ, $fn ) = @_;
-    $dh->do("begin exclusive transaction");
+    # $dh->do("begin exclusive transaction");
     my $idx = $dh->selectrow_array(
         "select value from hash natural join metadata where md5=? and tag = ?",
         undef, $fn, $typ
     );
-    $dh->do("commit");
+    # $dh->do("commit");
     return $idx;
 }
 
@@ -418,7 +418,6 @@ sub index_pdf {
 
     #my $thumb = eval { $self->pdf_thumb($fn)};
     #my $ico   = eval { $self->pdf_icon($fn)};
-    # $dh->do("commit");
     #$meta{"thumb"} = \$thumb;
     #$meta{"ico"}   = \$ico;
     
