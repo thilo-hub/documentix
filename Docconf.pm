@@ -1,5 +1,5 @@
 package Docconf;
-use JSON::PP;
+use JSON;
 use Encode;
 use Data::Dumper;
 use URI::Escape;
@@ -51,7 +51,7 @@ sub getset {
 
     print STDERR "getset... " . Dumper($args)
       if $Docconf::config->{"debug"} > 0;
-    my $json = JSON::PP->new->utf8;
+    my $json = JSON->new->utf8;
     if ($json_text) {
 
         $json_text = uri_unescape($json_text);

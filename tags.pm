@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Data::Dumper;
 use Cwd 'abs_path';
-use JSON::PP;
+use JSON;
 use Encode;
 use URI::Escape;
 
@@ -42,7 +42,7 @@ sub add_tag {
     $json_text = uri_unescape($json_text);
 
     print STDERR Dumper($json_text);
-    my $json        = JSON::PP->new->utf8;
+    my $json        = JSON->new->utf8;
     my $perl_scalar = $json->decode($json_text);
 
     my $p = $perl_scalar->{"op"};

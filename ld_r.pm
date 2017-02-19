@@ -6,7 +6,7 @@ use warnings;
 use Data::Dumper;
 use Cwd 'abs_path';
 use POSIX;
-use JSON::PP;
+use JSON;
 use Sys::Hostname;
 
 use Docconf;
@@ -266,7 +266,7 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
         msg     => $msg,
         items   => $out,
     };
-    $out = JSON::PP->new->pretty->encode($m);
+    $out = JSON->new->pretty->encode($m);
 
     return $out;
 }

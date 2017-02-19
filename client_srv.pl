@@ -18,7 +18,7 @@ use HTTP::Cookies;
 #use HTTP::Daemon::SSL;
 use HTTP::Response;
 use HTTP::Status;
-use JSON::PP;
+use JSON;
 use POSIX qw/ WNOHANG /;
 use ld_r;
 use feed;
@@ -105,6 +105,7 @@ $SIG{WINCH} = sub {
 };
 
 while (1) {
+exit 0 if -r "stop";
     if ( $O{'listen-clients'} ) {
 
         # prefork all at once
@@ -126,7 +127,7 @@ while (1) {
             }
         }
 
-        sleep 1;
+        wait;
     }
     else {
         http_child($d);
@@ -163,6 +164,7 @@ sub http_child {
 
     my $i;
     while ( ++$i < $O{'listen-max-req-per-child'} ) {
+last if -r "stop";
         my $c = $d->accept        or last;
         my $r = $c->get_request() or last;
         $c->autoflush(1);
@@ -303,7 +305,7 @@ sub http_child {
             if ( $Docconf::config->{"cgi_enabled"} ) {
 
                 #print  Dumper($c);
-                my $json = JSON::PP->new->utf8;
+                my $json = JSON->new->utf8;
                 my $rv = $json->encode( { "args" => $c->{"args"} } );
                 $ENV{"ARGS"} = $rv;
 	       print STDERR " + ";
@@ -418,7 +420,7 @@ sub http_child {
 	my $rv={status => "Failed"};
 	my $f=$Docconf::config->{"root_dir"}.$c->{"args"}->{"file"};
 	load_file(\$rv,$f);
-	my $json = JSON::PP->new->utf8;
+	my $json = JSON->new->utf8;
 	$rv = $json->encode( $rv );
 	return $rv;
     }
@@ -457,7 +459,7 @@ sub http_child {
 			    my $m= "-- Bad: $f --";
 			    my $rv={ status => "Error" };
 			    load_file( \$rv,$f,$fp);
-			    my $json = JSON::PP->new->utf8;
+			    my $json = JSON->new->utf8;
 			    $rv = $json->encode( $rv );
 			    $rv =~ s/\|/-/g;
 
@@ -531,7 +533,7 @@ sub http_child {
         # lock();
         my $m = $ld_r->get_rbox_item($digest);
         # unlock();
-	my $out = JSON::PP->new->pretty->encode($m);
+	my $out = JSON->new->pretty->encode($m);
 	return $out;
     }
 
