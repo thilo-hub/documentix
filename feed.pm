@@ -83,7 +83,7 @@ sub dfeed {
                 $f,
                 "$hash-$tpe",
                 sub {
-                    my ( $item, $idx, $mtime ) = @_;
+                    my ( $self, $item, $idx, $mtime ) = @_;
                     my $ntime = ( stat($item) )[9];
                     $mtime = 0 unless $mtime;
                     print STDERR "$item - $idx $mtime <> $ntime\n"
@@ -91,8 +91,14 @@ sub dfeed {
                     return undef if ( $mtime && -r $item && $ntime < $mtime );
                     print STDERR "OK\n" if ( $main::debug >= 0 );
                     my $fn  = abs_path( ${item} );
-                    my $res = qq{unoconv -o /tmp/$$.pdf ${fn} 2>&1};
-                    $res = qx{$res};
+		    my $tmp  = tmpnam();
+		    symlink $fn,$tmp;
+		    my $res;
+		    eval {
+			    $res = qq{unoconv -o /tmp/$$.pdf $tmp 2>&1};
+			    $res = qx{$res};
+		    };
+		    unlink $tmp;
 
                     if ( !-f "/tmp/$$.pdf" || $? ) {
                         return ( 'text/text', $res );
