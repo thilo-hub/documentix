@@ -188,7 +188,8 @@ div.descr {
     background: transparent;
     width: 68%;
     float: left;
-    padding-left: 4px
+    padding-left: 4px;
+    font-size: 9pt;
 }
 
 input {
