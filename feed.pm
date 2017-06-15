@@ -70,9 +70,12 @@ sub dfeed {
         my $bn =
           $Docconf::config->{local_storage} . "/" . $hash . "/" . basename($f,".pdf");
         my $fn;
-        foreach $fn ( $bn . ".ocr.pdf", $bn . ".pdf", $bn . "$ext.pdf", $f ) {
+	my $focr=$f;
+	$focr =~ s/\.pdf$/.ocr.pdf/;
+        foreach $fn ( $bn . ".ocr.pdf", $bn . ".pdf", $bn . "$ext.pdf", $focr, $f ) {
             next unless -r $fn;
             last unless $fn =~ /\.pdf$/;
+	    print STDERR "Return: $fn\n" if ( $main::debug > 1 );
             my $res = slurp($fn);
             return ( "application/pdf", $res );
         }
