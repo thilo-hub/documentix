@@ -7,6 +7,7 @@ use warnings;
 use Date::Parse;
 use Docconf;
 use doclib::pdfidx;
+use ld_r;
 
 
 
@@ -59,12 +60,33 @@ if (@new) {
 	my $pdfidx = pdfidx->new();
 	sub lock   { }
 	sub unlock { }
-
 	foreach(@new)
 	{
-	    my $txt = $pdfidx->index_pdf( $_, "/tmp" );
+           open (my $fh, '<', $_) or die "Can't open '$_': $!";
+           binmode ($fh);
+
+           my $ctx = Digest::MD5->new();
+           $ctx->addfile($fh);
+           close($fh);
+           my $digest = $ctx->hexdigest;
+	   my $wdir=get_store($digest);
+
+
+	    my $txt = $pdfidx->index_pdf( $_, $wdir );
 	    my $c = substr( $txt->{"Content"}, 0, 150 );
 	    $c =~ s/[\r\n]+/\n     #/g;
 	    print "R: $txt->{Docname} : $txt->{Mime} : $c ...\n";
 	}
+	print "Update caches\n";
+	my $ld_r    = ld_r->new();
+	$ld_r->update_caches();
+	print "Finished processing\n";
 }
+    sub get_store {
+        my $digest=shift;
+        my $wdir = $Docconf::config->{local_storage};
+        mkdir $wdir or die "No dir: $wdir" unless -d $wdir;
+        $wdir .= "/$digest";
+        mkdir $wdir or die "No dir: $wdir" unless -d $wdir;
+        return $wdir;
+    }
