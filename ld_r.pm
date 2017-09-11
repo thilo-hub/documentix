@@ -104,7 +104,7 @@ my $cache_setup = q{insert or abort into cache_lst (query) values(?)};
 # the result is saved in a caching table
 my $cached_search = q{insert or ignore into cache_q ( qidx,idx,snippet ) select 
 		?,docid,snippet(text) 
-		from text  join hash on (docid=idx) natural where text match ? 
+		from text  join hash on (docid=idx) where text match ? 
 	};
 
 # qidx,idx,rowid,snippet from cache_q_tmp
@@ -159,6 +159,7 @@ sub ldres {
 
 
 	# Do search and filter dates
+	print STDERR "S:$cached_search\n";
         my $nres = $dh->do( $cached_search, undef, @sargs );
 
 
@@ -202,6 +203,10 @@ sub ldres {
 			select * from $subsel cache_q where qidx = ?};
 
         $dh->do( $rest, undef, $idx );
+	$dh->do( qq{ delete from resl where idx in (
+			select idx from tags where tagid in (
+				select tagid from tagname where tagname = "deleted"))
+			});
 
         $dh->do( qq{ create temporary table drange as 
 			select min(date) min,max(date) max 

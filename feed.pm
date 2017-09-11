@@ -7,6 +7,7 @@ use HTTP::Message;
 use HTTP::Date;
 use Cwd 'abs_path';
 use File::Basename;
+use File::Temp qw/tempfile tmpnam tempdir/;
 
 use doclib::pdfidx;
 use doclib::cache;

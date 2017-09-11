@@ -36,10 +36,9 @@ my $doc_re="html|css|js|png|jpeg|jpg|gif";
 my $cgi_re="sh|pm|pl|cgi";
 my $pwfile=".htpasswd";
 
-my $ids= {
-	"Thilo" => "XXX"
-};
-
+my @unrestricted_dirs = (
+  "web/"
+);
 use constant HOSTNAME => qx{hostname};
 
 $main::debug = $Docconf::config->{debug};
@@ -156,6 +155,7 @@ sub http_child {
         { p => '/config',                    cb => \&do_conf, },
         { p => '/auth.*',                    cb => \&do_auth, },
         { p => '/dir',                       cb => \&do_fbrowser, },
+        { p => '/maintenance(/.*)',          cb => \&do_maintenance, },
         { p => '/import(/.*)?',              cb => \&do_import, },
         { p => '/importtree(.*)?',           cb => \&do_importtree },
         { p => '/',                          cb => \&do_index },
@@ -204,7 +204,8 @@ last if -r "stop";
         $ro->{"args"}    = $arg;
         $ro->{"q"}       = $r->uri->as_iri . "&" . $r->content;
         foreach my $g (@pages) {
-            if ( $r->uri->path =~ /^$g->{p}$/ ) {
+            my $path= $r->uri->path;
+            if ( $path =~ /^$g->{p}$/ ) {
                 $ENV{'PATH_INFO'} = $1;
                 $ro->{"g"}        = $g;
                 $ro->{"c"}        = $c;
@@ -217,7 +218,12 @@ last if -r "stop";
 		}
 
 		# Only do auth unless session is known
-		my $srvr = auth_check($ro->{"ID"}) ? $g : { cb => \&do_auth };
+		my $auth_ok = auth_check($ro->{"ID"});
+		foreach( @unrestricted_dirs ) {
+			last if $auth_ok;
+			$auth_ok = ($path =~ /^$_/);
+		}
+		my $srvr = $auth_ok ? $g : { cb => \&do_auth };
 
                 my $rv = $srvr->{"cb"}($ro);
                 _http_response( $c,
@@ -352,7 +358,7 @@ last if -r "stop";
 	my $resp = "auth.html";
 	my $a=$c->{"args"};
 
-	return ($c->{"c"}->send_redirect("auth",RC_TEMPORARY_REDIRECT), undef)
+	return ($c->{"c"}->send_redirect("/auth",RC_FOUND), undef)
 		unless $c->{"g"}->{"p"} =~ m|/auth|;
 
 	if ( $a && (my $u=$a->{"user"}) && (my $p=$a->{"pass"}) ) {
@@ -543,6 +549,14 @@ last if -r "stop";
         my $a = $c->{"args"};
 
         my $m = $dirlist->list( $c->{"args"} );
+        return $m;
+    }
+    sub do_maintenance {
+	print Dumper(\@_);
+        my $c = shift;
+        my $r = shift;
+        my $a = $c->{"args"};
+        my $m = "Undefined-yet";
         return $m;
     }
     sub guid {

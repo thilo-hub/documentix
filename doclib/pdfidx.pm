@@ -548,7 +548,7 @@ sub pdf_totext {
     # extract text-stream from pdf
     $txt = do_pdftotext($fn);
     # return if some text is found
-    return $txt if length($txt) > 100;
+    return $txt if length($txt) > 300;
     # give up if we already use an ocr version
     return $txt if ( $fn =~ /.ocr.pdf$/);
 
@@ -804,7 +804,7 @@ sub pdf_class_file {
 
     my $tmp_doc = get_popfile_r( $fn, $md5, $rtxt );
     my $op      = "handle_message";
-    my $dbop    = "insert into tags (idx,tagid) 
+    my $dbop    = "insert or ignore into tags (idx,tagid) 
 		       select idx,tagid from hash,tagname where md5=? and tagname =?";
     my $db_op = $self->db_prep( "add_tag", $dbop );
 
