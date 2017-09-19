@@ -100,18 +100,28 @@ q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text,
 my $cache_lookup = q{select qidx from cache_lst where query = ?};
 my $cache_setup = q{insert or abort into cache_lst (query) values(?)};
 
-# This is the main search query in the FTS table,
-# the result is saved in a caching table
-my $cached_search = q{insert or ignore into cache_q ( qidx,idx,snippet ) select 
-		?,docid,snippet(text) 
-		from text  join hash on (docid=idx) where text match ? 
-	};
 
 # qidx,idx,rowid,snippet from cache_q_tmp
 
 sub ldres {
     my $self = shift;
     my $dh   = $self->{"dh"};
+    my $srch;
+    unless ($self->{"cached_search"}){
+	# This is the main search query in the FTS table,
+	# the result is saved in a caching table
+	my $cached_search = q{insert or ignore into cache_q ( qidx,idx,snippet ) select 
+			?,docid,snippet(text) 
+			from text  join hash on (docid=idx) where text match ? 
+		};
+	$srch= $self->{"cached_search"} = $dh->prepare($cached_search);
+	$cached_search =~ s/where/natural join dates where date between ? and ? and/;
+	$self->{"cached_search3"} = $dh->prepare($cached_search);
+	$cached_search = "insert or ignore into cache_q (qidx, idx, snippet) select ?,idx,mtext
+				from dates where date between ? and ?";
+	$self->{"cached_search2"} = $dh->prepare($cached_search);
+	$self->{"update_cache"}= $dh->prepare( 'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?');
+    }
 
     my ( $class, $idx0, $ppage, $search ) = @_;
     $search =~ s/\s+$// if defined($search);
@@ -149,24 +159,22 @@ sub ldres {
 	    # Search restrict to date-range ( will reduce output list )
 	    my $dmin = $2;
 	    my $dmax = $3;
-	    $cached_search =~ s/where/natural join dates where date between ? and ? and/;
-	    @sargs=($idx,$dmin,$dmax,$search);
-	    $cached_search = "insert or ignore into cache_q (qidx, idx, snippet) select ?,idx,mtext
-				from dates where date between ? and ?"
-		unless $search;
+	    $srch=$self->{"cached_search2"};
+	    @sargs=($idx,$dmin,$dmax);
+	    unless ( $search =~ /^\s*$/ ) {
+		push @sargs ,$search;
+		$srch=$self->{"cached_search3"};
+	    }
 	}
 
 
 
 	# Do search and filter dates
-	print STDERR "S:$cached_search\n";
-        my $nres = $dh->do( $cached_search, undef, @sargs );
+	#print STDERR "S:$cached_search\n";
+	print STDERR "A:".join(":",@sargs).":\n";
+        my $nres = $srch->execute(@sargs);
 
-
-        $dh->do(
-		'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?',
-            undef, $nres, $idx
-        );
+        $self->{"update_cache"}->execute($nres,$idx);
 	$dh->do("commit");
     }
  
