@@ -114,7 +114,7 @@ sub ldres {
 			?,docid,snippet(text) 
 			from text  join hash on (docid=idx) where text match ? 
 		};
-	$srch= $self->{"cached_search"} = $dh->prepare($cached_search);
+	$self->{"cached_search"} = $dh->prepare($cached_search);
 	$cached_search =~ s/where/natural join dates where date between ? and ? and/;
 	$self->{"cached_search3"} = $dh->prepare($cached_search);
 	$cached_search = "insert or ignore into cache_q (qidx, idx, snippet) select ?,idx,mtext
@@ -124,6 +124,7 @@ sub ldres {
     }
 
     my ( $class, $idx0, $ppage, $search ) = @_;
+    my $srch=$self->{"cached_search"};
     $search =~ s/\s+$// if defined($search);
     $search =~ s/^\s+// if defined($search);
 
