@@ -75,7 +75,7 @@ sub dfeed {
 	$focr =~ s/\.pdf$/.ocr.pdf/;
         foreach $fn ( $bn . ".ocr.pdf", $bn . ".pdf", $bn . "$ext.pdf", $focr, $f ) {
             next unless -r $fn;
-            last unless $fn =~ /\.pdf$/;
+            last unless $m =~ m|application/pdf|;
 	    print STDERR "Return: $fn\n" if ( $main::debug > 1 );
             my $res = slurp($fn);
             return ( "application/pdf", $res );
