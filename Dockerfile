@@ -9,14 +9,15 @@ RUN apt-get install -y calibre-bin
 RUN apt-get install -y a2ps
 
 # Either use git
-# RUN apt-get -y install git 
-# RUN git clone https://github.com/thilo-hub/documentix
+RUN apt-get -y install git 
+RUN apt-get -y install libjson-perl
+RUN git clone https://github.com/thilo-hub/documentix
 
 # OR git-zip file
 # ADD https://github.com/thilo-hub/documentix/archive/master.zip
 
 # OR local directory
-ADD . documentix
+# ADD . documentix
 
 WORKDIR /documentix
 ENV DOCUMENTIX_CONF=/documentix/db/config.json
