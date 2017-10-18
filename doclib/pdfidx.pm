@@ -199,7 +199,7 @@ sub get_meta {
 sub pdf_info($$) {
     my $self = shift;
     my $fn   = shift;
-    my $res  = qx{$pdfinfo \"$fn\"};
+    my $res  = qexec($pdfinfo ,$fn);
     $res =~ s|:\s|</td><td>|mg;
     $res =~ s|\n|</td></tr>\n<tr><td>|gs;
     $res =~ s|^(.*)$|<table><tr><td>$1</td></tr></table>|s;
@@ -374,10 +374,9 @@ sub index_pdf {
     $meta{"Docname"} = $fn;
     $meta{"Docname"} =~ s/^.*\///s;
     $self->{"file"} = $fn;
-    die "Bad filename: $fn" if $fn =~ /'/;
     $self->{"idx"} = $idx;
     chomp( my $type =
-          qx|file --dereference --brief  --mime-type  '$self->{file}'| );
+          qexec(qw{file --dereference --brief  --mime-type}, $fn ));
     print STDERR "Type: $type\n";
     $meta{"Mime"} = $type;
     my %mime_handler = (
@@ -536,8 +535,8 @@ sub pdf_totext {
     my $f_path = dirname(abs_path($fn))."/";
     my $f_base = basename($fn,(".pdf",".ocr.pdf"));
 
-    my $lcl_store =
-          $Docconf::config->{local_storage} . "/" . $md5 . "/" . $f_base;
+    my $lcl_store_dir = $Docconf::config->{local_storage} . "/" . $md5;
+    my $lcl_store = $lcl_store_dir . "/$f_base";
     die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
     foreach $fn ( $lcl_store.".ocr.pdf", $f_path .$f_base.".ocr.pdf", $fn ) {
 	last if -r $fn;
@@ -553,6 +552,7 @@ sub pdf_totext {
     return $txt if ( $fn =~ /.ocr.pdf$/);
 
     # do the ocr conversion
+    mkdir($lcl_store_dir) unless -d $lcl_store_dir;
     return $self->ocrpdf( $fn, $lcl_store .".ocr.pdf" );
 }
 
@@ -884,42 +884,42 @@ sub do_convert_pdf {
     $in  = abs_path($in);
     $out = abs_path($out);
     print STDERR "convert: $in $out\n";
-    qx|convert "$in" "$out"|;
+    $in  =~ s/"/\\"/g;
+    $out =~ s/"/\\"/g;
+    qexec("convert", $in, $out);
     die "failed: convert: $in $out" unless -f $out;
     return;
+}
+sub qexec
+{
+  local $/;
+  print STDERR ">".join(":",@_)."<\n";
+  open(my $f,"-|",@_);
+  my $r=<$f>;
+  close($f);
+  return $r;
 }
 
 sub do_convert_thumb {
     my ( $fn, $pn ) = @_;
     $fn .= "[$pn]";
-    my @cmd = ( $convert, "'$fn'", qw{-trim -normalize -thumbnail 400 png:-} );
-    print STDERR "X:" . join( " ", @cmd ) . "\n";
-    my $png = qx{@cmd};
+    my @cmd = ( $convert, $fn, qw{-trim -normalize -thumbnail 400 png:-} );
+    print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug>2;
+    my $png = qexec(@cmd);
     return $png;
 }
 
 sub do_convert_icon {
     my ( $fn, $pn ) = @_;
-    my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
 
-  # my @cmd = ( $convert, "'${fn}[$pn]'", qw{-trim -normalize -thumbnail 100} );
-    my $out = $tmpdir . "/out";
     my @cmd = (
         $pdftocairo, "-scale-to", $Docconf::config->{icon_size}, "-jpeg", "-singlefile","-f",
-        $pn, "-l", $pn, "'$fn'", $out
+        $pn, "-l", $pn, $fn, "-"
     );
 
-    # push @cmd, "-rotate", $rot if $rot;
-    # push @cmd, "png:-";
     print STDERR "X:" . join( " ", @cmd ) . "\n";
-    my $png = qx{@cmd};
-    $out .= ".jpg" if -r $out . ".jpg";
+    my $png = qexec(@cmd);
     print STDERR "L:" . length($png) . "\n" if $main::debug > 1;
-    $out = "icon/noimg.jpg" unless -f $out;
-    die "Failed cairo... " unless -f $out;
-    $png = slurp($out);
-    unlink($out);
-    rmdir($tmpdir);
     return $png;
 }
 
@@ -973,7 +973,7 @@ sub do_pdftotext {
     @cmd = ( $pdftotext, $tmp, "-" );
 
     print STDERR "CMD: '" . join( "' '", @cmd). "'\n" ;
-    my $txt = qx( @cmd );
+    my $txt = qexec( @cmd );
     unlink $tmp;
     return $txt;
 }
@@ -984,7 +984,7 @@ sub do_calibrepdf {
     $out = abs_path($out);
     print STDERR "convert: $in\n";
     main::lock();
-    qx|ebook-convert "$in" "$out"|;
+    qexec("ebook-convert", $in ,$out);
     main::unlock();
     die "failed: calibre: ebook-convert $in $out" unless -f $out;
     return;
@@ -1006,7 +1006,7 @@ sub do_unopdf {
     $out = abs_path($out);
     print STDERR "convert: $in\n";
     main::lock();
-    qx|unoconv -o "$out" "$in"|;
+    qexec(qw{unoconv -o}, $out,$in);
     main::unlock();
     die "failed: -o $out $in" unless -f $out;
     return;
@@ -1014,7 +1014,7 @@ sub do_unopdf {
 
 sub do_file {
     my ($in) = @_;
-    chomp( my $type = qx|file -b --mime-type "$in"| );
+    chomp( my $type = qexec(qw{file -b --mime-type}, $in));
     return $type;
 }
 
