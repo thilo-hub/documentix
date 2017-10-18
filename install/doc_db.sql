@@ -100,3 +100,4 @@ CREATE TRIGGER del2 before delete on hash begin
                                         delete from tags where tags.idx=old.idx;
                                  end;
 CREATE TABLE config (var primary key unique,value);
+pragma journal_mode=wal;
