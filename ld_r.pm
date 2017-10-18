@@ -106,7 +106,6 @@ my $cache_setup = q{insert or abort into cache_lst (query) values(?)};
 sub ldres {
     my $self = shift;
     my $dh   = $self->{"dh"};
-    my $srch;
     unless ($self->{"cached_search"}){
 	# This is the main search query in the FTS table,
 	# the result is saved in a caching table
