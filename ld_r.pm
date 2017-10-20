@@ -40,6 +40,7 @@ sub update_caches {
     my $dh   = $self->{"dh"};
 
     my @sql = (
+        q{ begin exclusive transaction },
         q{ create table if not exists config (var primary key unique,value)},
 	q{ delete from cache_lst where query like '%...%' },
         q{ create temporary table cache_q1 as
@@ -53,15 +54,12 @@ q{ insert or replace into cache_lst (qidx,query,nresults,last_used) select qidx,
 q{ insert or replace  into config (var,value) select "max_idx",max(idx) from hash;},
         q{drop table cache_q1},
         q{drop table cache_q2},
+        q{commit},
     );
 
-    # $dh->do("begin exclusive transaction");
     foreach (@sql) {
-
-        #print "$_\n";
         $dh->do($_) or die "Error $_";
     }
-    # $dh->do("commit");
 
 }
 

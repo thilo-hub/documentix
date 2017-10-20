@@ -54,6 +54,7 @@ sub new {
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
     $self->{"setup_db"} = \&setup_db;
     $self->{"dh1"}      = $dh;
+    # trace_db($dh);
     setup_db($self);
     return $self;
 }
@@ -70,7 +71,7 @@ sub trace_db {
     sub trace_it {
         my $r = shift;
 
-        print TRC "DB: $r\n";
+        print STDERR "DB: $r\n";
     }
 
     $dh->sqlite_trace( \&trace_it );
@@ -82,6 +83,7 @@ sub setup_db {
 
     $dh->sqlite_busy_timeout(60000);
     my @slist = (
+q{begin exclusive transaction},
 q{create table if not exists hash ( idx integer primary key autoincrement, md5 text unique )},
 q{create table if not exists file ( md5 text primary key, file text unique)},
 q{create table if not exists data ( idx integer primary key , thumb text, ico text, html text) },
@@ -113,8 +115,8 @@ q{CREATE TABLE if not exists class ( idx integer primary key, class text )},
 q{CREATE TRIGGER if not exists intxt after insert on metadata when new.tag = "text" begin 
 			insert into text (docid,content) values (new.idx,new.value); 
 					end;},
-        q{ CREATE INDEX if not exists mtags on metadata(tag)}
-
+        q{ CREATE INDEX if not exists mtags on metadata(tag)},
+q{commit}
     );
     foreach (@slist) {
 
@@ -369,6 +371,7 @@ sub index_pdf {
     my ($idx) =
       $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
     print STDERR "Loading: ($idx) $fn\n";
+    $dh->do("commit");
 
     my %meta;
     $meta{"Docname"} = $fn;
@@ -410,18 +413,16 @@ sub index_pdf {
 
     $meta{"keys"} = join( ' ', keys(%meta) );
 
-    # die Dumper(\%meta)." DEBUG";
     foreach ( keys %meta ) {
         $self->ins_e( $idx, $_, $meta{$_} );
     }
 
-    #my $thumb = eval { $self->pdf_thumb($fn)};
-    #my $ico   = eval { $self->pdf_icon($fn)};
-    #$meta{"thumb"} = \$thumb;
-    #$meta{"ico"}   = \$ico;
-    
-    $idx = $type if ($type eq "FAILED");
-    $dh->do($type eq "FAILED" ? "rollback" : "commit");
+    if ($type eq "FAILED")
+    {
+	# roll back new data
+	$dh->prepare(q{delete from file where file=?})->execute($fn);
+	$idx=$type;
+    }
     return $idx, \%meta;
 
     sub tp_any {
