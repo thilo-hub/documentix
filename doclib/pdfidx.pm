@@ -929,8 +929,8 @@ sub do_tesseract {
     my ( $image, $outpage ) = @_;
     my $msg;
     @cmd = ( $tesseract, $image, $outpage, qw{ -l deu+eng+equ -psm 1 pdf} );
-    $msg .= "CMD: " . join( " ", @cmd, "\n" );
-    print STDERR "$msg";
+    $msg .= "CMD: " . join( " ", @cmd, "\n" ) if $Docconf::config->{debug} > 3;
+    print STDERR "$msg" if $Docconf::config->{debug} > 3;
     $outpage .= ".pdf";
     $fail += ( system(@cmd) ? 1 : 0 ) unless -f $outpage;
     print STDERR "Done $outpage\n";
@@ -944,7 +944,7 @@ sub do_pdftocairo {
     my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
     symlink( $inpdf, "$tmpdir/in.pdf" );
     my @cmd = ( qw{pdftocairo -r 300 -jpeg}, "$tmpdir/in.pdf", $pages );
-    print STDERR "CMD: " . join( " ", @cmd, "\n" );
+    print STDERR "CMD: " . join( " ", @cmd, "\n" ) if $Docconf::config->{debug} > 3;
     my $fail += ( system(@cmd) ? 1 : 0 );
     unlink("$tmpdir/in.pdf");
     rmdir($tmpdir) or die "DIr: $!";
@@ -958,7 +958,7 @@ sub do_pdfunite {
     #pdfunite croaks if only a single page is united
     @cmd = ( qw{ cp }, @cpages, $outpdf )
       if ( scalar(@cpages) == 1 );
-    print STDERR "CMD: " . join( " ", @cmd, "\n" );
+    print STDERR "CMD: " . join( " ", @cmd, "\n" ) if $Docconf::config->{debug} > 3;
     $fail += ( system(@cmd) ? 1 : 0 ) unless -f $outpdf;
 
     print STDERR "Unite into: $outpdf\n" if $debug>1;
@@ -973,7 +973,6 @@ sub do_pdftotext {
     symlink(abs_path($pdfin),$tmp);
     @cmd = ( $pdftotext, $tmp, "-" );
 
-    print STDERR "CMD: '" . join( "' '", @cmd). "'\n" ;
     my $txt = qexec( @cmd );
     unlink $tmp;
     return $txt;
