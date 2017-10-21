@@ -54,7 +54,7 @@ sub new {
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
     $self->{"setup_db"} = \&setup_db;
     $self->{"dh1"}      = $dh;
-    # trace_db($dh);
+    trace_db($dh) if $Docconf::config->{debug} > 3;
     setup_db($self);
     return $self;
 }
@@ -894,7 +894,7 @@ sub do_convert_pdf {
 sub qexec
 {
   local $/;
-  print STDERR ">".join(":",@_)."<\n";
+  print STDERR ">".join(":",@_)."<\n" if $Docconf::config->{debug} > 3;
   open(my $f,"-|",@_);
   my $r=<$f>;
   close($f);
