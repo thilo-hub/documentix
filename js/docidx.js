@@ -248,6 +248,9 @@ $(function() {
 	if ( next_page > data.nresults ){
 		next_page = data.nresults+1;  // limit
 	}
+        if ( data.nresults == 0 ) {
+		$('#result').html('<div><img src="js/images/iu.png"></div>');
+	}
         if ( data.idx >= first_item && data.idx > data.nresults ) {
 		// nothing we have everything already
 		return;
