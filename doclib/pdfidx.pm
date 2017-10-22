@@ -800,6 +800,15 @@ sub pdf_class_file {
     my $md5   = shift;
     my $class = shift;    # undef returns class else set class a '-' as the first char removes the class
 
+    print STDERR "Add tag: $class\n" if $Docconf::config->{debug} > 0;
+    if ( $class =~ m|^(-?)(.*/.*)| ) {
+        # allow multiple tags at once 
+	my $r="";
+	foreach( split(m|/|,$2)) {
+		$r.=$self->pdf_class_file($fn,$rtxt,$md5,$1.$_);
+	}
+	return $r;
+    }
     my $rv;
     my $ln;
 
@@ -815,20 +824,16 @@ sub pdf_class_file {
           "delete from tags where idx=(select idx from hash where md5=?) and 
 				 tagid = (select tagid from tagname where tagname = ?)";
         $db_op = $self->db_prep( "rm_tag", $dbop );
-	foreach(split(/\//,$class) {
-		$rv = $self->pop_call( "remove_message_from_bucket", $_, $tmp_doc );
-	}
+	$rv = $self->pop_call( "remove_message_from_bucket", $class, $tmp_doc );
     }
     elsif ($class) {
         # Set&create  specific class and add tag
 
         my $dbop = "insert or ignore into tagname (tagname) values(?)";
-	foreach(split(/\//,$class) {
-		my $b = to_bucketname($_);
-		$rv = $self->pop_call( "create_bucket", $b );
-		$rv = $self->pop_call( "add_message_to_bucket", $b, $tmp_doc );
-		$self->db_prep( "add_class", $dbop )->execute($_);
-	}
+	my $b = to_bucketname($class);
+	$rv = $self->pop_call( "create_bucket", $b );
+	$rv = $self->pop_call( "add_message_to_bucket", $b, $tmp_doc );
+	$self->db_prep( "add_class", $dbop )->execute($class);
 
     }
     else {
@@ -851,15 +856,11 @@ sub pdf_class_file {
         unlink($tmp_out);
 
         my $dbop = "insert or ignore into tagname (tagname) values(?)";
-        foreach(split(/\//,$class) {
-		$self->db_prep( "add_class", $dbop )->execute($_);
-	}
+	$self->db_prep( "add_class", $dbop )->execute($class);
 
     }
     close($fh_out);
-    foreach(split(/\//,$class) {
-	    $db_op->execute( $md5, $_ );
-    }
+    $db_op->execute( $md5, $class );
     unlink($tmp_doc);
     printf STDERR "Class: $rv\n";
 

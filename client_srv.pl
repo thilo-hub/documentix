@@ -457,7 +457,7 @@ last if -r "stop";
 			    #sleep 10;
 			    return undef unless $f;
 			    my $fp=lc(dirname($f));
-			    $fp =~ s|\Q$dpath\E(.*/)?||i;
+			    $fp =~ s|\Q$dpath\E/?||i;
 			    print STDERR "FP: $fp\n";
 			    $fp =~ s|[0-9a-f]{32}||i;
 			    undef $fp if $fp =~ /$Docconf::config->{"unclassified_folder"}/i;
