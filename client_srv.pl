@@ -442,7 +442,7 @@ last if -r "stop";
 
 # die ">>> $dpath" .Dumper($c);
 	return "Failed" unless -d $dpath;
-	open(FD,"find $dpath -name '*.pdf'|");
+	open(FD,"find $dpath -type f|");
 	my $i=0;
 
 	my $out = slurp("data");
