@@ -539,7 +539,9 @@ sub pdf_totext {
     my $lcl_store_dir = $Docconf::config->{local_storage} . "/" . $md5;
     my $lcl_store = $lcl_store_dir . "/$f_base";
     die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
-    foreach $fn ( $lcl_store.".ocr.pdf", $f_path .$f_base.".ocr.pdf", $fn ) {
+    my @locs=( $lcl_store.".ocr.pdf", $f_path .$f_base.".ocr.pdf", $fn );
+    foreach (@locs) {
+        $fn=$_;
 	last if -r $fn;
     }
     # Should not happen....
