@@ -504,7 +504,7 @@ sub index_pdf {
             $self->ins_e( $self->{"idx"}, "Content", $c );
             $meta->{"Text"}    = $t;
             $meta->{"Content"} = $c;
-            $meta->{"pdfinfo"} = $self->pdf_info($fn);
+            $meta->{"pdfinfo"} = $self->pdf_info($self->{"file"});
         }
         my $l = length($t) || "-FAILURE-";
         return "FINISH ($l)";
