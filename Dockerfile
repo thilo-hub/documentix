@@ -6,12 +6,10 @@ RUN apt-get update &&  apt-get install -y sqlite3 libdbd-sqlite3-perl  \
 	 tesseract-ocr tesseract-ocr-deu tesseract-ocr-equ \
 	 imagemagick unoconv poppler-utils
 RUN apt-get install -y calibre-bin
-RUN apt-get install -y a2ps
+RUN apt-get install -y a2ps libjson-perl
 
 # Either use git
 RUN apt-get -y install git 
-RUN apt-get -y install libjson-perl
-
 ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/master version.json
 RUN git clone https://github.com/thilo-hub/documentix
 
@@ -34,14 +32,14 @@ RUN ./run_local.sh install/install.sh  ;\
 	 ./conf_op.pl server_listen_if 0.0.0.0:80 ;\
 	 ./conf_op.pl cgi_enabled 1 ;\
 	 ./conf_op.pl "index_html" "index3.html"
-ENTRYPOINT ./run_local.sh install/install.sh start
 
 # VOLUME Documents:/documentix/Documents
-# VOLUME incoming:/documentix/Documents/incoming
-# VOLUME database:/documentix/db
+# VOLUME incomming:/documentix/Documents/incomming
+VOLUME Database:/documentix/db
 
 # popfile management interface
 EXPOSE 18080  
   # Main GUI interface
 EXPOSE 80
+ENTRYPOINT ./run_local.sh install/install.sh start
 
