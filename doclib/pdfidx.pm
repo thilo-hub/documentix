@@ -340,9 +340,9 @@ sub index_pdf {
 
     # Hack?
     # if a source document is not in a writable directory,
-    # we should create a folder in "incomming/{md5}" and have a symbolic link
+    # we should create a folder in "incoming/{md5}" and have a symbolic link
     # pointing to the source document.
-    # the incomming, can then hold the OCR and whatever other stuff we need
+    # the incoming, can then hold the OCR and whatever other stuff we need
     # HACK: I don't see a better way right now
     if ( $Docconf::config->{link_local}
         && !( $fn =~ /$Docconf::config->{local_storage}/ ) )

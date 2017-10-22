@@ -11,6 +11,7 @@ RUN apt-get install -y a2ps
 # Either use git
 RUN apt-get -y install git 
 RUN apt-get -y install libjson-perl
+
 ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/master version.json
 RUN git clone https://github.com/thilo-hub/documentix
 
@@ -23,7 +24,7 @@ RUN git clone https://github.com/thilo-hub/documentix
 WORKDIR /documentix
 ENV DOCUMENTIX_CONF=/documentix/db/config.json
 
-LABEL version="0.9"
+LABEL version="0.91"
 LABEL description="documentix provides a document management system\
  connect the port 80 of this docker to any port you want \
  Add persistent volume for the database and the documents, optionally the upload folder can be mounted elsewhere"
@@ -35,9 +36,9 @@ RUN ./run_local.sh install/install.sh  ;\
 	 ./conf_op.pl "index_html" "index3.html"
 ENTRYPOINT ./run_local.sh install/install.sh start
 
-VOLUME Documents:/documentix/Documents
-VOLUME incomming:/documentix/Documents/incomming
-VOLUME database:/documentix/db
+# VOLUME Documents:/documentix/Documents
+# VOLUME incoming:/documentix/Documents/incoming
+# VOLUME database:/documentix/db
 
 # popfile management interface
 EXPOSE 18080  
