@@ -24,16 +24,25 @@ sub new {
     return bless $f, $class;
 }
 
+# return message with header info
 sub feed_m {
     my $self = shift;
     my ( $t, $m ) = $self->dfeed(@_);
     my $exp = time2str( time() + 24 * 3600 );
     my $h   = HTTP::Headers->new(
         Content_type => $t,
-        Expires      => $exp
+        Expires      => $exp,
     );
     return ( $h, $m );
 }
+
+# Return type and message for
+# {md5} {type} {extra-unused}
+#
+# Types:  raw,pdf,ico,pdfpage,thumb,lowres
+#         (Unused: pdfpage,thumb,lowres)
+#
+# On error return text/text Error
 
 sub dfeed {
     my $self = shift;
@@ -55,25 +64,35 @@ sub dfeed {
     };
 
     my $f = $self->{pdfidx}->get_file($hash);
+    # Return error if file does not exists
     return ( "text/text", "Error" )
       unless $f && -r $f;
+
+    # File-type 
     my $m = $self->{pdfidx}->get_meta( "Mime", $hash );
+
+    my $bn =
+      $Docconf::config->{local_storage} . "/" . $hash . "/" . basename($f,".pdf");
+    my $fn;
+    my $focr=$f;
+    $focr =~ s/\.pdf$/.ocr.pdf/;
+    # list the pdf's in preferable order
+    #  ocr'd pdf
+    #  pdf in local-storage
+    #  ocr'd in original place
+    #  original file
+
+    my @searchpath = ( $bn . ".ocr.pdf", $bn . ".pdf", $focr, $f );
 
     # Raw type returns raw data and mime-type
     if ( $tpe eq "raw" ) {
         $res = slurp($f);
     }
     elsif ( $tpe eq "pdf" ) {
-        my $ext = dirname($f);
-        $ext =~ s/^.*\.//;
 	# Get first file in order:
 	#  local_storage...ocr.pdf local_storage...pdf ???  orig....pdf
-        my $bn =
-          $Docconf::config->{local_storage} . "/" . $hash . "/" . basename($f,".pdf");
-        my $fn;
-	my $focr=$f;
-	$focr =~ s/\.pdf$/.ocr.pdf/;
-        foreach $fn ( $bn . ".ocr.pdf", $bn . ".pdf", $bn . "$ext.pdf", $focr, $f ) {
+
+        foreach $fn ( @searchpath ) {
             next unless -r $fn;
             last unless $m =~ m|application/pdf|;
 	    print STDERR "Return: $fn\n" if ( $main::debug > 1 );
@@ -118,8 +137,14 @@ sub dfeed {
 
     }
     elsif ( $converter->{$tpe} ) {
-        ( $m, $res ) =
-          $self->{cache}->get_cache( $f, "$hash-$tpe", $converter->{$tpe},$self );
+	# This converter must have a PDF as its input,
+        # if the file is not one, find the next on in the search-path
+        foreach $fn ( @searchpath ) {
+	    next unless -r $fn;
+	    ( $m, $res ) =
+	      $self->{cache}->get_cache( $fn, "$hash-$tpe", $converter->{$tpe},$self );
+	    last;
+	}
     }
     return ( $m, $res );
 
