@@ -11,6 +11,7 @@ RUN apt-get install -y a2ps
 # Either use git
 RUN apt-get -y install git 
 RUN apt-get -y install libjson-perl
+ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/master version.json
 RUN git clone https://github.com/thilo-hub/documentix
 
 # OR git-zip file
