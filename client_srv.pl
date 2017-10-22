@@ -400,11 +400,12 @@ last if -r "stop";
 			eval { ($otxt,$meta) = $pdfidx->index_pdf( $f, $wdir )};
 			rmdir $wdir;  # if is is not empty the rmdir will fail - which is intended
 			$ld_r->update_caches();
+			my $mc=$meta->{"Class"};
 
-			if( $class && $class ne $meta->{"Class"}  ) {
-			    $pdfidx->pdf_class_md5( $digest, "-". $meta->{"Class"} );
+			if( $class && (!defined ($mc) || $class ne $mc)  ) {
+			    $pdfidx->pdf_class_md5( $digest, "-". $mc ) if $mc;
 			    $pdfidx->pdf_class_md5( $digest, $class );
-			    print STDERR "Force class $meta->{Class} -> ";
+			    print STDERR "Force class $mc -> " if $mc;
 			    $meta->{Class}=$class;
 
 			}
