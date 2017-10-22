@@ -338,7 +338,7 @@ sub get_cell {
     my $dh   = shift;
     my ($r)  = @_;
     my $meta = get_meta( $dh, $r->{"idx"} );
-    my $md5  = $meta->{"hash"}->{"value"};
+    my $md5  = $meta->{"hash"}->{"value"} || "-";
     my $s    = undef;
     my $p    = "1";
     my $d    = $r->{"date"} || "--";
@@ -352,7 +352,7 @@ sub get_cell {
 "select tagname from hash natural join tags natural join tagname where md5=\"$md5\"";
     $tags = $dh->selectall_hashref( $tags, 'tagname' );
     $tags = join( ",", sort keys %$tags );
-    my $short_name = $meta->{"Docname"}->{"value"};
+    my $short_name = $meta->{"Docname"}->{"value"} || "-";
     $short_name =~ s/^.*\///;
     my $sshort_name = $short_name;
     $short_name =~ s/#/%23/g;
@@ -361,13 +361,13 @@ sub get_cell {
     $tip =~ s/\n/<br>/g;
 
     # $meta->{PopFile}
-    $s = $meta->{"size"}->{"value"}
+    $s = ($meta->{"size"}->{"value"} || "0")
 		unless defined($s);
     my $so=$s;
     $so = sprintf("%3.1fMb",$s/1024/1024) if $s > 1024*1024;
     $so = sprintf("%3.1fKb",$s/1024) if $s > 1024;
     $so = "--" unless defined($s);
-    $d = scalar(localtime($meta->{"mtime"}->{"value"}))
+    $d = scalar(localtime($meta->{"mtime"}->{"value"} || 1))
 		unless $d =~ /:.*:/;
     my $day = $d;
     $day =~ s/\s+\d+:\d+:\d+\s+/ /;
