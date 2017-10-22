@@ -434,7 +434,8 @@ sub index_pdf {
         # Output will generally be created in the local_storage (and kept)
         my $of = $Docconf::config->{local_storage} . "/" . $meta->{"hash"};
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
-        do_unopdf( $i, $self->{file} );
+        do_unopdf( $i, $self->{file} )
+		unless -r $self->{file};
         my $type = do_file( $self->{file} );
         return $type;
     }
