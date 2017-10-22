@@ -810,22 +810,26 @@ sub pdf_class_file {
     my $db_op = $self->db_prep( "add_tag", $dbop );
 
     if ( $class && $class =~ s/^-// ) {
-        $rv = $self->pop_call( "remove_message_from_bucket", $class, $tmp_doc );
+	# remove tags and message from bucket
         my $dbop =
           "delete from tags where idx=(select idx from hash where md5=?) and 
 				 tagid = (select tagid from tagname where tagname = ?)";
         $db_op = $self->db_prep( "rm_tag", $dbop );
+	foreach(split(/\//,$class) {
+		$rv = $self->pop_call( "remove_message_from_bucket", $_, $tmp_doc );
+	}
     }
     elsif ($class) {
-
-        # Set&create  specific class
-        my $b = to_bucketname($class);
-        $rv = $self->pop_call( "create_bucket", $b );
-
-        $rv = $self->pop_call( "add_message_to_bucket", $b, $tmp_doc );
+        # Set&create  specific class and add tag
 
         my $dbop = "insert or ignore into tagname (tagname) values(?)";
-        $self->db_prep( "add_class", $dbop )->execute($class);
+	foreach(split(/\//,$class) {
+		my $b = to_bucketname($_);
+		$rv = $self->pop_call( "create_bucket", $b );
+		$rv = $self->pop_call( "add_message_to_bucket", $b, $tmp_doc );
+		$self->db_prep( "add_class", $dbop )->execute($_);
+	}
+
     }
     else {
         # ask for class
@@ -847,11 +851,15 @@ sub pdf_class_file {
         unlink($tmp_out);
 
         my $dbop = "insert or ignore into tagname (tagname) values(?)";
-        $self->db_prep( "add_class", $dbop )->execute($class);
+        foreach(split(/\//,$class) {
+		$self->db_prep( "add_class", $dbop )->execute($_);
+	}
 
     }
     close($fh_out);
-    $db_op->execute( $md5, $class );
+    foreach(split(/\//,$class) {
+	    $db_op->execute( $md5, $_ );
+    }
     unlink($tmp_doc);
     printf STDERR "Class: $rv\n";
 
