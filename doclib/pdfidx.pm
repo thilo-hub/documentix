@@ -318,6 +318,7 @@ sub ocrpdf {
 	if ( @cpages ) {
 
 	    $fail += do_pdfunite( $outpdf, @cpages );
+	    $fail += do_pdfstamp( $outpdf );
 	    $txt = do_pdftotext($outpdf);
 	}
 	unlink(@outpages) unless $debug > 2;
@@ -965,6 +966,20 @@ sub do_pdftocairo {
     return $fail;
 }
 
+sub do_pdfstamp {
+    my ( $outpdf ) = shift;
+    my $outpdf1=$outpdf.".pdf";
+    my $creator;
+    my $fail=0;
+    open(my $ver,"version.txt");
+    chomp($creator=<$ver>);
+    close($ver);
+    qexec("exiftool","-Producer=$creator","-overwrite_original_in_place",$outpdf);
+    qexec("qpdf","--linearize",$outpdf,$outpdf1);
+    $fail++ unless  -r $outpdf1;
+    rename $outpdf1,$outpdf unless $fail;
+    return $fail;
+}
 sub do_pdfunite {
     my ( $outpdf, @cpages ) = @_;
     @cmd = ( qw{ pdfunite }, @cpages, $outpdf );
