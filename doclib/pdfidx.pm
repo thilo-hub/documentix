@@ -12,7 +12,7 @@ use Cwd 'abs_path';
 use Data::Dumper;
 $File::Temp::KEEP_ALL = 1;
 my $maxcpu = $Docconf::config->{number_ocr_threads};
-my $mth    = $maxcpu > 1 ? 1 : 01;
+my $mth    = $maxcpu > 1 ? 1 : 0;
 my $debug  = $Docconf::config->{debug};
 
 my $tools = "/usr/pkg/bin";
