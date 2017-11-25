@@ -105,6 +105,7 @@ $SIG{WINCH} = sub {
 
 while (1) {
 exit 0 if -r "stop";
+my $chldno=0;
     if ( $O{'listen-clients'} ) {
 
         # prefork all at once
@@ -121,15 +122,16 @@ exit 0 if -r "stop";
             }
             else {                    # child
                 $_ = 'DEFAULT' for @SIG{qw/ INT TERM CHLD /};
-                http_child($d);
+                http_child($d,$chldno);
                 exit;
             }
+	    $chldno++;
         }
 
         wait;
     }
     else {
-        http_child($d);
+        http_child($d,$chldno);
     }
 
 }
@@ -142,11 +144,12 @@ exit 0 if -r "stop";
     my $pdfidx;
 sub http_child {
     my $d       = shift;
-    $ld_r    = ld_r->new();
-    $feed    = feed->new();
-    $tags    = tags->new();
-    $dirlist = dirlist->new();
-    $pdfidx  = pdfidx->new();
+    my $chldno  = shift;
+    $ld_r    = ld_r->new($chldno);
+    $feed    = feed->new($chldno);
+    $tags    = tags->new($chldno);
+    $dirlist = dirlist->new($chldno);
+    $pdfidx  = pdfidx->new($chldno);
     my @pages   = (
         { p => '/upload(/.*)?',              cb => \&do_upload },
         { p => '/docs/([^/]+)/([^/]+)/(.*)', cb => \&do_feed },

@@ -14,11 +14,13 @@ my $__meta_sel;
 
 sub new {
     my $class = shift;
+    my $chldno= shift;
 
     my $self = {};
-    $self->{pd} = pdfidx->new();
+    $self->{pd} = pdfidx->new($chldno);
     $self->{dh} = $self->{pd}->{dh};
 
+    if ( $chldno ) {
     $self->{add_l} =
       $self->{dh}->prepare("insert or ignore into tagname (tagname) values(?)");
     $self->{add} =
@@ -29,6 +31,7 @@ sub new {
       $self->{dh}->prepare(
 "delete from tags where tagid = (select tagid from tagname where tagname = ? ) and idx = (select idx from hash where md5 = ?) "
       );
+    }
 
     return bless $self, $class;
 }

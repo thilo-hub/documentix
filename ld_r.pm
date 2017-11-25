@@ -24,12 +24,14 @@ my $ANY = "*ANY*";
 
 sub new {
     my $class = shift;
+    my $chldno= shift;
 
     my $self = {};
-    $self->{pd} = pdfidx->new();
+    $self->{pd} = pdfidx->new($chldno);
     $self->{dh} = $self->{pd}->{dh};
     setup_db( $self->{dh} );
-    update_caches($self);
+    print STDERR "Child number:$chldno\n" if $Docconf::config->{debug} > 2;
+    update_caches($self) unless $chldno;
     return bless $self, $class;
 }
 

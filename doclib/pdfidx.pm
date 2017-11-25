@@ -42,11 +42,13 @@ my $cleanup = 0;
 
 
 sub new {
+    my $class  = shift;
+    my $chldno = shift;
+
     my $dbn    = $Docconf::config->{database_provider};
     my $d_name = $Docconf::config->{database};
     my $user   = $Docconf::config->{database_user};
     my $pass   = $Docconf::config->{database_pass};
-    my $class  = shift;
 
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
@@ -55,7 +57,7 @@ sub new {
     $self->{"setup_db"} = \&setup_db;
     $self->{"dh1"}      = $dh;
     trace_db($dh) if $Docconf::config->{debug} > 3;
-    setup_db($self);
+    setup_db($self) unless $chldno;
     return $self;
 }
 

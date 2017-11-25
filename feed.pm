@@ -17,8 +17,9 @@ print STDERR ">>> feed.pm\n" if $Docconf::config->{debug} > 2;
 
 sub new {
     my $class = shift;
+    my $chldno = shift;
     my $f     = {};
-    $f->{pdfidx} = pdfidx->new();
+    $f->{pdfidx} = pdfidx->new($chldno);
     $f->{dh}     = $f->{pdfidx}->{dh};
     $f->{cache}  = cache->new();
     return bless $f, $class;
