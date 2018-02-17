@@ -37,6 +37,17 @@ $(function() {
             load_result(1, data)
         }
     });
+    // filter taglist with search field
+    $("#search").keyup(function(event) {
+	var ms=$("input#search").val();
+	$('#taglist').find("input").each(function(){
+	    if (ms.length == 0 || this.value.match(ms)) {
+		$(this).show();
+	    } else {
+		$(this).hide();
+	    }
+	})
+    });
     // React on return button in search
     $("#search").keypress(function(event) {
         if (event.keyCode == 13) {
@@ -47,7 +58,7 @@ $(function() {
             clname = "";
             last_item = -1;
             fetch_page(1);
-        }
+	}
     });
     // react on filter tags
     $('#taglist').click(function(e) {
@@ -57,6 +68,7 @@ $(function() {
                 // reset tag
                 ncl = "";
             }
+	    $("input#search").val("");
             $("#result").html("");
             clname = ncl;
             last_item = -1;
@@ -183,7 +195,7 @@ $(function() {
     // idx:  item number
     //   search & tags are merged in the query
     //     if the search has changed, drop all cached results
-    //      
+    //
     fetch_page = function (idx) {
         var params = "";
         if (idx > 0) {
@@ -282,7 +294,7 @@ $(function() {
 	var n10 = n0+10;
 	if (n10*data.nitems > data.nresults)
 		    n10 = data.nresults/data.nitems;
-	$('#result').find('#item_'+data.idx).find('#pgs').find(':button').each( 
+	$('#result').find('#item_'+data.idx).find('#pgs').find(':button').each(
 		function(id,el) {
 			var at="pageno";
 			var idxn=parseInt(data.idx)+data.nitems*(id-2);
@@ -291,7 +303,7 @@ $(function() {
 			else if (vis =="<") idxn= data.idx-data.nitems;
 			else if (vis ==">") idxn= data.idx+data.nitems;
 			else if (vis ==">>")idxn= data.nresults-data.nitems;
-			else 
+			else
 			{
 				vis = n0+id-1;
 				el.value = vis;
@@ -325,13 +337,13 @@ $(function() {
 		    if ( u !== undefined )
 			    p.prop("src",u);
 
-		    $('.left').click(function() { 
+		    $('.left').click(function() {
 			p.hide();
-			r.show(); 
+			r.show();
 			});
-		    $('.top').click(function() { 
+		    $('.top').click(function() {
 			p.hide();
-			r.show(); 
+			r.show();
 			});
 			return false;
 		}
