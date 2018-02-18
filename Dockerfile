@@ -3,15 +3,20 @@ MAINTAINER thilo-hub@nispuk.com
 RUN apt-get update &&  apt-get install -y sqlite3 libdbd-sqlite3-perl  \
 	 libhtml-template-perl  libdigest-md5-file-perl \
 	 libxmlrpc-lite-perl\
-	 tesseract-ocr tesseract-ocr-deu tesseract-ocr-equ \
 	 imagemagick unoconv poppler-utils
 RUN apt-get install -y calibre-bin
 RUN apt-get install -y a2ps libjson-perl
 
+#uncomment if you have a locally compiled tesseract version
+#COPY locals/tess_bin.tar.gz /
+RUN test -f /tess_bin.tar.gz && tar xf /tess_bin.tar.gz -C /usr  && rm /tess_bin.tar.gz || true
+
+RUN which tesseract || apt-get install -y  tesseract-ocr tesseract-ocr-deu tesseract-ocr-equ 
+
 # Either use git
 RUN apt-get -y install git 
 ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/master version.json
-RUN git clone https://github.com/thilo-hub/documentix
+RUN git clone --depth 1 https://github.com/thilo-hub/documentix
 
 # OR git-zip file
 # ADD https://github.com/thilo-hub/documentix/archive/master.zip
