@@ -11,8 +11,6 @@ use File::Basename;
 use Cwd 'abs_path';
 use Data::Dumper;
 $File::Temp::KEEP_ALL = 1;
-my $maxcpu = $Docconf::config->{number_ocr_threads};
-my $mth    = $maxcpu > 1 ? 1 : 0;
 my $debug  = $Docconf::config->{debug};
 
 my $tools = "/usr/pkg/bin";
@@ -45,6 +43,7 @@ sub new {
     my $class  = shift;
     my $chldno = shift;
 
+    $debug     = $Docconf::config->{debug};
     my $dbn    = $Docconf::config->{database_provider};
     my $d_name = $Docconf::config->{database};
     my $user   = $Docconf::config->{database_user};
@@ -267,7 +266,8 @@ sub w_load {
     my $l   = shift;
     my $err = 0;
     my $pid;
-    while ( ( my $pn = scalar( keys(%childs) ) ) > $l ) {
+    $l++ unless $l; # ensure a load==0 is handled ok
+    while ( ( my $pn = scalar( keys(%childs) ) ) >= $l ) {
         print STDERR "($pn) ";
         delete $childs{$pid} if ( ( ( $pid = wait ) ) > 0 );
         $err++ if $? != 0;
@@ -278,6 +278,7 @@ sub w_load {
 sub ocrpdf {
     my $self = shift;
     my ( $inpdf, $outpdf, $ascii ) = @_;
+    my $maxcpu = $Docconf::config->{number_ocr_threads};
     print STDERR "ocrpdf $inpdf $outpdf\n" if $debug > 1;
     $inpdf  = abs_path($inpdf);
     $outpdf = abs_path($outpdf);
@@ -291,12 +292,12 @@ sub ocrpdf {
     foreach $in (@inpages) {
         my $outpage = $tmpdir->dirname . "/o-page-" . $pg++;
         my $outim   = $in . ".jpg";
-        if ( !$mth || ( $pid = fork() ) == 0 ) {
+        if ( $maxcpu<=1 || ( $pid = fork() ) == 0 ) {
             print STDERR "Conv $in\n";
             $fail += do_convert_ocr( $in, $outim );
             $fail += do_tesseract( $outim, $outpage );
             unlink( $in, $outim ) unless $debug > 2;
-            exit($fail) if $mth;
+            exit($fail) if $maxcpu>1;
             $errs += $fail;
         }
         $childs{$pid}++;
@@ -305,7 +306,7 @@ sub ocrpdf {
         push @outpages, $outpage;
     }
     print STDERR "Wait..\n";
-    $errs += w_load(0) if $mth;
+    $errs += w_load(0) if $maxcpu>1;
     print STDERR "Done Errs:$errs\n";
 
     my $txt = undef;
