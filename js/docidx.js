@@ -74,8 +74,10 @@ $(function() {
             last_item = -1;
             fetch_page(1);
         }
-    })
+    });
     // react on page-no click
+    $('#tagl').on("show.bs.tab",function(){ $('#result').hide(); $('#tagv').show(); });
+    $('#tagl').on("hide.bs.tab",function(){ $('#tagv').hide(); $('#result').show(); });
     $('#set_page').click(function(e) {
         if ($(e.target).hasClass("pageno")) {
             show_page(e.target.id);
@@ -279,6 +281,27 @@ $(function() {
             // Assume classes do not change from page to page
             var tl = data.classes;
             $('#taglist').html(tl);
+	    var v=""; 
+	    // v=v+'<div><fieldset class="uploadbtn">';
+            $('#taglist input').each(function(){
+		v=v+'<div class="uploadbtn">';
+		v=v+'<button class="tagb btn btn-info btn-lg" style="font-size:'+this.style.fontSize+'" ><span class="glyphicon glyphicon-tag"></span>'+this.value+'</button>'
+		v=v+'</div>';
+		});
+	    // v=v+'</fieldset></div>';
+	    $("#tagv").html(v);
+	    $('.uploadbtn').each(function(){
+		$(this).filedrop()
+		.on('fdsend', function(e,files){ 
+		    // Occurs when FileDrop's 'send' event is initiated.
+		    $.each(files, function (i, file) {
+			console.log(e,file) ;
+		      file.sendTo('upload?tag='+$(e.target,".button").text())
+		    })
+
+		})
+		//attach_upl(this)
+            });
         } else if (data.idx == last_item) {
             $('#result').append(itm);
             last_item = new_last_item;

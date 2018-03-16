@@ -513,8 +513,9 @@ last if -r "stop";
         my $n      = $r->header("x-file-name") || "Unknown";
         $n = uri_unescape($n);
         $n =~ s/[^a-zA-Z0-9. _\-]/_/g;
+        my %qu=$r->uri->query_form;
 
-
+	my $class = ( $qu{"tag"} && $qu{"tag"} =~ /[0-9a-z]+/) ? $& : undef;
         my $nfh = $pdfidx->get_file($digest);
         if ($nfh) {
             print STDERR "File known\n";
@@ -541,7 +542,7 @@ last if -r "stop";
 		}
 
 		print "File: $n\n";
-		my $txt = $pdfidx->index_pdf( $fn, $wdir );
+		my $txt = $pdfidx->index_pdf( $fn, $wdir,$class );
 		$ld_r->update_caches();
 	}
 

@@ -5,6 +5,7 @@ div.snippet {
 span.glyphicon {
     font-size: 20px;  
 }
+.tagb { margin: 8px; float: left }
 .glyphicon-refresh-animate {
     -animation: spin .7s infinite linear;
     -webkit-animation: spin2 .7s infinite linear;

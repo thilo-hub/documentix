@@ -1,10 +1,9 @@
-      // Tell FileDrop we can deal with iframe uploads using this URL:
-      var options = {iframe: {url: 'upload'}};
-      // Attach FileDrop to an area ('zone' is an ID but you can also give a DOM node):
-      var zone = new FileDrop('zone', options);
+
+fd.jQuery();
+
 
       // Do something when a user chooses or drops a file:
-      zone.event('upload', function (files) { 
+      var upl_f=function (files) { 
 	      // Check if it is a url
 	      // then retrieve it and send upstream
 	      var itm=files.dataTransfer.getData("text/uri-list")
@@ -16,8 +15,8 @@
 			downld(itm,"myfile.pdf");
 		      $('#droplist').append("<hr>"+itm);
 	      }
-      });
-      zone.event('send', function (files) {
+      };
+      var upl_s=function (files) {
         // Depending on browser support files (FileList) might contain multiple items.
 	var drop_count=files.length;
         files.each(function (file) {
@@ -65,7 +64,17 @@
           // Send the file:
           file.sendTo('upload');
         });
-      });
+      };
+
+var attach_upl=function(zoneid) {
+      // Tell FileDrop we can deal with iframe uploads using this URL:
+      var options = {iframe: {url: 'upload'}};
+      // Attach FileDrop to an area ('zone' is an ID but you can also give a DOM node):
+      var zone = new FileDrop(zoneid, options);
+      // Attach to zone
+      zone.event('upload', upl_f);
+      zone.event('send', upl_s);
+
 
       // React on successful iframe fallback upload (this is separate mechanism
       // from proper AJAX upload hence another handler):
@@ -77,6 +86,9 @@
       fd.addEvent(fd.byID('multiple'), 'change', function (e) {
         zone.multiple(e.currentTarget || e.srcElement.checked);
       });
+}
+
+attach_upl('zone');
 
 function downld(url,filename)
 {

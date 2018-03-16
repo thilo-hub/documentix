@@ -335,6 +335,7 @@ sub index_pdf {
     my $dh   = $self->{"dh"};
     my $fn   = shift;
     my $wdir = shift;
+    my $class= shift;
     print STDERR "index_pdf $fn\n" if $debug > 1;
 
     # make sure we skip already ocred docs
@@ -413,7 +414,7 @@ sub index_pdf {
 
     $meta{"Image"} = '<img src="?type=thumb&send=#hash#">';
     ( $meta{"PopFile"}, $meta{"Class"} ) =
-      ( $self->pdf_class_file( $fn, \$meta{"Text"}, $meta{"hash"}, undef ) );
+      ( $self->pdf_class_file( $fn, \$meta{"Text"}, $meta{"hash"}, $class ) );
 
     $meta{"keys"} = join( ' ', keys(%meta) );
 
@@ -841,6 +842,7 @@ sub pdf_class_file {
 	$rv = $self->pop_call( "create_bucket", $b );
 	$rv = $self->pop_call( "add_message_to_bucket", $b, $tmp_doc );
 	$self->db_prep( "add_class", $dbop )->execute($class);
+	$rv = $class if $rv;
 
     }
     else {
