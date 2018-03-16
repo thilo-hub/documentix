@@ -253,7 +253,7 @@ last if -r "stop";
         my $c       = shift;
         my $options = shift;
         my $co = $options->{cookie};
-	$co .= ";Expires=".HTTP::Date::time2isoz(auth_check($options->{"ID"})+ $login_timeout)."\n";
+	$co .= ";Expires=".HTTP::Date::time2isoz(auth_check($options->{"ID"})+ $login_timeout)."; HttpOnly\n";
 	my $res =
             HTTP::Response->new(
                 RC_OK, undef,
@@ -262,13 +262,14 @@ last if -r "stop";
                     'charset' => 'utf-8',
                     'Cache-Control' => 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0',
                     'Pragma'  => 'no-cache',
+		    'x-frame-options' => 'DENY',
                     'Expires' => 'Thu, 01 Dec 1994 16:00:00 GMT',
                     'Access-Control-Allow-Origin' => "*",
 
                 ],
                 join( "\n", @_ ),
             );
-	$res->header( "Set-Cookie" => $co )
+	$res->push_header( "Set-Cookie" => $co )
 		if $co;
 	# $co->add_cookie_header($res) if (0 && $co);
         $c->send_response($res);
@@ -345,6 +346,7 @@ last if -r "stop";
 
         # lock();
         my $r = HTTP::Message->new( $feed->feed_m( $2, $1, $3 ) );
+        $r->push_header("x-frame-options"=> "DENY");
         # unlock();
         my $rp = HTTP::Response->new( RC_OK, undef, $r->headers, $r->content );
         $c->{"c"}->send_response($rp);
@@ -353,6 +355,8 @@ last if -r "stop";
 
     sub do_index {
         my $c = shift;
+	$c->{"c"}->send_basic_header;
+	$c->{"c"}->send_header("x-frame-options"=> "DENY");
         $c->{"c"}->send_file_response( $Docconf::config->{"index_html"} );
         return undef;
     }
@@ -452,7 +456,7 @@ last if -r "stop";
 	my $out = slurp("data");
 
 	my $rn=HTTP::Response -> new ( RC_OK,
-		{ content_type => 'text/html', charset => 'utf-8'},undef,
+		{ content_type => 'text/html', charset => 'utf-8', "x-frame-options"=> "DENY" },undef,
 		    sub {
 			    # get next file to process
 			    my $f = <FD>;
