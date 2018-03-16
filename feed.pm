@@ -8,6 +8,7 @@ use HTTP::Date;
 use Cwd 'abs_path';
 use File::Basename;
 use File::Temp qw/tempfile tmpnam tempdir/;
+use MIME::Base64 qw(decode_base64url);
 
 use doclib::pdfidx;
 use doclib::cache;
@@ -51,6 +52,7 @@ sub dfeed {
 
     my $sz;
     my $res;
+    $hash=unpack("H*",decode_base64url($hash)) if ( length($hash) == 22 );
     $hash =~ s/[^0-9a-fA-F]//g;
 
     # return from doc "hash" the info "type"
