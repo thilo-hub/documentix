@@ -13,6 +13,7 @@ use Data::Dumper;
 use HTTP::Daemon;
 use Date::Parse;
 use HTTP::Cookies;
+use Time::HiRes qw(tv_interval gettimeofday); 
 
 # Disabled for the time being  seems hard to compile
 #use HTTP::Daemon::SSL;
@@ -35,6 +36,8 @@ my $nthreads = $Docconf::config->{number_server_threads};
 my $doc_re="html|css|js|png|jpeg|jpg|gif";
 my $cgi_re="sh|pm|pl|cgi";
 my $pwfile=".htpasswd";
+open(LOGGER,">>/tmp/documentix.log");
+{ my $oh=select LOGGER; $|=1; select $oh; }
 
 my @unrestricted_dirs = (
   "web/"
@@ -166,9 +169,16 @@ sub http_child {
     );
 
     my $i;
+    my $t0 = [gettimeofday]; 
+    my $rq = "Starting";
     while ( ++$i < $O{'listen-max-req-per-child'} ) {
-last if -r "stop";
+        last if -r "stop";
+        my $ev=tv_interval ( $t0, [gettimeofday]); 
+	print LOGGER "Elapsed: $ev s ($rq)\n";
+
         my $c = $d->accept        or last;
+        $t0= [gettimeofday]; 
+
         my $r = $c->get_request() or last;
         $c->autoflush(1);
 
@@ -177,8 +187,9 @@ last if -r "stop";
         my $host = scalar gethostbyaddr( $myaddr, AF_INET );
 
         $ENV{"SERVER_ADDR"} = "http://$host:$port";
-        print sprintf( "[%s] %s %s\n",
+        $rq=sprintf( "[%s] %s %s",
             $c->peerhost, $r->method, $r->uri->as_string );
+        print "$rq\n";
 
         my $matches = 0;
 
