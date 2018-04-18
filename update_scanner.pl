@@ -69,7 +69,7 @@ if (@new) {
            $ctx->addfile($fh);
            close($fh);
            my $digest = $ctx->hexdigest;
-	   my $wdir=get_store($digest);
+	   my $wdir=get_store($digest,true);
 
 
 	    my $txt = $pdfidx->index_pdf( $_, $wdir );
@@ -83,10 +83,16 @@ if (@new) {
 	print "Finished processing\n";
 }
     sub get_store {
-        my $digest=shift;
-        my $wdir = $Docconf::config->{local_storage};
-        mkdir $wdir or die "No dir: $wdir" unless -d $wdir;
-        $wdir .= "/$digest";
-        mkdir $wdir or die "No dir: $wdir" unless -d $wdir;
-        return $wdir;
+	my $digest=shift;
+	my $md = shift || false;
+	my $wdir = $Docconf::config->{local_storage};
+	mkdir $wdir or die "No dir: $wdir" unless $md && -d $wdir;
+	$digest =~ m/^(..)/;
+	$wdir .= "/$1";
+	mkdir $wdir or die "No dir: $wdir" unless $md && -d $wdir;
+	
+	$wdir .= "/$digest";
+	mkdir $wdir or die "No dir: $wdir" unless $md && -d $wdir;
+	return $wdir;
     }
+

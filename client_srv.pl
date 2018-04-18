@@ -412,7 +412,7 @@ sub http_child {
 		print STDERR "OK\n" if $Docconf::config->{"debug"} >0;
 		my $nfh = $pdfidx->get_file($digest);
 		unless ($nfh) {
-			my $wdir=get_store($digest);
+			my $wdir=get_store($digest,1);
 
 			my ($otxt,$meta);
 			eval { ($otxt,$meta) = $pdfidx->index_pdf( $f, $wdir )};
@@ -497,15 +497,6 @@ sub http_child {
 
 
     };
-
-    sub get_store {
-	my $digest=shift;
-	my $wdir = $Docconf::config->{local_storage};
-	mkdir $wdir or die "No dir: $wdir" unless -d $wdir;
-	$wdir .= "/$digest";
-	mkdir $wdir or die "No dir: $wdir" unless -d $wdir;
-	return $wdir;
-    }
     sub slurp {
         local $/;
         open( my $fh, "<" . shift )
@@ -537,7 +528,7 @@ sub http_child {
         }
 	else
 	{
-		my $wdir = get_store($digest);
+		my $wdir = get_store($digest,1);
 		# Now store the file
 		my $fn = "$wdir/$n";
 
@@ -591,6 +582,20 @@ sub http_child {
       return $o;
     }
 }
+}
+
+sub get_store {
+    my $digest=shift;
+    my $md = shift || 0;
+    my $wdir = $Docconf::config->{local_storage};
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+    $digest =~ m/^(..)/;
+    $wdir .= "/$1";
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+
+    $wdir .= "/$digest";
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+    return $wdir;
 }
 
 # Check if ID is known

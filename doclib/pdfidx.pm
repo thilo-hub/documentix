@@ -353,7 +353,7 @@ sub index_pdf {
         && !( $fn =~ /$Docconf::config->{local_storage}/ ) )
     {
         my $f_dir = dirname($fn);
-        my $new   = $Docconf::config->{local_storage} . "/" . $md5_f;
+        my $new   = main::get_store( $md5_f,0);
         mkdir $new
           unless -d $new;
         $new .= "/" . basename($fn);
@@ -437,7 +437,7 @@ sub index_pdf {
         my $i = $self->{"file"};
 
         # Output will generally be created in the local_storage (and kept)
-        my $of = $Docconf::config->{local_storage} . "/" . $meta->{"hash"};
+        my $of = main::get_store( $meta->{"hash"},0);
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
         do_unopdf( $i, $self->{file} )
 		unless -r $self->{file};
@@ -450,7 +450,7 @@ sub index_pdf {
         my $i = $self->{"file"};
 
         # Output will generally be created in the local_storage (and kept)
-        my $of = $Docconf::config->{local_storage} . "/" . $meta->{"hash"};
+        my $of = main::get_store( $meta->{"hash"},0);
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
         do_convert_pdf( $i, $self->{file} );
         my $type = do_file( $self->{file} );
@@ -463,7 +463,7 @@ sub index_pdf {
         my $i = $self->{"file"};
 
         # Output will generally be created in the local_storage (and kept)
-        my $of = $Docconf::config->{local_storage} . "/" . $meta->{"hash"};
+        my $of = main::get_store( $meta->{"hash"},0);
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
         do_ascii2pdf( $i, $self->{file} );
         my $type = do_file( $self->{file} );
@@ -477,7 +477,7 @@ sub index_pdf {
         my $i = $self->{"file"};
 
         # Output will generally be created in the local_storage (and kept)
-        my $of = $Docconf::config->{local_storage} . "/" . $meta->{"hash"};
+        my $of = main::get_store( $meta->{"hash"},0);
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
         do_calibrepdf( $i, $self->{file} );
         my $type = do_file( $self->{file} );
@@ -542,7 +542,7 @@ sub pdf_totext {
     my $f_path = dirname(abs_path($fn))."/";
     my $f_base = basename($fn,(".pdf",".ocr.pdf"));
 
-    my $lcl_store_dir = $Docconf::config->{local_storage} . "/" . $md5;
+    my $lcl_store_dir = main::get_store( $md5,0);
     my $lcl_store = $lcl_store_dir . "/$f_base";
     die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
     my @locs=( $lcl_store.".ocr.pdf", $f_path .$f_base.".ocr.pdf", $fn );
@@ -810,7 +810,7 @@ sub pdf_class_file {
 
     print STDERR "Add tag: $class\n" if $Docconf::config->{debug} > 0;
     if ( $class =~ m|^(-?)(.*/.*)| ) {
-        # allow multiple tags at once 
+        # allow multiple tags at once
 	my $r="";
 	foreach( split(m|/|,$2)) {
 		$r.=$self->pdf_class_file($fn,$rtxt,$md5,$1.$_);
@@ -822,14 +822,14 @@ sub pdf_class_file {
 
     my $tmp_doc = get_popfile_r( $fn, $md5, $rtxt );
     my $op      = "handle_message";
-    my $dbop    = "insert or ignore into tags (idx,tagid) 
+    my $dbop    = "insert or ignore into tags (idx,tagid)
 		       select idx,tagid from hash,tagname where md5=? and tagname =?";
     my $db_op = $self->db_prep( "add_tag", $dbop );
 
     if ( $class && $class =~ s/^-// ) {
 	# remove tags and message from bucket
         my $dbop =
-          "delete from tags where idx=(select idx from hash where md5=?) and 
+          "delete from tags where idx=(select idx from hash where md5=?) and
 				 tagid = (select tagid from tagname where tagname = ?)";
         $db_op = $self->db_prep( "rm_tag", $dbop );
 	$rv = $self->pop_call( "remove_message_from_bucket", $class, $tmp_doc );

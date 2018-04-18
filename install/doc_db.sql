@@ -1,6 +1,6 @@
 CREATE TABLE ocr ( idx integer, text text);
 CREATE TABLE metadata ( idx integer, tag text, value text, unique ( idx,tag) );
-CREATE TABLE "cache_old" (item text,idx integer,data blob,date integer, unique (item,idx));
+CREATE TABLE IF NOT EXISTS "cache_old" (item text,idx integer,data blob,date integer, unique (item,idx));
 CREATE TABLE classes (class text primary key unique, count integer);
 CREATE TABLE class ( idx integer primary key, class text );
 CREATE TABLE mtime ( idx integer primary key, mtime integer);
@@ -16,6 +16,7 @@ CREATE TABLE Users (
 	passwd                    varchar(255) not null,
 	Disabled                  char(1) default '0'
 	);
+CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE Groups (
     gid                       integer primary key autoincrement,
     Name                      char(31) not null
@@ -33,13 +34,18 @@ CREATE TABLE tagname (tagid integer primary key autoincrement, tagname text uniq
 CREATE TABLE tags (tagid integer,idx integer,constraint tagid unique (tagid,idx));
 CREATE TABLE meta_tag (tagv integer primary key autoincrement,tag text unique);
 CREATE TABLE data ( idx integer primary key , thumb text, ico text, html text);
-CREATE TABLE "db.dates"(date INT,mtext TEXT,idx TEXT);
-CREATE TABLE "dates"(date INT,mtext TEXT,idx TEXT);
+CREATE TABLE IF NOT EXISTS "db.dates"(date INT,mtext TEXT,idx TEXT);
+CREATE TABLE IF NOT EXISTS "dates"(date INT,mtext TEXT,idx TEXT);
 CREATE TABLE cache_lst ( qidx integer primary key autoincrement,
 		query text unique, nresults integer, last_used integer );
 CREATE TABLE cache_q ( qidx integer, idx integer, id integer, snippet text, unique(qidx,idx));
 CREATE TABLE nfile1(md5 TEXT,file);
 CREATE VIRTUAL TABLE "text" using fts4;
+CREATE TABLE IF NOT EXISTS 'text_content'(docid INTEGER PRIMARY KEY, 'c0content');
+CREATE TABLE IF NOT EXISTS 'text_segments'(blockid INTEGER PRIMARY KEY, block BLOB);
+CREATE TABLE IF NOT EXISTS 'text_segdir'(level INTEGER,idx INTEGER,start_block INTEGER,leaves_end_block INTEGER,end_block INTEGER,root BLOB,PRIMARY KEY(level, idx));
+CREATE TABLE IF NOT EXISTS 'text_docsize'(docid INTEGER PRIMARY KEY, size BLOB);
+CREATE TABLE IF NOT EXISTS 'text_stat'(id INTEGER PRIMARY KEY, value BLOB);
 CREATE INDEX file_md5 on file(md5);
 CREATE INDEX class_i on class(class);
 CREATE INDEX mtime_i on mtime(mtime);
@@ -89,8 +95,6 @@ CREATE TRIGGER file_ins after insert  on file begin
 CREATE TRIGGER cache_del before delete on cache_lst begin delete 
 		from cache_q where cache_q.qidx = old.qidx ; 
 	end;
-drop trigger if exists hash_delete1;
-drop trigger if exists del2;
 CREATE TRIGGER del2 before delete on hash begin
                                         delete from file where file.md5 = old.md5;
                                         delete from data where data.idx = old.idx;
@@ -100,4 +104,3 @@ CREATE TRIGGER del2 before delete on hash begin
                                         delete from tags where tags.idx=old.idx;
                                  end;
 CREATE TABLE config (var primary key unique,value);
-pragma journal_mode=wal;
