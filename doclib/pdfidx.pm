@@ -97,24 +97,24 @@ q{CREATE TABLE if not exists mtime ( idx integer primary key, mtime integer)},
 q{CREATE TABLE if not exists class ( idx integer primary key, class text )},
         q{CREATE INDEX if not exists class_i on class(class)},
 
-        q{CREATE TRIGGER if not exists del2 before delete on hash begin 
-					delete from file where file.md5 = old.md5; 
-					delete from data where data.idx = old.idx; 
-					delete from metadata where metadata.idx=old.idx; 
-					delete from text where docid=old.idx; 
-					delete from mtime where mtime.idx=old.idx; 
-					delete from class where class.idx=old.idx; 
+        q{CREATE TRIGGER if not exists del2 before delete on hash begin
+					delete from file where file.md5 = old.md5;
+					delete from data where data.idx = old.idx;
+					delete from metadata where metadata.idx=old.idx;
+					delete from text where docid=old.idx;
+					delete from mtime where mtime.idx=old.idx;
+					delete from class where class.idx=old.idx;
 				 end;},
-        q{CREATE TRIGGER if not exists inmtime after insert on metadata when 
-	                    new.tag = "mtime" begin 
-			    insert into mtime (idx,mtime) values (new.idx,new.value); 
+        q{CREATE TRIGGER if not exists inmtime after insert on metadata when
+	                    new.tag = "mtime" begin
+			    insert into mtime (idx,mtime) values (new.idx,new.value);
 		end;},
-        q{CREATE TRIGGER if not exists inclass after insert on metadata when 
-	                    new.tag = "Class" begin 
-			    insert into class (idx,class) values (new.idx,new.value); 
+        q{CREATE TRIGGER if not exists inclass after insert on metadata when
+	                    new.tag = "Class" begin
+			    insert into class (idx,class) values (new.idx,new.value);
 		end;},
-q{CREATE TRIGGER if not exists intxt after insert on metadata when new.tag = "text" begin 
-			insert into text (docid,content) values (new.idx,new.value); 
+q{CREATE TRIGGER if not exists intxt after insert on metadata when new.tag = "text" begin
+			insert into text (docid,content) values (new.idx,new.value);
 					end;},
         q{ CREATE INDEX if not exists mtags on metadata(tag)},
 q{commit}
@@ -224,8 +224,8 @@ sub expand_templ {
         if ( $md5 && !$$db->{$md5} ) {
             print STDERR "Fetch: $md5\n";
             my $res = $dh->selectall_hashref(
-                q{select idx,tag,value from file 
-				natural join hash natural join metadata 
+                q{select idx,tag,value from file
+				natural join hash natural join metadata
 				    where md5=?}, "tag", undef, $md5
             );
             $$db->{$md5}->{$_} = $res->{$_}->{"value"} foreach ( keys %$res );
