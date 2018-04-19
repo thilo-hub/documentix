@@ -69,14 +69,12 @@ fi
 
 case $OPT in
 	start)
-		set -vx
 		DB_V="$(sqlite3 db/doc_db.db 'select value  from config where var = "version"')"
 	        if [ -z "$DB_V" -o "$DB_V" '<' "$INSTALL_V" ]; then
 			# Do all db-updates
 			perl tests/update_incoming.pl
 			sqlite3 db/doc_db.db "insert or replace into config (var,value) values('version','$INSTALL_V')"
 		fi
-exit 0
 		test -f popuser/popfile.pid ||
 			./run_local.sh perl start_pop.pl $PWD  || exit 96
 		test -f popuser/popfile.pid || exit 95
