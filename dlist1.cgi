@@ -48,6 +48,6 @@ sub dlist {
     }
     closedir(BIN);
     push @out,@fout;
-
+     @out=sort {$a->{"name"} cmp $b->{"name"}} @out;
     return \@out;
 }
