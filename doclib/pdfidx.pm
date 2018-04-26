@@ -144,7 +144,7 @@ q{select md5 from metadata natural join hash where tag="mtime" and value > ?},
 
     my %ref;
     my $idx = "0000";
-    while ( $tpl =~ s/{\*([A-Z0-9a-z]+)}(.*?){\*}/RPT>$2</s ) {
+    while ( $tpl =~ s/\{\*([A-Z0-9a-z]+)\}(.*?)\{\*\}/RPT>$2</s ) {
         $ref{"XX_$1"} = $2;
     }
 

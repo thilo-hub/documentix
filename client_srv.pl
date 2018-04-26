@@ -3,6 +3,7 @@
 
 use strict;
 use warnings;
+use lib ".";
 
 use Docconf;
 my $auth={"update"=>0};;
