@@ -358,6 +358,8 @@ sub get_cell {
     $short_name =~ s/^.*\///;
     my $sshort_name = $short_name;
     $short_name =~ s/#/%23/g;
+    $short_name =~ s/(\.[a-z]*)$//;
+    my $short_ext = $1;
     my $tip = $r->{"snippet"} || "";
     $tip =~ s/["']/&quot;/g;
     $tip =~ s/\n/<br>/g;
@@ -376,6 +378,7 @@ sub get_cell {
     my $vals = {
         md5 => $md5,
         doc => $short_name,
+        doct => $short_ext,
         tip => $tip,
         pg  => $p,
         sz  => $so,
