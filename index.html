@@ -105,18 +105,18 @@ PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 				    <div class="thumb">
 					<a class="thumb" 
 					    href="web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}.pdf#pagemode=thumb" 
-					    ondragstart="Dropit('{{:md5}}','{{:doc}}')"
+					    ondragstart="Dropit('{{:md5}}','{{:doc}}{{:doct}}')"
 					    onmouseout="UnTip()" 
 					    onmouseover="Tip('{{:tip}}')" target="docpage"
 					    >
-					    <img class="thumb" src="docs/ico/{{:md5}}/{{:doc}}" />
+					    <img class="thumb" src="docs/ico/{{:md5}}/{{:doc}}.ico" />
 					</a>
 				    </div>
 				    <div class="descr">
 					<a href target="_popfile">
 					</a>
 					<br />
-					<a class="doclink" href="docs/raw/{{:md5}}/{{:doc}}" target="docpage">{{:doc}}
+					<a class="doclink" href="docs/raw/{{:md5}}/{{:doc}}{{:doct}}" target="docpage">{{:doc}}
 					</a>
 					<br />
 					<a class="dtags">
