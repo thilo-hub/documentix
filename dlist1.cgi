@@ -2,6 +2,7 @@
 # Basic template for this machine
 
 
+use lib ".";
 use dirlist;
 use Data::Dumper;
 use JSON::PP;
