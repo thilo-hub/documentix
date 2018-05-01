@@ -74,8 +74,7 @@ sub dfeed {
     # File-type 
     my $m = $self->{pdfidx}->get_meta( "Mime", $hash );
 
-    my $bn =
-      $Docconf::config->{local_storage} . "/" . $hash . "/" . basename($f,".pdf");
+    my $bn = main::get_store($hash,0) ."/" . basename($f,".pdf"); 
     my $fn;
     my $focr=$f;
     $focr =~ s/\.pdf$/.ocr.pdf/;

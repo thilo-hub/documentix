@@ -1,7 +1,13 @@
 #!/usr/bin/perl
 #copyright Thilo Jeremias
+use lib ".";
 use strict;
 use warnings;
+#use old smb version;
+
+$ENV{"LD_LIBRARY_PATH"}="/tmp/samba/private";
+$ENV{"PATH"} =~ s|^|/tmp/samba:|;
+
 
 
 use Date::Parse;
@@ -12,7 +18,7 @@ use ld_r;
 
 
 my $dir="CANON_SC/DOCUMENT/0001";
-my $srv="//serenity/canon_memory";
+my $srv="//192.168.0.64/canon_memory";
 my $dst=$Docconf::config->{local_storage}."/Scanner";
 
 my @new;
@@ -24,6 +30,7 @@ my $debug = $Docconf::config->{debug};
 my @onserver = qx{smbclient -N $srv -D $dir  -c  dir 2>/dev/null };
 foreach ( @onserver )
 {
+    print STDERR  "$_" if /error/i;
     next unless /^\s+(\S+)\s+\S+\s+(\d+)\s+(.*?)\s*$/;
     my $f="$dst/$1";
     my $s= $2;
@@ -69,7 +76,7 @@ if (@new) {
            $ctx->addfile($fh);
            close($fh);
            my $digest = $ctx->hexdigest;
-	   my $wdir=get_store($digest,true);
+	   my $wdir=get_store($digest,1);
 
 
 	    my $txt = $pdfidx->index_pdf( $_, $wdir );
@@ -82,17 +89,18 @@ if (@new) {
 	$ld_r->update_caches();
 	print "Finished processing\n";
 }
-    sub get_store {
-	my $digest=shift;
-	my $md = shift || false;
-	my $wdir = $Docconf::config->{local_storage};
-	mkdir $wdir or die "No dir: $wdir" unless $md && -d $wdir;
-	$digest =~ m/^(..)/;
-	$wdir .= "/$1";
-	mkdir $wdir or die "No dir: $wdir" unless $md && -d $wdir;
-	
-	$wdir .= "/$digest";
-	mkdir $wdir or die "No dir: $wdir" unless $md && -d $wdir;
-	return $wdir;
-    }
+sub get_store {
+    my $digest=shift;
+    my $md = shift || 0;
+    my $wdir = $Docconf::config->{local_storage};
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+    $digest =~ m/^(..)/;
+    $wdir .= "/$1";
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+
+    $wdir .= "/$digest";
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+    return $wdir;
+}
+
 

@@ -14,7 +14,7 @@ my $pdfidx = pdfidx->new();
 sub lock   { }
 sub unlock { }
 
-sub get_store{ }
+sub get_store{ die "Ups"; }
 
 my $wdir = $Docconf::config->{local_storage};
 my $upd=$pdfidx->{"dh"}->prepare(
