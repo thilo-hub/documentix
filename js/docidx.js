@@ -136,9 +136,10 @@ $(function() {
         tag_edit(0);
         //$('#tagedit').hide('slow')
     });
-    $('.right').click(function(e) {
+    tageditor = function(e) {
         var f = e.target;
         if ($(f).hasClass("tagbox")) {
+	    e.stopPropagation();
             tag_edit(f);
             foc_id = foc_el.id;
             $(foc_el).css("background-color", "yellow");
@@ -147,6 +148,9 @@ $(function() {
                 $('#tags_tag').focus();
             })
         }
+    };
+    $('.right').click(function(e) {
+	    tageditor(e);
     });
     // Check if we need to load more based on
     // viewport

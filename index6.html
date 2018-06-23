@@ -97,13 +97,15 @@ var viewer_default;
                     </script>
                     <script id="template_result_items" type="text/x-jsrender">
                         
-	<li class="rbox">
+	<li class="rbox"
+				onclick="Showpdf('web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}.pdf',event)" 
+	>
 	    <td id="{{:md5}}" >
-		<div class="rcell" >
+		<div class="rcell" 
+>
 		    <div class="thumb">
 			<a class="thumb" 
 				href='docs/raw/{{:md5}}/{{:doc}}{{:doct}}'
-				onclick="Showpdf('web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}.pdf',event)" 
 				ondragstart="Dropit('{{:md5}}','{{:doc}}{{:doct}}')"
 				onmouseout="UnTip()" 
 				onmouseover="Tip('{{:tip}}')"
@@ -112,10 +114,12 @@ var viewer_default;
 			</a>
 		    </div>
 		    <div class="descr">
+			<div class="doclink" onclick="event.stopPropagation()">
 			<a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}{{:doct}}" download> </a> {{:doc}}
+			</div>
 			<a class="dtags">
-			    <p class="tagfield">
-				<input class="tagbox" id="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
+			    <p class="tagfield" >
+				<input onclick="tageditor(event)" class="tagbox" id="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
 			    </p>
 			</a>
 			{{:dt}}

@@ -135,7 +135,8 @@ div.results {
 a.doclink {
     border: green;
     color: green;
-    word-wrap: break-word
+    word-wrap: break-word;
+    z-index: 5
 }
 
 div.rcell {
@@ -162,7 +163,8 @@ a.dtags {
     background-color: transparent;
     border: none;
     font-style: italic;
-    padding: 1px
+    padding: 1px;
+    z-index: 50;
 }
 
 img.thumbX {
@@ -296,7 +298,8 @@ unsel {
     width: 300px;
     height: 120px;
     float: left;
-    list-style-type: none
+    list-style-type: none;
+    z-index: -2 
 }
 .rbox:hover {
    background: #cccccc;
