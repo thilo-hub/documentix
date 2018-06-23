@@ -29,6 +29,9 @@ $(function() {
     $(window).scroll(function() {
         update_view();
     });
+    $('div.right').scroll(function(ev,id) {
+        update_view();
+    });
     // Initial load
     $.ajax({
         url: "ldres",
@@ -170,7 +173,7 @@ $(function() {
                 }
             });
         }
-        var pixelsFromWindowBottomToBottom = 0 + $(document).height() - w_bot;
+        var pixelsFromWindowBottomToBottom = 0 + $('#result li.rbox:last').offset().top - w_bot;
         if (pixelsFromWindowBottomToBottom > reload_limit) {
             // Still unvisible data at the bottom
             return;
@@ -228,9 +231,11 @@ $(function() {
     //  callback when new data arrive
     // Update page idx with json data
     insert_item = function(data) {
+        if ( data.items.length > 0 ) {
         var dup= $("#"+data.items[0].md5);
 	if (dup)
 		dup.parents("li").remove();
+	data.URL=document.location.origin;
         var itm = template.render(data);
         var rv=$('#result').prepend(itm);
         var msg = data.msg;
@@ -238,8 +243,11 @@ $(function() {
         if (msg)
             $('#msg').append(msg);
 	return itm;
+	}
+        return;
     }
     function load_result(idx, data) {
+	data.URL=document.location.origin;
         var itm = template.render(data);
 
 	if (1) {
@@ -342,7 +350,7 @@ $(function() {
 		}
 	)
         no_update_possible = 0;
-        update_view();
+        $().ready(update_view);
     }
     dbg_msg = function(msg) {
 	if ( debug_lvl > 0)

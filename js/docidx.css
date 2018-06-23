@@ -165,6 +165,13 @@ a.dtags {
     padding: 1px
 }
 
+img.thumbX {
+    width: 64px;
+    max-height: 64px;
+    padding-right: 5px;
+}
+
+
 img.thumb {
     width: 100%;
     max-height: 115px;

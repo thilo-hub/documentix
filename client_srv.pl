@@ -34,7 +34,7 @@ my $session="/tmp/doc.sessions";
 my $session_time=24*3600; # seconds valid
 my $login_timeout=60; # seconds valid
 my $nthreads = $Docconf::config->{number_server_threads};
-my $doc_re="html|css|js|png|jpeg|jpg|gif";
+my $doc_re="html|css|js|png|jpeg|jpg|gif|js\.map|properties";
 my $cgi_re="sh|pm|pl|cgi";
 my $pwfile=".htpasswd";
 open(LOGGER,">>/tmp/documentix.log");
@@ -322,6 +322,7 @@ sub http_child {
         {    # Standard files that can be returned
             $c->{"c"}->send_file_response($f);
 	    print STDERR " + ";
+            return undef;
         }
         elsif ( $f =~ /\.($cgi_re)$/ && -x $f ) {
             if ( $Docconf::config->{"cgi_enabled"} ) {
@@ -336,6 +337,8 @@ sub http_child {
             return "Failed: cgi scripts are disabled";
         }
         print STDERR " - ";
+        $c->{"c"}->send_error(RC_NOT_FOUND);
+        return undef;
         return "Failed $f";
     }
 
