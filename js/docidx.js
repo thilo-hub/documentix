@@ -357,7 +357,7 @@ $(function() {
 		$("#fmsg").show().prepend(msg);
     }
 	
-    Showpdf = function(u) {
+    Showpdf = function(u,e) {
 	    var p=$('#pdfview');
 	    if ( p.length ) {
 		    var r=$("#result");
@@ -376,12 +376,21 @@ $(function() {
 			p.hide();
 			r.show();
 			});
+			if(e) {
+				e.preventDefault();
+			}
 			return false;
 		}
 		else
 		{
 			if ( u !== undefined ){
-				window.open(u,"pdfviewer");
+				if (!viewer_frame) {
+					viewer_frame="pdfviewer";
+				}
+				window.open(u,viewer_frame);
+				if(e) {
+					e.preventDefault();
+				}
 				return false;
 			}
 		}
