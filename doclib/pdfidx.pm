@@ -393,6 +393,7 @@ sub index_pdf {
         "application/msword" => \&tp_any,
         "image/png"         => \&tp_jpg,
         "image/jpeg"         => \&tp_jpg,
+        "image/jpg"         => \&tp_jpg,
 	"text/plain"	     => \&tp_ascii,
 "application/vnd.openxmlformats-officedocument.presentationml.presentation"
           => \&tp_any,

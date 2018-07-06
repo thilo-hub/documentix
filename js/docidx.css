@@ -295,7 +295,7 @@ unsel {
 
 .rbox {
     border: inset #CCC;
-    width: 300px;
+    width: 240px;
     height: 120px;
     float: left;
     list-style-type: none;
