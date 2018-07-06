@@ -726,6 +726,7 @@ var PDFViewerApplication = {
     this.setTitle(title);
   },
   setTitle: function setTitle(title) {
+    this.Title = title;
     if (this.isViewerEmbedded) {
       return;
     }
@@ -1575,6 +1576,9 @@ function webViewerUpdateViewarea(evt) {
     }).catch(function () {});
   }
   var href = PDFViewerApplication.pdfLinkService.getAnchorUrl(location.pdfOpenParams);
+  
+  PDFViewerApplication.appConfig.toolbar.viewBookmark.innerHTML = "<span>"+PDFViewerApplication.Title + "(" + location.pageNumber + ")"+"</span>";
+  PDFViewerApplication.appConfig.toolbar.viewBookmark.href = href;
   PDFViewerApplication.appConfig.toolbar.viewBookmark.href = href;
   PDFViewerApplication.appConfig.secondaryToolbar.viewBookmarkButton.href = href;
   var currentPage = PDFViewerApplication.pdfViewer.getPageView(PDFViewerApplication.page - 1);

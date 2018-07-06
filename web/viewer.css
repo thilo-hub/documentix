@@ -2377,6 +2377,18 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
   }
 }
 
+*[draggable=true] {
+  -moz-user-select:none;
+  -khtml-user-drag: element;
+  cursor: move;
+}
+
+*:-khtml-drag {
+  background-color: rgba(238,238,238, 0.5);
+}
+
+
+
 @media all and (max-width: 535px) {
   #scaleSelectContainer {
     display: none;
