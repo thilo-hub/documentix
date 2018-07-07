@@ -33,7 +33,16 @@
 	<script src="js/doc_tree2.js" type="text/javascript"></script>
 
 	<script type="text/javascript" src="js/jquery.layout.js"></script>
-	<script type="text/javascript">
+	<style type="text/css" media="all">
+		@import "widgEditor/css/info.css";
+		@import "widgEditor/css/main.css";
+		@import "widgEditor/css/widgEditor.css";
+	</style>
+
+	<script type="text/javascript" src="widgEditor/scripts/widgEditor.js"></script>
+	<script type="text/javascript" src="markitup/jquery.markitup.js"></script>
+	<script type="text/javascript" src="markitup/sets/default/set.js"></script>
+<script type="text/javascript">
 var pagin;
 var viewer_frame;
 var viewer_default;
@@ -184,6 +193,11 @@ var viewer_default;
                             <span class="glyphicon glyphicon-fire"></span>
                         </a>
                     </li>
+		    <li>
+			<a data-toggle="tab" href="#menu6" id="classfile">
+			    <span class="glyphicon glyphicon-edit"></span>
+			</a>
+		    </li>
                 </ul>
                 <div class="tab-content">
                     <div id="home" class="tab-pane fade in active">
@@ -241,6 +255,17 @@ var viewer_default;
                             </form>
                         </div>
                     </div>
+		    <div id="menu6" class="tab-pane fade">
+			<hr>
+			<fieldset>
+			    <form action="submit.php" onsubmit="alert('Your submitted HTML was:\n\n' + document.getElementById('noise').value); return false;">
+		    <textarea id="noise" name="noise" class="widgEditor nothing">Temporary store notes here</textarea>
+			</fieldset>
+			<fieldset class="submit">
+				<input type="submit" value="Check the submitted code" />
+			</fieldset>
+		</div>
+		    <!-- END OF DIVS -->
                 </div>
                 <div id="left" class="menu">
                     <div id="xitem" style="float: right"></div>
