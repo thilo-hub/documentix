@@ -933,7 +933,7 @@ sub do_convert_icon {
     my ( $fn, $pn ) = @_;
 
     my @cmd = (
-        $pdftocairo, "-scale-to", $Docconf::config->{icon_size}, "-jpeg", "-singlefile","-f",
+        $pdftocairo, "-scale-to", $Docconf::config->{icon_size}, "-png", "-singlefile","-f",
         $pn, "-l", $pn, $fn, "-"
     );
 
