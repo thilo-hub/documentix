@@ -61,6 +61,54 @@ var viewer_default;
 	viewer_frame = "docpage";
 	}
  });
+$('#fire').on(
+    'dragover',
+    function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+)
+$('#fire').on(
+    'dragenter',
+    function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+)
+
+function drop_handler(ev) {
+ console.log("Drop");
+ var data = ev.dataTransfer.items;
+ for (var i = 0; i < data.length; i += 1) {
+     if ((data[i].kind == 'string') ) {
+	 console.log(data[i].type + "  "+ ev.dataTransfer.getData(data[i].type) );
+   } else if ((data[i].kind == 'file') && 
+              (data[i].type.match('^image/'))) {
+     // Drag data item is an image file
+     var f = data[i].getAsFile();
+     console.log("... Drop: File ");
+   }
+ }
+}
+
+$('#fire').on(
+    'drop',
+    function(e){
+	    e.preventDefault();
+	    e.stopPropagation();
+                console.log(e.originalEvent.dataTransfer);
+	drop_handler(e.originalEvent);
+
+
+        if(e.originalEvent.dataTransfer){
+            if(e.originalEvent.dataTransfer.files.length) {
+                /*UPLOAD FILES HERE*/
+                console.log(e.originalEvent.dataTransfer.files);
+            }
+        }
+    }
+);
+
 	});
 	</script>
 
@@ -237,7 +285,9 @@ var viewer_default;
                     </div>
                     <div id="menu5" class="tab-pane fade">
                         <div class="tagfield">
+			    <div id="fire">
                             <i>this should be replaced....</i>
+			    </div>
                         </div>
                     </div>
                     <div id="menu3" class="tab-pane fade">
