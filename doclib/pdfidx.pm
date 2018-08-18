@@ -353,7 +353,7 @@ sub index_pdf {
         && !( $fn =~ /$Docconf::config->{local_storage}/ ) )
     {
         my $f_dir = dirname($fn);
-        my $new   = main::get_store( $md5_f,0);
+        my $new   = self->get_store( $md5_f,0);
         mkdir $new
           unless -d $new;
         $new .= "/" . basename($fn);
@@ -438,7 +438,7 @@ sub index_pdf {
         my $i = $self->{"file"};
 
         # Output will generally be created in the local_storage (and kept)
-        my $of = main::get_store( $meta->{"hash"},0);
+        my $of = $self->get_store( $meta->{"hash"},0);
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
         do_unopdf( $i, $self->{file} )
 		unless -r $self->{file};
@@ -451,7 +451,7 @@ sub index_pdf {
         my $i = $self->{"file"};
 
         # Output will generally be created in the local_storage (and kept)
-        my $of = main::get_store( $meta->{"hash"},0);
+        my $of = $self->get_store( $meta->{"hash"},0);
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
         do_convert_pdf( $i, $self->{file} );
         my $type = do_file( $self->{file} );
@@ -464,7 +464,7 @@ sub index_pdf {
         my $i = $self->{"file"};
 
         # Output will generally be created in the local_storage (and kept)
-        my $of = main::get_store( $meta->{"hash"},0);
+        my $of = $self->get_store( $meta->{"hash"},0);
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
         do_ascii2pdf( $i, $self->{file} );
         my $type = do_file( $self->{file} );
@@ -478,7 +478,7 @@ sub index_pdf {
         my $i = $self->{"file"};
 
         # Output will generally be created in the local_storage (and kept)
-        my $of = main::get_store( $meta->{"hash"},0);
+        my $of = $self->get_store( $meta->{"hash"},0);
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
         do_calibrepdf( $i, $self->{file} );
         my $type = do_file( $self->{file} );
@@ -543,7 +543,7 @@ sub pdf_totext {
     my $f_path = dirname(abs_path($fn))."/";
     my $f_base = basename($fn,(".pdf",".ocr.pdf"));
 
-    my $lcl_store_dir = main::get_store( $md5,0);
+    my $lcl_store_dir = $self->get_store( $md5,0);
     my $lcl_store = $lcl_store_dir . "/$f_base";
     die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
     my @locs=( $lcl_store.".ocr.pdf", $f_path .$f_base.".ocr.pdf", $fn );
@@ -1057,6 +1057,22 @@ sub do_ungzip {
     qx|gzip -dc $i > "$out"|;
     return;
 }
+sub get_store {
+    my $self = shift;
+    my $digest=shift;
+    my $md = shift || 0;
+    my $wdir = $Docconf::config->{local_storage};
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+    $wdir  = abs_path($wdir);
+    $digest =~ m/^(..)/;
+    $wdir .= "/$1";
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+
+    $wdir .= "/$digest";
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+    return $wdir;
+}
+
 
 
 1;
