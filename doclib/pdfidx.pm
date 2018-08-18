@@ -947,8 +947,8 @@ sub do_convert_icon {
 sub do_tesseract {
     my ( $image, $outpage ) = @_;
     my $msg;
-    my @cmd = ( $tesseract, $image, $outpage, qw{ -l deu+eng+equ -psm 1 pdf} );
-    my @cmd1 = ( $tesseract, $image, $outpage, qw{ -l deu+eng+equ -psm 1 --oem 1 pdf} );
+    my @cmd = ( $tesseract, $image, $outpage, qw{ -l deu+eng+equ --psm 1 pdf} );
+    my @cmd1 = ( $tesseract, $image, $outpage, qw{ -l deu+eng+equ --psm 1 --oem 1 pdf} );
     $msg .= "CMD: " . join( " ", @cmd, "\n" ) if $Docconf::config->{debug} > 3;
     print STDERR "$msg" if $Docconf::config->{debug} > 3;
     $outpage .= ".pdf";
