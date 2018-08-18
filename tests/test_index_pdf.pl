@@ -1,3 +1,4 @@
+use lib ".";
 use doclib::pdfidx;
 use Data::Dumper;
 
