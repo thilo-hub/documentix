@@ -535,6 +535,29 @@ sub ins_e {
 #
 # try to get text from document
 #  in order local_storage...ocr.pdf orig...ocr.pdf   orig.pdf
+sub pdf_filename {
+    my $self = shift;
+    my $md5   = shift;
+    my $fn=$self->get_file ($md5);
+    my $f_path = dirname(abs_path($fn))."/";
+    my $f_base = basename($fn,(".pdf",".ocr.pdf"));
+
+    my $lcl_store_dir = $self->get_store( $md5,0);
+    my $lcl_store = $lcl_store_dir . "/$f_base";
+    die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
+    my @locs=( $lcl_store.".ocr.pdf", $f_path .$f_base.".ocr.pdf", $fn );
+    foreach (@locs) {
+        $fn=$_;
+	last if -r $fn;
+    }
+    # Should not happen....
+    die "Cannot read: $fn" unless -r $fn;
+
+    return $fn;
+}
+
+# try to get text from document
+#  in order local_storage...ocr.pdf orig...ocr.pdf   orig.pdf
 sub pdf_totext {
     my $self = shift;
     my $fn   = shift;
