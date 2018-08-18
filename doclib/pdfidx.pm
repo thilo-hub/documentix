@@ -277,7 +277,7 @@ sub w_load {
 
 sub ocrpdf {
     my $self = shift;
-    my ( $inpdf, $outpdf, $ascii ) = @_;
+    my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
     my $maxcpu = $Docconf::config->{number_ocr_threads};
     print STDERR "ocrpdf $inpdf $outpdf\n" if $debug > 1;
     $inpdf  = abs_path($inpdf);
@@ -319,7 +319,7 @@ sub ocrpdf {
 	if ( @cpages ) {
 
 	    $fail += do_pdfunite( $outpdf, @cpages );
-	    $fail += do_pdfstamp( $outpdf );
+	    $fail += do_pdfstamp( $outpdf, $md5 );
 	    $txt = do_pdftotext($outpdf);
 	}
 	unlink(@outpages) unless $debug > 2;
@@ -563,7 +563,7 @@ sub pdf_totext {
 
     # do the ocr conversion
     mkdir($lcl_store_dir) unless -d $lcl_store_dir;
-    return $self->ocrpdf( $fn, $lcl_store .".ocr.pdf" );
+    return $self->ocrpdf( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
 }
 
 sub pdf_text {
@@ -972,14 +972,17 @@ sub do_pdftocairo {
 }
 
 sub do_pdfstamp {
-    my ( $outpdf ) = shift;
+    my ( $outpdf,$cmt ) = @_;
     my $outpdf1=$outpdf.".pdf";
     my $creator;
     my $fail=0;
     open(my $ver,"version.txt");
     chomp($creator=<$ver>);
     close($ver);
-    qexec("exiftool","-Producer=$creator","-overwrite_original_in_place",$outpdf);
+    print STDERR "Stamp: $cmt\n" if  $Docconf::config->{debug} > 3;
+    my @tg="-Producer=$creator";
+    push @tg,"-Keywords=$cmt" if $cmt;
+    qexec("exiftool",@tg,"-overwrite_original_in_place",$outpdf);
     qexec("qpdf","--linearize",$outpdf,$outpdf1);
     $fail++ unless  -r $outpdf1;
     rename $outpdf1,$outpdf unless $fail;
