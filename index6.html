@@ -173,7 +173,7 @@ $('#fire').on(
 		    </div>
 		    <div class="descr">
 			<div class="doclink" onclick="event.stopPropagation()">
-			<a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}{{:doct}}" download> </a> {{:doc}}
+			<a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}{{:doct}}" download> {{:doc}}</a> 
 			</div>
 			<a class="dtags">
 			    <p class="tagfield" >
@@ -309,7 +309,23 @@ $('#fire').on(
 			<hr>
 			<fieldset>
 			    <form action="submit.php" onsubmit="alert('Your submitted HTML was:\n\n' + document.getElementById('noise').value); return false;">
-		    <textarea id="noise" name="noise" class="widgEditor nothing">Temporary store notes here</textarea>
+		    <textarea id="noise" name="noise" class="widgEditor nothing">
+Temporary store notes here
+<ol>
+<li>
+<li>
+<li>
+<li>
+<li>
+<li>
+<li>
+<li>
+<li>
+<li>
+</ol>
+
+</textarea>
+
 			</fieldset>
 			<fieldset class="submit">
 				<input type="submit" value="Check the submitted code" />
