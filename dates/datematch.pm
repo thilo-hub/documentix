@@ -66,7 +66,7 @@ sub extr_date
 	# return:
 	# 
 	$in =~ s/\b\d\d? +\d\d? +\d\d?\b//sg;
-	if ($in =~ s/\b($d($s)$m\g{-2}$Y|$m($s)$d\g{-2}$Y|$M$s$y)\b//si)
+	if ($in =~ s/\b($d($s)$m\g{-2}$Y|$m($s)$d\g{-2}$Y|$M$s$Y)\b//si)
 	{
 		my $dy=todate($+{Y},$+{M},$+{D});
 		return ( $`,$dy,$&,$');
