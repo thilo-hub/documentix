@@ -36,7 +36,7 @@ LABEL description="documentix provides a document management system\
 RUN ./run_local.sh install/install.sh  ;\
 	 ./conf_op.pl server_listen_if 0.0.0.0:80 ;\
 	 ./conf_op.pl cgi_enabled 1 ;\
-	 ./conf_op.pl "index_html" "index3.html"
+	 ./conf_op.pl "index_html" "index6.html"
 
 # VOLUME Documents:/documentix/Documents
 # VOLUME incomming:/documentix/Documents/incomming
