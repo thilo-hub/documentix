@@ -11,7 +11,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y a2ps libjson-perl
 #COPY locals/tess_bin.tar.gz /
 RUN test -f /tess_bin.tar.gz && tar xf /tess_bin.tar.gz -C /usr  && rm /tess_bin.tar.gz || true
 
-RUN which tesseract || apt-get install -y  tesseract-ocr tesseract-ocr-deu tesseract-ocr-equ 
+RUN which tesseract || apt-get install -y  tesseract-ocr tesseract-ocr-deu 
 
 # Either use git
 RUN apt-get -y install git 
