@@ -16,7 +16,6 @@ CREATE TABLE Users (
 	passwd                    varchar(255) not null,
 	Disabled                  char(1) default '0'
 	);
-CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE Groups (
     gid                       integer primary key autoincrement,
     Name                      char(31) not null
