@@ -1,11 +1,11 @@
 FROM ubuntu:latest
 MAINTAINER thilo-hub@nispuk.com
-RUN apt-get update &&  apt-get install -y sqlite3 libdbd-sqlite3-perl  \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update &&  apt-get install -y sqlite3 libdbd-sqlite3-perl  \
 	 libhtml-template-perl  libdigest-md5-file-perl \
 	 libxmlrpc-lite-perl\
 	 imagemagick unoconv poppler-utils
-RUN apt-get install -y calibre-bin
-RUN apt-get install -y a2ps libjson-perl
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y calibre-bin
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y a2ps libjson-perl
 
 #uncomment if you have a locally compiled tesseract version
 #COPY locals/tess_bin.tar.gz /
