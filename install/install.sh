@@ -29,7 +29,7 @@ else
 echo "check the availability of required perl modules..."
 # Filter out some false negatives
 find . -name '*.p[lm]' -type f | egrep -v './local' | xargs cat | 
-   ./run_local.sh perl -Idates  -ne '
+   ./run_local.sh perl -I. -Idates  -ne '
   use Docconf;
   $main::debug=0;
   BEGIN{
@@ -71,7 +71,7 @@ case $OPT in
 		DB_V="$(sqlite3 db/doc_db.db 'select value  from config where var = "version"')"
 	        if [ -z "$DB_V" -o "$DB_V" '<' "$INSTALL_V" ]; then
 			# Do all db-updates
-			perl tests/update_incoming.pl
+			perl -I . tests/update_incoming.pl
 			sqlite3 db/doc_db.db "insert or replace into config (var,value) values('version','$INSTALL_V')"
 		fi
 		test -f popuser/popfile.pid ||
