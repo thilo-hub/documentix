@@ -10,6 +10,7 @@ $ENV{"PATH"} =~ s|^|/tmp/samba:|;
 
 
 
+use File::Basename;
 use Date::Parse;
 use Docconf;
 use doclib::pdfidx;
@@ -38,16 +39,19 @@ foreach ( @onserver )
     my ( $sf, $tf ) ;
 
     my $o=undef;
-    next if -d $f;
+    next if -d $f; 
+    # Check if same file is already known (size & date & name)
     next if  -f $f
       && (( $sf, $tf ) = ( stat($f) )[ 7, 9 ] )
       && $sf == $s
       && $tf == $t ;
 
     if ( -f $f ) {
-	my $idx="01";
- 	$idx++ while ( -f "$f.$idx" ) ;
-    	$o="$f.$idx";
+	my $o="$f";
+        while ( -f $o ) 
+	{ 
+		$o =~ s/(\.([0-9]+))?(\.pdf)/my $r=($2||"00"); $r++;  ".$r$3"/e;
+	}
 	rename $f,$o;
     }
     die "File exists: $1" if -f $f;
@@ -77,9 +81,15 @@ if (@new) {
            close($fh);
            my $digest = $ctx->hexdigest;
 	   my $wdir=$pdfidx->get_store($digest,1);
+	   # Link (try hard) file to store location
+
+           my $on = $wdir."/". basename($_);
+
+	   link ($_,$on) or die "Cannot create link to: $on ($!)"
+		unless -f $on;
 
 
-	    my $txt = $pdfidx->index_pdf( $_, $wdir );
+	    my $txt = $pdfidx->index_pdf( $on );
 	    my $c = substr( $txt->{"Content"}, 0, 150 );
 	    $c =~ s/[\r\n]+/\n     #/g;
 	    print "R: $txt->{Docname} : $txt->{Mime} : $c ...\n";
