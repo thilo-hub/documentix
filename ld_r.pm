@@ -45,12 +45,12 @@ sub update_caches {
         q{ create table if not exists config (var primary key unique,value)},
         q{ delete from cache_lst where query like '%...%' },
         q{ create temporary table cache_q1 as
-    select a.*,b.docid idx,snippet(text) snippet  from cache_lst a,text b 
-           where text match a.query and idx > 
+    select a.*,b.docid idx,snippet(text) snippet  from cache_lst a,text b
+           where text match a.query and idx >
                      (select value from config where var="max_idx") ;},
 q{ create temporary table cache_q2 as select qidx,count(*) n from cache_q1 group by qidx;},
 q{ insert or replace into cache_q (qidx,idx,snippet) select qidx,idx,snippet from cache_q1;},
-q{ insert or replace into cache_lst (qidx,query,nresults,last_used) select qidx,query,nresults+n,last_used 
+q{ insert or replace into cache_lst (qidx,query,nresults,last_used) select qidx,query,nresults+n,last_used
 	from cache_lst natural join cache_q2;},
 q{ insert or replace  into config (var,value) select "max_idx",max(idx) from hash;},
         q{drop table cache_q1},
@@ -89,8 +89,8 @@ q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text,
 
     $dh->do(
         q{
-		CREATE TRIGGER if not exists cache_del before delete on cache_lst begin delete 
-			from cache_q where cache_q.qidx = old.qidx ; 
+		CREATE TRIGGER if not exists cache_del before delete on cache_lst begin delete
+			from cache_q where cache_q.qidx = old.qidx ;
 		end;
 		}
     );
@@ -99,35 +99,85 @@ q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text,
 my $cache_lookup = q{select qidx from cache_lst where query = ?};
 my $cache_setup  = q{insert or abort into cache_lst (query) values(?)};
 
+sub search {
+    my ( $self, $search ) = @_;
+    my $dh = $self->{"dh"};
+
+    # Check if search is already captured
+    return undef unless $search;
+    my $idx = $dh->selectrow_array( $cache_lookup, undef, $search );
+    return $idx if $idx;
+
+    #     if ( $search && !$idx ) {
+    # 	$idx = search( $self, $search );
+    #     }
+
+    my $srch = $self->{"search_txt"};
+
+    # not yet done
+    # create cached results table
+
+    $dh->do("begin transaction");
+
+    $dh->do( $cache_setup, undef, $search );
+    $idx = $dh->last_insert_id( undef, undef, undef, undef );
+
+    # results are now available in cache_lst
+    my @sargs = ( $idx, $search );
+
+    my $date_match =
+      '(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d)(\s|$)';
+    if ( $search && $search =~ s/date:$date_match//i ) {
+
+        # daterange specified...
+        # remove range from search string and process normally
+        # Search restrict to date-range ( will reduce output list )
+        @sargs = ( $idx, $1, $2 );
+        $srch = $self->{"search_date"};
+        unless ( $search =~ /^\s*$/ ) {
+            push @sargs, $search;
+            $srch = $self->{"search_date_txt"};
+        }
+    }
+
+    # Do search and filter dates
+    #print STDERR "S:$cached_search\n";
+    print STDERR "A:" . join( ":", @sargs ) . ":\n";
+    my $nres = $srch->execute(@sargs);
+
+    $self->{"update_cache"}->execute( $nres, $idx );
+    $dh->do("commit");
+    return $idx;
+}
+
 # qidx,idx,rowid,snippet from cache_q_tmp
 
 sub ldres {
     my $self = shift;
     my $dh   = $self->{"dh"};
-    unless ( $self->{"cached_search"} ) {
+    unless ( $self->{"search_txt"} ) {
 
         # This is the main search query in the FTS table,
         # the result is saved in a caching table
         my $cached_search =
-          q{insert or ignore into cache_q ( qidx,idx,snippet ) select 
-			?,docid,snippet(text) 
-			from text  join hash on (docid=idx) where text match ? 
+          q{insert or ignore into cache_q ( qidx,idx,snippet ) select
+			?,docid,snippet(text)
+			from text  join hash on (docid=idx) where text match ?
 		};
-        $self->{"cached_search"} = $dh->prepare($cached_search);
+        $self->{"search_txt"} = $dh->prepare($cached_search);
         $cached_search =~
           s/where/natural join dates where date between ? and ? and/;
-        $self->{"cached_search3"} = $dh->prepare($cached_search);
+        $self->{"search_date_txt"} = $dh->prepare($cached_search);
         $cached_search =
           "insert or ignore into cache_q (qidx, idx, snippet) select ?,idx,mtext
 				from dates where date between ? and ?";
-        $self->{"cached_search2"} = $dh->prepare($cached_search);
-        $self->{"update_cache"}   = $dh->prepare(
+        $self->{"search_date"}  = $dh->prepare($cached_search);
+        $self->{"update_cache"} = $dh->prepare(
 'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?'
         );
     }
 
     my ( $class, $idx0, $ppage, $search ) = @_;
-    my $srch = $self->{"cached_search"};
     $search =~ s/\s+$// if defined($search);
     $search =~ s/^\s+// if defined($search);
 
@@ -140,46 +190,7 @@ sub ldres {
     $class =~ s/:\d+$// if $class;
     undef $class if defined($class) && $class eq $ANY;
 
-    # Check if search is already captured
-    my $idx = $dh->selectrow_array( $cache_lookup, undef, $search );
-    if ( $search && !$idx ) {
-
-        # not yet done
-        # create cached results table
-
-        $dh->do("begin transaction");
-
-        $dh->do( $cache_setup, undef, $search );
-        $idx = $dh->last_insert_id( undef, undef, undef, undef );
-
-        # results are now available in cache_lst
-        my @sargs = ( $idx, $search );
-
-        my $date_match =
-          '(^|\s+)(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d)(\s|$)';
-        if ( $search && $search =~ s/$date_match//i ) {
-
-            # daterange specified...
-            # remove range from search string and process normally
-            # Search restrict to date-range ( will reduce output list )
-            my $dmin = $2;
-            my $dmax = $3;
-            $srch = $self->{"cached_search2"};
-            @sargs = ( $idx, $dmin, $dmax );
-            unless ( $search =~ /^\s*$/ ) {
-                push @sargs, $search;
-                $srch = $self->{"cached_search3"};
-            }
-        }
-
-        # Do search and filter dates
-        #print STDERR "S:$cached_search\n";
-        print STDERR "A:" . join( ":", @sargs ) . ":\n";
-        my $nres = $srch->execute(@sargs);
-
-        $self->{"update_cache"}->execute( $nres, $idx );
-        $dh->do("commit");
-    }
+    my $idx = search( $self, $search );
 
     #Filter tags & dates
     my $subsel = "";
@@ -199,68 +210,61 @@ q{insert into taglist (tagid) select tagid from tagname where tagname=?}
         }
         $dh->do(q{drop table if exists docids});
         $dh->do(
-            q{create temporary table docids as 
-			select distinct(idx) idx  from taglist natural join tags}
+q{create temporary table docids as select distinct(idx) idx  from taglist natural join tags}
         );
         $subsel = "docids natural join ";
     }
 
     my ( $classes, $ndata, $get_res );
     $dh->do(qq{drop table if exists drange });
-    if ($search) {
+    if ($idx) {
+
+        # Return query ($idx) result
 
         # get final reslist
         $dh->do(q{drop table if exists resl});
-        my $rest = qq{create temporary table resl as 
-			select * from $subsel cache_q where qidx = ?};
-
+        my $rest =
+qq{create temporary table resl as select * from $subsel cache_q where qidx = ?};
         $dh->do( $rest, undef, $idx );
         $dh->do(
-            qq{ delete from resl where idx in (
-			select idx from tags where tagid in (
-				select tagid from tagname where tagname = "deleted"))
-			}
+qq{ delete from resl where idx in ( select idx from tags where tagid in ( select tagid from tagname where tagname = "deleted")) }
         );
 
-        $dh->do(
-            qq{ create temporary table drange as 
-			select min(date) min,max(date) max 
-			    from dates natural join cache_q where qidx = ?},
-            undef, $idx
-        );
+# $dh->do( qq{ create temporary table drange as select min(date) min,max(date) max from dates natural join cache_q where qidx = ?}, undef, $idx );
 
         # get list of classes
-        $classes = q{select tagname,count(*) from tags natural join tagname 
-			where idx in ( select idx from resl) group by 1 order by 1};
+        $classes =
+q{select tagname,count(*) from tags natural join tagname where idx in ( select idx from resl) group by 1 order by 1};
 
         # get number of results
         $ndata = qq{select count(*) from resl};
 
         # get display list
-        $get_res = qq{ select * from resl join metadata m using (idx) 
-			where m.tag = "mtime" order by cast(m.value as integer) desc limit ?,?};
+        $get_res =
+qq{ select * from resl join metadata m using (idx) where m.tag = "mtime" order by cast(m.value as integer) desc};
     }
     else {
+# Return all
+# $dh->do( qq{ create temporary table drange as select min(date),max(date) from dates } );
+
         $classes =
 qq{ select tagname,count(*) from $subsel tags natural join tagname group by 1};
         $ndata = qq{ select count(*) from $subsel hash };
 
         $get_res =
-qq{ select s.idx,s.value snippet from $subsel metadata s join metadata m using (idx) 
-			where s.tag="Content" and m.tag="mtime" order by cast(m.value as integer)  desc limit ?,?  };
-        $dh->do(
-qq{ create temporary table drange as select min(date),max(date) from dates }
-        );
+qq{ select s.idx,s.value snippet from $subsel metadata s join metadata m using (idx) where s.tag="Content" and m.tag="mtime" order by cast(m.value as integer)  desc  };
     }
 
-    my $dater =
-      join( " ... ", $dh->selectrow_array("select * from drange") || "" );
+# my $dater = join( " ... ", $dh->selectrow_array("select * from drange") || "" );
     $classes = $dh->selectall_arrayref($classes);
     $ndata   = $dh->selectrow_array($ndata);
+
+    #  Add selection of slice wanted
+    $get_res .= " limit ?1 offset ?2";
     $get_res = $dh->prepare($get_res);
 
-    $get_res->bind_param( 1, int( $idx0 - 1 ) );
-    $get_res->bind_param( 2, $ppage );
+    $get_res->bind_param( 2, int( $idx0 - 1 ) );
+    $get_res->bind_param( 1, $ppage );
     $get_res->execute();
 
     # unshift @$classes,[$ANY,$ndata];
@@ -275,7 +279,7 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
             $ts = 9 if $ts < 9;
             my $rr = $$_[0];
             $filtered = "filtered" if ( $class && $rr !~ /$class/ );
-            $_ = "<input type='button'  name='button_name' 
+            $_ = "<input type='button'  name='button_name'
 		   value='$rr' class='tagbox $filtered' style='font-size: ${ts}px; $bg ' />";
         } @$classes
     ];
@@ -289,7 +293,7 @@ qq{ create temporary table drange as select min(date),max(date) from dates }
         pageno   => int( ( $idx0 - 1 ) / $ppage ) + 1,
         nitems   => int($ppage),
 
-        dates => $dater,
+        # dates => $dater,
         query => $search,
 
         classes => join( "", @$classes ),
