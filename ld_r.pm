@@ -1,6 +1,5 @@
 package ld_r;
 
-#!/usr/bin/perl
 use strict;
 use warnings;
 use Data::Dumper;
@@ -23,8 +22,8 @@ my $myhost = hostname();
 my $ANY = "*ANY*";
 
 sub new {
-    my $class = shift;
-    my $chldno= shift;
+    my $class  = shift;
+    my $chldno = shift;
 
     my $self = {};
     $self->{pd} = pdfidx->new($chldno);
@@ -44,7 +43,7 @@ sub update_caches {
     my @sql = (
         q{ begin exclusive transaction },
         q{ create table if not exists config (var primary key unique,value)},
-	q{ delete from cache_lst where query like '%...%' },
+        q{ delete from cache_lst where query like '%...%' },
         q{ create temporary table cache_q1 as
     select a.*,b.docid idx,snippet(text) snippet  from cache_lst a,text b 
            where text match a.query and idx > 
@@ -98,32 +97,37 @@ q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text,
 }
 
 my $cache_lookup = q{select qidx from cache_lst where query = ?};
-my $cache_setup = q{insert or abort into cache_lst (query) values(?)};
-
+my $cache_setup  = q{insert or abort into cache_lst (query) values(?)};
 
 # qidx,idx,rowid,snippet from cache_q_tmp
 
 sub ldres {
     my $self = shift;
     my $dh   = $self->{"dh"};
-    unless ($self->{"cached_search"}){
-	# This is the main search query in the FTS table,
-	# the result is saved in a caching table
-	my $cached_search = q{insert or ignore into cache_q ( qidx,idx,snippet ) select 
+    unless ( $self->{"cached_search"} ) {
+
+        # This is the main search query in the FTS table,
+        # the result is saved in a caching table
+        my $cached_search =
+          q{insert or ignore into cache_q ( qidx,idx,snippet ) select 
 			?,docid,snippet(text) 
 			from text  join hash on (docid=idx) where text match ? 
 		};
-	$self->{"cached_search"} = $dh->prepare($cached_search);
-	$cached_search =~ s/where/natural join dates where date between ? and ? and/;
-	$self->{"cached_search3"} = $dh->prepare($cached_search);
-	$cached_search = "insert or ignore into cache_q (qidx, idx, snippet) select ?,idx,mtext
+        $self->{"cached_search"} = $dh->prepare($cached_search);
+        $cached_search =~
+          s/where/natural join dates where date between ? and ? and/;
+        $self->{"cached_search3"} = $dh->prepare($cached_search);
+        $cached_search =
+          "insert or ignore into cache_q (qidx, idx, snippet) select ?,idx,mtext
 				from dates where date between ? and ?";
-	$self->{"cached_search2"} = $dh->prepare($cached_search);
-	$self->{"update_cache"}= $dh->prepare( 'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?');
+        $self->{"cached_search2"} = $dh->prepare($cached_search);
+        $self->{"update_cache"}   = $dh->prepare(
+'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?'
+        );
     }
 
     my ( $class, $idx0, $ppage, $search ) = @_;
-    my $srch=$self->{"cached_search"};
+    my $srch = $self->{"cached_search"};
     $search =~ s/\s+$// if defined($search);
     $search =~ s/^\s+// if defined($search);
 
@@ -139,63 +143,63 @@ sub ldres {
     # Check if search is already captured
     my $idx = $dh->selectrow_array( $cache_lookup, undef, $search );
     if ( $search && !$idx ) {
-	# not yet done
+
+        # not yet done
         # create cached results table
 
-
-	$dh->do("begin transaction");
+        $dh->do("begin transaction");
 
         $dh->do( $cache_setup, undef, $search );
         $idx = $dh->last_insert_id( undef, undef, undef, undef );
 
-       # results are now available in cache_lst
-	my @sargs=($idx,$search);
+        # results are now available in cache_lst
+        my @sargs = ( $idx, $search );
 
-	my $date_match='(^|\s+)(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d)(\s|$)';
-	if (   $search && $search =~ s/$date_match//i )
-	{
-	    # daterange specified...
-	    # remove range from search string and process normally
-	    # Search restrict to date-range ( will reduce output list )
-	    my $dmin = $2;
-	    my $dmax = $3;
-	    $srch=$self->{"cached_search2"};
-	    @sargs=($idx,$dmin,$dmax);
-	    unless ( $search =~ /^\s*$/ ) {
-		push @sargs ,$search;
-		$srch=$self->{"cached_search3"};
-	    }
-	}
+        my $date_match =
+          '(^|\s+)(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d)(\s|$)';
+        if ( $search && $search =~ s/$date_match//i ) {
 
+            # daterange specified...
+            # remove range from search string and process normally
+            # Search restrict to date-range ( will reduce output list )
+            my $dmin = $2;
+            my $dmax = $3;
+            $srch = $self->{"cached_search2"};
+            @sargs = ( $idx, $dmin, $dmax );
+            unless ( $search =~ /^\s*$/ ) {
+                push @sargs, $search;
+                $srch = $self->{"cached_search3"};
+            }
+        }
 
-
-	# Do search and filter dates
-	#print STDERR "S:$cached_search\n";
-	print STDERR "A:".join(":",@sargs).":\n";
+        # Do search and filter dates
+        #print STDERR "S:$cached_search\n";
+        print STDERR "A:" . join( ":", @sargs ) . ":\n";
         my $nres = $srch->execute(@sargs);
 
-        $self->{"update_cache"}->execute($nres,$idx);
-	$dh->do("commit");
+        $self->{"update_cache"}->execute( $nres, $idx );
+        $dh->do("commit");
     }
- 
 
     #Filter tags & dates
     my $subsel = "";
     if ($class) {
-	# If tagname(s) specified,
-	#  create junction list of docids
+
+        # If tagname(s) specified,
+        #  create junction list of docids
         $dh->do(q{drop table if exists taglist});
         $dh->do(
-            q{create temporary table taglist ( tagid integer primary key unique )});
+q{create temporary table taglist ( tagid integer primary key unique )}
+        );
         my $sth = $dh->prepare(
-            q{insert into taglist (tagid) select tagid from tagname where tagname=?}
+q{insert into taglist (tagid) select tagid from tagname where tagname=?}
         );
         foreach ( split( /\s*,\s*/, $class ) ) {
             $sth->execute($_);
         }
         $dh->do(q{drop table if exists docids});
         $dh->do(
-		q{create temporary table docids as 
+            q{create temporary table docids as 
 			select distinct(idx) idx  from taglist natural join tags}
         );
         $subsel = "docids natural join ";
@@ -211,12 +215,15 @@ sub ldres {
 			select * from $subsel cache_q where qidx = ?};
 
         $dh->do( $rest, undef, $idx );
-	$dh->do( qq{ delete from resl where idx in (
+        $dh->do(
+            qq{ delete from resl where idx in (
 			select idx from tags where tagid in (
 				select tagid from tagname where tagname = "deleted"))
-			});
+			}
+        );
 
-        $dh->do( qq{ create temporary table drange as 
+        $dh->do(
+            qq{ create temporary table drange as 
 			select min(date) min,max(date) max 
 			    from dates natural join cache_q where qidx = ?},
             undef, $idx
@@ -234,13 +241,15 @@ sub ldres {
 			where m.tag = "mtime" order by cast(m.value as integer) desc limit ?,?};
     }
     else {
-        $classes = qq{ select tagname,count(*) from $subsel tags natural join tagname group by 1};
+        $classes =
+qq{ select tagname,count(*) from $subsel tags natural join tagname group by 1};
         $ndata = qq{ select count(*) from $subsel hash };
 
-        $get_res = qq{ select s.idx,s.value snippet from $subsel metadata s join metadata m using (idx) 
+        $get_res =
+qq{ select s.idx,s.value snippet from $subsel metadata s join metadata m using (idx) 
 			where s.tag="Content" and m.tag="mtime" order by cast(m.value as integer)  desc limit ?,?  };
         $dh->do(
-		qq{ create temporary table drange as select min(date),max(date) from dates }
+qq{ create temporary table drange as select min(date),max(date) from dates }
         );
     }
 
@@ -248,7 +257,7 @@ sub ldres {
       join( " ... ", $dh->selectrow_array("select * from drange") || "" );
     $classes = $dh->selectall_arrayref($classes);
     $ndata   = $dh->selectrow_array($ndata);
-    $get_res    = $dh->prepare($get_res);
+    $get_res = $dh->prepare($get_res);
 
     $get_res->bind_param( 1, int( $idx0 - 1 ) );
     $get_res->bind_param( 2, $ppage );
@@ -365,25 +374,25 @@ sub get_cell {
     $tip =~ s/\n/<br>/g;
 
     # $meta->{PopFile}
-    $s = ($meta->{"size"}->{"value"} || "0")
-		unless defined($s);
-    my $so=$s;
-    $so = sprintf("%3.1fMb",$s/1024/1024) if $s > 1024*1024;
-    $so = sprintf("%3.1fKb",$s/1024) if $s > 1024;
+    $s = ( $meta->{"size"}->{"value"} || "0" )
+      unless defined($s);
+    my $so = $s;
+    $so = sprintf( "%3.1fMb", $s / 1024 / 1024 ) if $s > 1024 * 1024;
+    $so = sprintf( "%3.1fKb", $s / 1024 )        if $s > 1024;
     $so = "--" unless defined($s);
-    $d = scalar(localtime($meta->{"mtime"}->{"value"} || 1))
-		unless $d =~ /:.*:/;
+    $d = scalar( localtime( $meta->{"mtime"}->{"value"} || 1 ) )
+      unless $d =~ /:.*:/;
     my $day = $d;
     $day =~ s/\s+\d+:\d+:\d+\s+/ /;
     my $vals = {
-        md5 => $md5,
-        doc => $short_name,
+        md5  => $md5,
+        doc  => $short_name,
         doct => $short_ext,
-        tip => $tip,
-        pg  => $p,
-        sz  => $so,
-        dt  => $day,
-        tg  => $tags,
+        tip  => $tip,
+        pg   => $p,
+        sz   => $so,
+        dt   => $day,
+        tg   => $tags,
     };
     return $vals;
 }
