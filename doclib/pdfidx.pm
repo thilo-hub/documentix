@@ -10,7 +10,8 @@ use File::Temp qw/tempfile tmpnam tempdir/;
 use File::Basename;
 use Cwd 'abs_path';
 use Data::Dumper;
-$File::Temp::KEEP_ALL = 1;
+use doclib::datelib;
+# $File::Temp::KEEP_ALL = 1;
 my $debug  = $Docconf::config->{debug};
 
 my $tools = "/usr/pkg/bin";
@@ -67,7 +68,6 @@ sub dbname {
 
 sub trace_db {
     my $dh = shift;
-    open( TRC, ">>/tmp/db.trace" );
 
     sub trace_it {
         my $r = shift;
@@ -279,16 +279,18 @@ sub ocrpdf {
     my $self = shift;
     my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
     my $maxcpu = $Docconf::config->{number_ocr_threads};
+    my @outpages;
     print STDERR "ocrpdf $inpdf $outpdf\n" if $debug > 1;
     $inpdf  = abs_path($inpdf);
     $outpdf = abs_path($outpdf);
-    my $txt  = undef;
     my $fail = 0;
+    my $pg = 1;
 
     my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
     $fail += do_pdftocairo( $inpdf, "$tmpdir/page" );
     my @inpages = glob( $tmpdir->dirname . "/page*" );
 
+    print STDERR "Convert ".scalar(@inpages)." pages\n" if $debug > 1;
     foreach $in (@inpages) {
         my $outpage = $tmpdir->dirname . "/o-page-" . $pg++;
         my $outim   = $in . ".jpg";
@@ -324,7 +326,8 @@ sub ocrpdf {
 	}
 	unlink(@outpages) unless $debug > 2;
     }
-    rmdir $tmpdir unless $debug > 2;
+system("ls -ltr /var/tmp");
+    #  rmdir $tmpdir unless $debug > 2;
     return $txt;
 }
 
@@ -353,7 +356,7 @@ sub index_pdf {
         && !( $fn =~ /$Docconf::config->{local_storage}/ ) )
     {
         my $f_dir = dirname($fn);
-        my $new   = self->get_store( $md5_f,0);
+        my $new   = $self->get_store( $md5_f,0);
         mkdir $new
           unless -d $new;
         $new .= "/" . basename($fn);
@@ -373,7 +376,7 @@ sub index_pdf {
       ->execute( $md5_f, $fn, hostname() );
 
     # $idx = $dh->last_insert_id( "", "", "", "" );
-    my ($idx) =
+    ($idx) =
       $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
     print STDERR "Loading: ($idx) $fn\n";
     $dh->do("commit");
@@ -429,6 +432,8 @@ sub index_pdf {
 	$dh->prepare(q{delete from file where file=?})->execute($fn);
 	$idx=$type;
     }
+    datelib::fixup_dates($dh);
+    
     return $idx, \%meta;
 
     sub tp_any {
@@ -914,7 +919,7 @@ my $tesseract = "tesseract";
 sub do_convert_ocr {
     my ( $in, $outim ) = @_;
     @cmd = (
-        qw{convert -density 150 },
+        qw{convert -density 300 },
         $in, qw {-trim -quality 70 -flatten -sharpen 0x1.0}, $outim
     );
     $msg .= "CMD: " . join( " ", @cmd, "\n" );
