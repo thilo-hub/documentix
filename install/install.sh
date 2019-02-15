@@ -22,7 +22,6 @@ else
 	/bin/echo -n "Test for: " ; which pdftocairo || (echo "FAILED: Need pdftocairo from Poppler to help for OCR" ; false) || ERR=90
 	/bin/echo -n "Test for: " ; which convert || (echo "FAILED: Need convert from ImageMagic  to help for OCR" ; false) || ERR=90
 	test -d $(dirname "$DB_FILE") || mkdir $(dirname "$DB_FILE") || exit 98
-	test -f "$DB_FILE" || sqlite3 $DB_FILE < install/doc_db.sql
 	test -d "$INDIR" || mkdir -p "$INDIR"
 	test -d popuser || ( mkdir popuser && cp install/popuser_default.cfg popuser/popfile.cfg )
 
@@ -68,11 +67,15 @@ fi
 
 case $OPT in
 	start)
-		DB_V="$(sqlite3 db/doc_db.db 'select value  from config where var = "version"')"
+		# Ensure db is there (or old db gets updated)
+		if [ ! -r "$DB_FILE" ]; then
+			test -f "$DB_FILE" || sqlite3 $DB_FILE < install/doc_db.sql
+		fi
+		DB_V="$(sqlite3 "$DB_FILE" 'select value  from config where var = "version"')"
 	        if [ -z "$DB_V" -o "$DB_V" '<' "$INSTALL_V" ]; then
 			# Do all db-updates
 			perl -I . tests/update_incoming.pl
-			sqlite3 db/doc_db.db "insert or replace into config (var,value) values('version','$INSTALL_V')"
+			sqlite3 "$DB_FILE" "insert or replace into config (var,value) values('version','$INSTALL_V')"
 		fi
 		test -f popuser/popfile.pid ||
 			./run_local.sh perl start_pop.pl $PWD  || exit 96
