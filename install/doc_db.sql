@@ -33,8 +33,7 @@ CREATE TABLE tagname (tagid integer primary key autoincrement, tagname text uniq
 CREATE TABLE tags (tagid integer,idx integer,constraint tagid unique (tagid,idx));
 CREATE TABLE meta_tag (tagv integer primary key autoincrement,tag text unique);
 CREATE TABLE data ( idx integer primary key , thumb text, ico text, html text);
-CREATE TABLE IF NOT EXISTS "db.dates"(date INT,mtext TEXT,idx TEXT);
-CREATE TABLE IF NOT EXISTS "dates"(date INT,mtext TEXT,idx TEXT);
+CREATE TABLE IF NOT EXISTS "dates"(date INT,mtext TEXT,idx integer);
 CREATE TABLE cache_lst ( qidx integer primary key autoincrement,
 		query text unique, nresults integer, last_used integer );
 CREATE TABLE cache_q ( qidx integer, idx integer, id integer, snippet text, unique(qidx,idx));
