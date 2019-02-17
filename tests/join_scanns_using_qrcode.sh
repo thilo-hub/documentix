@@ -96,7 +96,7 @@ sub join_pdf
     my @o=sort {$a cmp $b}  glob("$tmp/page*.pdf"); 
     print STDERR "Joining ".(scalar(@o)-scalar(@l))." front pages and ".scalar(@l)." back pages to $out\n";
     splice(@o,($strip_front-1)*2,2);
-    system("pdfjoin","-q","-o",$out,@o);
+    system("pdfunite",@o,$out);
     unlink @o or die "failed remove @o";
     chmod 0,$front,$back;
 }
