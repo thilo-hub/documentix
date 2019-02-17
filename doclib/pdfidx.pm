@@ -326,7 +326,7 @@ sub ocrpdf {
 	}
 	unlink(@outpages) unless $debug > 2;
     }
-system("ls -ltr /var/tmp");
+# system("ls -ltr /var/tmp");
     #  rmdir $tmpdir unless $debug > 2;
     return $txt;
 }
@@ -975,8 +975,23 @@ sub do_convert_icon {
 sub do_tesseract {
     my ( $image, $outpage ) = @_;
     my $msg;
+    my @ckori = ( $tesseract, qw{ --psm 0},$image,"-" );
+
+    my $r=qx{@ckori};
+
+    if ($r =~ /Orientation in degrees: 180/) {
+        print STDERR "Rotate...\n";
+	my $oi=$image;
+        $oi =~ s/(\.[^\.]*)$/_rot$1/;
+	my @rot= ( $convert , $image,qw{-rotate 180},$oi);
+	$msg .= "CMD: " . join( " ", @rot, "\n" ) if $Docconf::config->{debug} > 3;
+	system(@rot);
+	$image=$oi;
+    }
     my @cmd = ( $tesseract, $image, $outpage, qw{ -l deu+eng --psm 1 pdf} );
     my @cmd1 = ( $tesseract, $image, $outpage, qw{ -l deu+eng --psm 1 --oem 1 pdf} );
+
+    
     $msg .= "CMD: " . join( " ", @cmd, "\n" ) if $Docconf::config->{debug} > 3;
     print STDERR "$msg" if $Docconf::config->{debug} > 3;
     $outpage .= ".pdf";
