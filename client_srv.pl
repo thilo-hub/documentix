@@ -40,6 +40,14 @@ my $pwfile=".htpasswd";
 open(LOGGER,">>/tmp/documentix.log");
 { my $oh=select LOGGER; $|=1; select $oh; }
 
+sub Log
+{
+  my $lvl = shift;
+  return if $Docconf::config->{debug} < $lvl;
+  print LOGGER (@_);
+}
+
+
 my @unrestricted_dirs = (
   "web/"
 );
@@ -127,6 +135,7 @@ my $chldno=0;
             else {                    # child
                 $_ = 'DEFAULT' for @SIG{qw/ INT TERM CHLD /};
                 http_child($d,$chldno);
+		print STDERR "Child terminated\n";
                 exit;
             }
 	    $chldno++;
@@ -169,13 +178,13 @@ sub http_child {
         { p => '/([^\?]+)',                  cb => \&do_anycgi },
     );
 
-    my $i;
+    my $i=0;
     my $t0 = [gettimeofday];
     my $rq = "Starting";
     while ( ++$i < $O{'listen-max-req-per-child'} ) {
         last if -r "stop";
         my $ev=tv_interval ( $t0, [gettimeofday]);
-	print LOGGER "Elapsed: $ev s ($rq)\n";
+	Log(0, "Elapsed: $ev s ($rq)\n");
 
         my $c = $d->accept        or last;
         $t0= [gettimeofday];
@@ -196,12 +205,17 @@ sub http_child {
 
         # Get args POST/GET -- I assume all ARGS are SHORT
         my $arg;
-        foreach ( split( /&/, $r->content ) ) {
+        unless ( $r->header("content-type")  eq 'application/octet-stream') {
+        foreach ( split( /&/, $r->decoded_content ) ) {
             my ( $k, $v ) = split( /=/, $_, 2 );
             next unless $k;
             $v = uri_unescape($v);
             $arg->{$k} = $v;
+	    # Some simple check
+	    die "Weird request: ".Dumper($arg)
+		if scalar(%$arg) > 10 ;
         }
+}
         if ( $r->uri->as_iri =~ /\?(.*)/ ) {
             foreach ( split( /&/, $1 ) ) {
                 my ( $k, $v ) = split( /=/, $_, 2 );
@@ -218,8 +232,9 @@ sub http_child {
         $ro->{"cookie"} = $cookie;
         $ro->{"args"}    = $arg;
         $ro->{"q"}       = $r->uri->as_iri . "&" . $r->content;
+        my $path= $r->uri->path;
+	Log(0,"R:",$path);
         foreach my $g (@pages) {
-            my $path= $r->uri->path;
             if ( $path =~ /^$g->{p}$/ ) {
                 $ENV{'PATH_INFO'} = $1;
                 $ro->{"g"}        = $g;
@@ -332,7 +347,12 @@ sub http_child {
                 my $rv = $json->encode( { "args" => $c->{"args"} } );
                 $ENV{"ARGS"} = $rv;
 	       print STDERR " + ";
-                return HTTP::Message->parse(scalar(qx{$f}))->content();
+		my $m=qx{$f};
+		$m = HTTP::Message->parse(scalar($m));
+		print STDERR Dumper($m);
+		$c->{"c"}->send_response( $m); return undef;
+		return undef;
+                return  $m->content() ;
             }
             return "Failed: cgi scripts are disabled";
         }
@@ -430,8 +450,8 @@ sub http_child {
 			    print STDERR "Force class $mc -> " if $mc;
 			    $meta->{Class}=$class;
 
+			    print STDERR "class $meta->{Class}\n";
 			}
-			print STDERR "class $meta->{Class}\n";
 
 		}
 		# lock();
