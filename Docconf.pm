@@ -87,6 +87,9 @@ sub get_config {
         my $js;
         $js->{"set"} = <$fh>;
         close($fh);
+
+        # getset will set it again
+        $Docconf::config->{"debug"} =0;
         getset($js);
     }
 }
