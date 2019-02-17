@@ -72,6 +72,9 @@ case $OPT in
 			test -f "$DB_FILE" || sqlite3 $DB_FILE < install/doc_db.sql
 		fi
 		DB_V="$(sqlite3 "$DB_FILE" 'select value  from config where var = "version"')"
+		if [ ! -z "$DOCUMENTIX_CONF" -a ! -f "$DOCUMENTIX_CONF" -a -f Docconf.js ]; then
+			cp Docconf.js "$DOCUMENTIX_CONF"
+		fi
 	        if [ -z "$DB_V" -o "$DB_V" '<' "$INSTALL_V" ]; then
 			# Do all db-updates
 			perl -I . tests/update_incoming.pl
