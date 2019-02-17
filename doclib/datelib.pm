@@ -10,6 +10,7 @@ sub fixup_dates
 	my $dh=shift;
 
 	my $sel = $dh->prepare(q{select file  from file});
+	$dh->do( 'insert or ignore into config (var,value) values("max_datesidx",0)');
 	$dh->do( 'delete from dates where idx > (select value from config where var="max_datesidx")');
 	$setmidx = $dh->prepare( 'insert or replace into config (var,value) values("max_datesidx",?)');
 	my $get_t =
