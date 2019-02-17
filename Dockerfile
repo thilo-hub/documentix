@@ -35,9 +35,11 @@ LABEL description="documentix provides a document management system\
 
 # Patch default config
 RUN      DOCUMENTIX_CONF=Docconf.js ./run_local.sh install/install.sh  ;\
-	 DOCUMENTIX_CONF=Docconf.js ./conf_op.pl server_listen_if 0.0.0.0:80 ;\
 	 DOCUMENTIX_CONF=Docconf.js ./conf_op.pl cgi_enabled 1 ;\
-	 DOCUMENTIX_CONF=Docconf.js ./conf_op.pl "index_html" "index6.html"
+	 DOCUMENTIX_CONF=Docconf.js ./conf_op.pl number_ocr_threads 4 ;\
+	 DOCUMENTIX_CONF=Docconf.js ./conf_op.pl number_server_threads 4 ;\
+	 DOCUMENTIX_CONF=Docconf.js ./conf_op.pl "index_html" "index6.html"; \
+	 DOCUMENTIX_CONF=Docconf.js ./conf_op.pl server_listen_if "0.0.0.0:80"
 
 # VOLUME Documents:/documentix/Documents
 # VOLUME incomming:/documentix/Documents/incomming
