@@ -345,14 +345,12 @@ sub http_child {
                 #print  Dumper($c);
                 my $json = JSON->new->utf8;
                 my $rv = $json->encode( { "args" => $c->{"args"} } );
-                $ENV{"ARGS"} = $rv;
-	       print STDERR " + ";
+                local $ENV{"ARGS"} = $rv;
+	        print STDERR " + ";
 		my $m=qx{$f};
-		$m = HTTP::Message->parse(scalar($m));
-		print STDERR Dumper($m);
-		$c->{"c"}->send_response( $m); return undef;
+                $m = HTTP::Response->new( RC_OK, undef, undef, $m );
+		$c->{"c"}->send_response( $m); 
 		return undef;
-                return  $m->content() ;
             }
             return "Failed: cgi scripts are disabled";
         }
