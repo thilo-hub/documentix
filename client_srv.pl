@@ -205,7 +205,7 @@ sub http_child {
 
         # Get args POST/GET -- I assume all ARGS are SHORT
         my $arg;
-        unless ( $r->header("content-type")  eq 'application/octet-stream') {
+        unless ( ($r->header("content-type") or "")  eq 'application/octet-stream') {
         foreach ( split( /&/, $r->decoded_content ) ) {
             my ( $k, $v ) = split( /=/, $_, 2 );
             next unless $k;
