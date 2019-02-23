@@ -33,6 +33,7 @@ my $pdfopt     = "pdfopt";
 my $pdftoppm   = "pdftoppm";
 my $pdftotext  = "pdftotext";
 my $pdftocairo = "pdftocairo";
+my $zbarimg    = "zbarimg";
 
 # use threads;
 # use threads::shared;
@@ -301,9 +302,21 @@ sub ocrpdf {
     my @inpages = glob( $tmpdir->dirname . "/page*" );
 
     print STDERR "Convert ".scalar(@inpages)." pages\n" if $debug > 1;
+    my $qr;
     foreach $in (@inpages) {
-        my $outpage = $tmpdir->dirname . "/o-page-" . $pg++;
         my $outim   = $in . ".jpg";
+
+# my $d=$Docconf::config->{debug} ;
+# $Docconf::config->{debug} =4;
+        my $qrc=qexec($zbarimg,"-q", $in);
+	if ( $qrc ) {
+		# print STDERR "RV: $qrc\n";
+		chomp($qrc);
+		$qrc =~ s/\n/\n$pg:/gs;
+		$qr .= "$pg:$qrc";
+        }
+# $Docconf::config->{debug} =$d;
+        my $outpage = $tmpdir->dirname . "/o-page-" . $pg++;
         if ( $maxcpu<=1 || ( $pid = fork() ) == 0 ) {
             print STDERR "Conv $in\n";
             $fail += do_convert_ocr( $in, $outim );
@@ -320,6 +333,10 @@ sub ocrpdf {
     print STDERR "Wait..\n";
     $errs += w_load(0) if $maxcpu>1;
     print STDERR "Done Errs:$errs\n";
+print STDERR Dumper(\$self,\$qr);
+    if ($qr && $self->{"idx"} ) {
+	$self->ins_e($self->{"idx"},"QR",$qr);
+    }
 
     my $txt = undef;
     if (@outpages) {
@@ -336,8 +353,8 @@ sub ocrpdf {
 	}
 	unlink(@outpages) unless $debug > 2;
     }
-# system("ls -ltr /var/tmp");
-    #  rmdir $tmpdir unless $debug > 2;
+    unlink ("$outpdf.wip");
+    $txt .= "\n$qr" if $qr;
     return $txt;
 }
 
