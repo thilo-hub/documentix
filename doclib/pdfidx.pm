@@ -269,9 +269,19 @@ sub w_load {
     $l++ unless $l; # ensure a load==0 is handled ok
     while ( ( my $pn = scalar( keys(%childs) ) ) >= $l ) {
         print STDERR "($pn) ";
-        delete $childs{$pid} if ( ( ( $pid = wait ) ) > 0 );
-        $err++ if $? != 0;
+	my $pid=wait;
+        if ( $pid > 0 && $childs{$pid} ) {
+		delete $childs{$pid};
+		$err++ if $? != 0;
+		print STDERR "Errs: $err\n" if $err>0;
+	}
+	if ( $pid < 0 ) {
+		print STDERR "Failed .. no mor childs\n";
+		print Dumper(\%childs);
+		return 0;
+	}
     }
+print STDERR "Errs: ...  $err\n" if $err>0;
     return $err;
 }
 
