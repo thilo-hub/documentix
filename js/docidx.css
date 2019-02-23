@@ -301,6 +301,12 @@ unsel {
     list-style-type: none;
     z-index: -2 
 }
+.framed {
+    border-style:round; 
+    border-width: 8px;
+    border-color:red;
+
+}
 .rbox:hover {
    background: #cccccc;
 }

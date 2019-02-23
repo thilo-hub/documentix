@@ -363,6 +363,8 @@ $(function() {
 	
     Showpdf = function(u,e) {
 	    var p=$('#pdfview');
+	    $(".rbox").removeClass("framed");
+	    $(e.currentTarget).addClass("framed");
 	    if ( p.length ) {
 		    var r=$("#result");
 		    var h=r.width() * 1.42;
