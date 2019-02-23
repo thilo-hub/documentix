@@ -286,6 +286,35 @@ print STDERR "Errs: ...  $err\n" if $err>0;
     return $err;
 }
 
+sub ocrpdf_async {
+	my $self=shift;
+	my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
+	# Otherwise the directory would be deleted 
+	open (FH,">$outpdf.wip");
+	print FH "WIP\n";
+	close(FH);
+	main::push_job($self->{"idx"},@_);
+}
+
+sub ocrpdf_offline
+{
+	my $self=shift;
+	my $idx=shift;
+        $t = $self->ocrpdf(@_);
+        if ($t) {
+	    $self->{"idx"}=$idx;
+            $t =~ s/[ \t]+/ /g;
+            $self->ins_e( $idx, "Text", $t );
+
+            # short version
+            $t =~ m/^\s*(([^\n]*\n){24}).*/s;
+            my $c = $1 || "";
+            $self->ins_e( $idx, "Content", $c );
+            # $meta->{"Text"}    = $t;
+            # $meta->{"Content"} = $c;
+            # $meta->{"pdfinfo"} = $self->pdf_info($self->{"file"});
+        }
+}
 sub ocrpdf {
     my $self = shift;
     my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
@@ -294,6 +323,7 @@ sub ocrpdf {
     print STDERR "ocrpdf $inpdf $outpdf\n" if $debug > 1;
     $inpdf  = abs_path($inpdf);
     $outpdf = abs_path($outpdf);
+
     my $fail = 0;
     my $pg = 1;
 
@@ -554,7 +584,7 @@ sub ins_e {
     my ( $self, $idx, $t, $c, $bin ) = @_;
     $bin = SQL_BLOB if defined $bin;
     $self->{"new_e"} = $self->{"dh"}->prepare(
-        "insert or ignore into metadata (idx,tag,value)
+        "insert or replace into metadata (idx,tag,value)
 			 values (?,?,?)"
     ) unless $self->{"new_e"};
     $self->{"new_e"}->bind_param( 1, $idx, SQL_INTEGER );
@@ -616,9 +646,10 @@ sub pdf_totext {
     # give up if we already use an ocr version
     return $txt if ( $fn =~ /.ocr.pdf$/);
 
+print STDERR "XXXXXX> $lcl_store_dir \n";
     # do the ocr conversion
     mkdir($lcl_store_dir) unless -d $lcl_store_dir;
-    return $self->ocrpdf( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
+    return $self->ocrpdf_async( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
 }
 
 sub pdf_text {
