@@ -281,16 +281,16 @@ sub ocrpdf_async {
 	open (FH,">$outpdf.wip");
 	print FH "WIP\n";
 	close(FH);
-	main::push_job($self->{"idx"},@_);
+	return main::push_job($self->{"idx"},@_);
 }
 
 sub ocrpdf_offline
 {
 	my $self=shift;
 	my $idx=shift;
+	$self->{"idx"}=$idx;
         $t = $self->ocrpdf(@_);
         if ($t) {
-	    $self->{"idx"}=$idx;
             $t =~ s/[ \t]+/ /g;
 	    $self->del_meta($idx,"Text");
             $self->ins_e( $idx, "Text", $t );
@@ -300,6 +300,7 @@ sub ocrpdf_offline
             my $c = $1 || "";
 	    $self->del_meta($idx,"Content");
             $self->ins_e( $idx, "Content", $c );
+
         }
 }
 sub ocrpdf {
@@ -556,12 +557,10 @@ sub index_pdf {
         my $t    = $self->pdf_text( $self->{"file"}, $meta->{"hash"} );
         if ($t) {
             $t =~ s/[ \t]+/ /g;
-            $self->ins_e( $self->{"idx"}, "Text", $t );
 
             # short version
-            $t =~ m/^\s*(([^\n]*\n){24}).*/s;
+            $t =~ m/^\s*(([^\n]*\n){1,24}).*/s;
             my $c = $1 || "";
-            $self->ins_e( $self->{"idx"}, "Content", $c );
             $meta->{"Text"}    = $t;
             $meta->{"Content"} = $c;
             $meta->{"pdfinfo"} = $self->pdf_info($self->{"file"});
