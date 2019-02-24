@@ -6,7 +6,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update &&  apt-get install -y sqlite3
 	 imagemagick unoconv poppler-utils
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y calibre-bin
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y a2ps libjson-perl
-RUN DEBIAN_FRONTEND=noninteractive apt-get install -y zbar-tools 
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y zbar-tools libgd-barcode-perl  exiftool qpdf
 
 #uncomment if you have a locally compiled tesseract version
 #COPY locals/tess_bin.tar.gz /
