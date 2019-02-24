@@ -381,6 +381,84 @@ print STDERR Dumper(\$self,\$qr);
     return $txt;
 }
 
+sub try_merge_pages
+{
+my ($self,$qrm,$pg,$ofile,$md5)=@_;
+
+    my $qro = "Front"; $qro =  "Back" if $qrm eq $qro;
+    my $dh   = $self->{"dh"};
+    my $mt = $self->get_metas($md5);
+    my $mtime = $mt->{"mtime"}->{"value"};
+    my $npages = $& if ( $mt->{"pdfinfo"}->{"value"} =~ m|^<tr><td>Pages</td><td>.*|m);
+
+print STDERR "Check if merge for $pg:$qrm possible\n";
+    $sel_qr = q{select b.idx,b.value,md5,file
+		      from metadata a join metadata b  using (idx) join metadata c  using (idx)  natural join hash natural join file
+		      where a.tag="pdfinfo" and a.value like ?
+			     and b.tag = "QR" and b.value like ?
+			     and c.tag="mtime" and cast(c.value as int)  between (?-600) and (?+600)
+		};
+    $sel_qr =$dh->prepare($sel_qr);
+    die "DBerror :$? $idx:$t:$c: " . $sel_qr->errstr unless
+	$sel_qr->execute("%$npages%","%QR-Code:$qro Page%",$mtime,$mtime);
+    my $doc->{"out"}=$ofile;
+    $doc->{"out"} =~ s/\.pdf/_combined.pdf/;
+    while ( my $r = $sel_qr->fetchrow_hashref() ) {
+	    print STDERR "merge is possible\n";
+	    my $opage=$1 if $r->{"value"} =~ /(\d+):QR-Code:$qro Page/;
+	    if ( $qrm eq "Back" ) {
+		    $doc->{"even"} = $ofile;
+		    $doc->{"even_skip"}=$pg;
+		    $doc->{"odd"}  = $r->{"file"};
+		    $doc->{"odd_skip"}= $opage;
+	    } else {
+		    $doc->{"odd"} = $ofile;
+		    $doc->{"odd_skip"}=$pg;
+		    $doc->{"even"}  = $r->{"file"};
+		    $doc->{"even_skip"}= $opage;
+	    }
+	    print STDERR ">>($opage):".Dumper($r,$doc);
+	    join_pdf($doc);
+	    unlink($ofile);
+	    rename($doc->{"out"},$ofile);
+    }
+}
+
+sub g_tmp
+{
+   my $tmpdir = File::Temp->newdir("/var/tmp/joining__XXXXXX");
+   return $tmpdir;
+}
+
+sub join_pdf
+{
+    $doc=shift;
+    print "Join $doc->{odd} $doc->{even} -> $doc->{out}\n";
+    warn "Output $doc->{out} already exists" if -f $doc->{"out"};
+    print "Output: $doc->{out}\n";
+    return  if -f $doc->{"out"};
+
+    my $tmp = g_tmp();
+    qexec("pdfseparate",  $doc->{"even"},  "$tmp/page-%03d.pdf");
+
+    my @l=sort {$b cmp $a}  glob("$tmp/page*.pdf");  # reverse order
+    my $p="001";
+    foreach(@l){
+	$s=$_;
+	s/-\d+/-$p-b/;
+	$p++;
+	rename( $s,$_);
+    }
+    qexec("pdfseparate",  $doc->{"odd"}  ,"$tmp/page-%03d-a.pdf");
+    my @o=sort {$a cmp $b}  glob("$tmp/page*.pdf");
+    print STDERR "Joining ".(scalar(@o)-scalar(@l))." front pages and ".scalar(@l)." back pages to $doc->{out}\n";
+    splice(@o,($doc->{"odd_skip"}-1)*2,2);
+    qexec("pdfunite",@o,$doc->{"out"});
+    unlink @o or die "failed remove @o";
+    # chmod 0,$doc->{"odd"},$doc->{"even"};
+}
+
+
 # Read input pdf and join the given html file
 
 sub index_pdf {
