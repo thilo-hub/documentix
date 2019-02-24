@@ -64,6 +64,35 @@ q{ insert or replace  into config (var,value) select "max_idx",max(idx) from has
 
 }
 
+sub updated_idx {
+    my $self=shift;
+    my $idx=shift;
+    my $dh   = $self->{"dh"};
+    print STDERR "Fixup cache for id: $idx\n";
+    my @sql = (
+        q{ begin exclusive transaction },
+        q{ create temporary table cache_q1 as
+		    select a.*,b.docid idx,snippet(text) snippet  from cache_lst a,text b
+			   where text match a.query and idx = ?},
+	q{ create temporary table cache_q2 as select qidx,count(*) n from cache_q1 group by qidx;},
+	q{ insert or replace into cache_q (qidx,idx,snippet) select qidx,idx,snippet from cache_q1;},
+	q{ insert or replace into cache_lst (qidx,query,nresults,last_used) select qidx,query,nresults+n,last_used
+	from cache_lst natural join cache_q2;},
+        q{drop table cache_q1},
+        q{drop table cache_q2},
+        q{commit},
+    );
+
+    foreach (@sql) {
+	if (/\?/) {
+	    $dh->do($_,undef,$idx) or die "Error $_";
+	} else {
+	    $dh->do($_) or die "Error $_";
+	}
+    }
+
+}
+
 sub trace_db {
     my $dh = shift;
     open( TRC, ">>/tmp/db.trace" );
