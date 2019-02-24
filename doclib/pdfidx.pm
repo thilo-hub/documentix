@@ -45,7 +45,6 @@ sub new {
     my $class  = shift;
     my $chldno = shift;
 
-    $debug     = $Docconf::config->{debug};
     my $dbn    = $Docconf::config->{database_provider};
     my $d_name = $Docconf::config->{database};
     my $user   = $Docconf::config->{database_user};
@@ -53,13 +52,21 @@ sub new {
 
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
-    print STDERR "New pdf conn: $dh\n" if $Docconf::config->{debug} > 0;
+    print STDERR "New pdf conn: $dh\n" if $debug > 0;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
+    $self->set_debug(undef);
     $self->{"setup_db"} = \&setup_db;
     $self->{"dh1"}      = $dh;
-    trace_db($dh) if $Docconf::config->{debug} > 3;
+    trace_db($dh) if $debug > 3;
     setup_db($self) unless $chldno;
     return $self;
+}
+
+sub set_debug {
+  my $self=shift;
+  my $odebug=$debug;
+  $debug = shift or $Docconf::config->{debug};
+  return $debug;
 }
 
 sub dbname {
@@ -210,10 +217,10 @@ sub expand_templ {
         my $db  = shift;
         my $var = shift;
         my $md5 = shift;
-        print STDERR "Expand: $var / $md5\n";
+        print STDERR "Expand: $var / $md5\n" if $debug > 1;
 
         if ( $md5 && !$$db->{$md5} ) {
-            print STDERR "Fetch: $md5\n";
+            print STDERR "Fetch: $md5\n" if $debug > 1;
             my $res = $dh->selectall_hashref(
                 q{select idx,tag,value from file
 				natural join hash natural join metadata
@@ -300,7 +307,7 @@ sub ocrpdf_offline
             my $c = $1 || "";
 	    $self->del_meta($idx,"Content");
             $self->ins_e( $idx, "Content", $c );
-
+	    $self->{"fixup_cache"}($self,$idx) if $self->{"fixup_cache"};
         }
 }
 sub ocrpdf {
@@ -324,8 +331,6 @@ sub ocrpdf {
     foreach $in (@inpages) {
         my $outim   = $in . ".jpg";
 
-# my $d=$Docconf::config->{debug} ;
-# $Docconf::config->{debug} =4;
         my $qrc=qexec($zbarimg,"-q", $in);
 	if ( $qrc ) {
 		# print STDERR "RV: $qrc\n";
@@ -333,10 +338,9 @@ sub ocrpdf {
 		$qrc =~ s/\n/\n$pg:/gs;
 		$qr .= "$pg:$qrc";
         }
-# $Docconf::config->{debug} =$d;
         my $outpage = $tmpdir->dirname . "/o-page-" . $pg++;
         if ( $maxcpu<=1 || ( $pid = fork() ) == 0 ) {
-            print STDERR "Conv $in\n";
+            print STDERR "Conv $in\n" if $debug > 1;
             $fail += do_convert_ocr( $in, $outim );
             $fail += do_tesseract( $outim, $outpage );
             unlink( $in, $outim ) unless $debug > 2;
@@ -351,7 +355,7 @@ sub ocrpdf {
     print STDERR "Wait..\n";
     $errs += w_load(0) if $maxcpu>1;
     print STDERR "Done Errs:$errs\n";
-print STDERR Dumper(\$self,\$qr);
+print STDERR Dumper(\$self,\$qr) if $debug > 1;
     if ($qr && $self->{"idx"} ) {
 	$self->ins_e($self->{"idx"},"QR",$qr);
     }
@@ -391,7 +395,7 @@ my ($self,$qrm,$pg,$ofile,$md5)=@_;
     my $mtime = $mt->{"mtime"}->{"value"};
     my $npages = $& if ( $mt->{"pdfinfo"}->{"value"} =~ m|^<tr><td>Pages</td><td>.*|m);
 
-print STDERR "Check if merge for $pg:$qrm possible\n";
+print STDERR "Check if merge for $pg:$qrm possible\n" if $debug > 1;
     $sel_qr = q{select b.idx,b.value,md5,file
 		      from metadata a join metadata b  using (idx) join metadata c  using (idx)  natural join hash natural join file
 		      where a.tag="pdfinfo" and a.value like ?
@@ -404,7 +408,7 @@ print STDERR "Check if merge for $pg:$qrm possible\n";
     my $doc->{"out"}=$ofile;
     $doc->{"out"} =~ s/\.pdf/_combined.pdf/;
     while ( my $r = $sel_qr->fetchrow_hashref() ) {
-	    print STDERR "merge is possible\n";
+	    print STDERR "merge is possible\n" if $debug > 1;
 	    my $opage=$1 if $r->{"value"} =~ /(\d+):QR-Code:$qro Page/;
 	    if ( $qrm eq "Back" ) {
 		    $doc->{"even"} = $ofile;
@@ -417,28 +421,24 @@ print STDERR "Check if merge for $pg:$qrm possible\n";
 		    $doc->{"even"}  = $r->{"file"};
 		    $doc->{"even_skip"}= $opage;
 	    }
-	    print STDERR ">>($opage):".Dumper($r,$doc);
+	    print STDERR ">>($opage):".Dumper($r,$doc) if $debug > 1;
 	    join_pdf($doc);
 	    unlink($ofile);
 	    rename($doc->{"out"},$ofile);
+	    # Remove from DB the merged other file
+	    die "DBerror :$? $r->{md5} " . $dh->errstr unless
+		$dh->do(q{delete from hash where md5=?},undef,$r->{"md5"});
     }
-}
-
-sub g_tmp
-{
-   my $tmpdir = File::Temp->newdir("/var/tmp/joining__XXXXXX");
-   return $tmpdir;
 }
 
 sub join_pdf
 {
     $doc=shift;
-    print "Join $doc->{odd} $doc->{even} -> $doc->{out}\n";
+    print STDERR "Join $doc->{odd} $doc->{even} -> $doc->{out}\n" if $debug>0;
     warn "Output $doc->{out} already exists" if -f $doc->{"out"};
-    print "Output: $doc->{out}\n";
     return  if -f $doc->{"out"};
 
-    my $tmp = g_tmp();
+    my $tmp = File::Temp->newdir("/var/tmp/joining__XXXXXX");
     qexec("pdfseparate",  $doc->{"even"},  "$tmp/page-%03d.pdf");
 
     my @l=sort {$b cmp $a}  glob("$tmp/page*.pdf");  # reverse order
@@ -451,11 +451,10 @@ sub join_pdf
     }
     qexec("pdfseparate",  $doc->{"odd"}  ,"$tmp/page-%03d-a.pdf");
     my @o=sort {$a cmp $b}  glob("$tmp/page*.pdf");
-    print STDERR "Joining ".(scalar(@o)-scalar(@l))." front pages and ".scalar(@l)." back pages to $doc->{out}\n";
+    print STDERR "Joining ".(scalar(@o)-scalar(@l))." front pages and ".scalar(@l)." back pages to $doc->{out}\n" if $debug > 1;
     splice(@o,($doc->{"odd_skip"}-1)*2,2);
     qexec("pdfunite",@o,$doc->{"out"});
     unlink @o or die "failed remove @o";
-    # chmod 0,$doc->{"odd"},$doc->{"even"};
 }
 
 
@@ -668,7 +667,7 @@ sub ins_e {
     $self->{"new_e"}->bind_param( 3, $c,   $bin );
     die "DBerror :$? $idx:$t:$c: " . $self->{"new_e"}->errstr
       unless $self->{"new_e"}->execute;
-print STDERR "ins_e: $idx: $t (".length($c).")\n";
+print STDERR "ins_e: $idx: $t (".length($c).")\n" if $debug > 1;
 }
 
 #
@@ -723,7 +722,7 @@ sub pdf_totext {
     # give up if we already use an ocr version
     return $txt if ( $fn =~ /.ocr.pdf$/);
 
-print STDERR "XXXXXX> $lcl_store_dir \n";
+print STDERR "XXXXXX> $lcl_store_dir \n" if $debug > 1;
     # do the ocr conversion
     mkdir($lcl_store_dir) unless -d $lcl_store_dir;
     return $self->ocrpdf_async( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
@@ -786,7 +785,7 @@ q{select idx,md5,file,substr(value,1,10000) txt    from metadata natural join ha
         $rv = $self->pdf_class_file( $r->{"file"}, \$r->{"txt"}, $r->{"md5"},
             undef );
         $l = length( $r->{"txt"} );
-        print STDERR "Tx: $r->{idx} $r->{md5} ($l)  -> $rv\n";
+        print STDERR "Tx: $r->{idx} $r->{md5} ($l)  -> $rv\n" if $debug > 1;
     }
 
 }
@@ -811,7 +810,7 @@ q{select idx,count(*) cnt, group_concat(tagname) lst,value    from tags natural 
         unlink $tmp_doc;
         next if ( $r->{lst} eq $rv );
 
-        print STDERR "Tx: $r->{idx} $r->{lst}   -> $rv\n";
+        print STDERR "Tx: $r->{idx} $r->{lst}   -> $rv\n" if $debug > 1;
     }
 }
 
@@ -822,11 +821,11 @@ q{select tagname,group_concat(substr(value,1,10000)) txt  from tagname natural j
 
     # delete all buckets first ....
     my $rv = $self->pop_call('get_buckets');
-    print STDERR "cln: $tg -> $rv\n";
+    print STDERR "cln: $tg -> $rv\n" if $debug > 1;
 
     foreach (@$rv) {
         $rv = $self->pop_call( 'delete_bucket', $_ );
-        print STDERR "Del: $_ ->$rv\n";
+        print STDERR "Del: $_ ->$rv\n" if $debug > 1;
     }
     my $all_s = $self->{"dh"}->prepare($all_t);
     $all_s->execute;
@@ -840,7 +839,7 @@ sub set_class_content {
     my $self = shift;
     my ( $tg, $rtxt ) = @_;
     $rv = $self->pop_call( 'create_bucket', to_bucketname($tg) );
-    print STDERR "TG: $tg -> $rv\n";
+    print STDERR "TG: $tg -> $rv\n" if $debug > 1;
     my ( $fh, $tmp_doc ) = tempfile(
         'popfileinXXXXXXX',
         SUFFIX => ".msg",
@@ -849,11 +848,11 @@ sub set_class_content {
     );
     print $fh $$rtxt;
     close($fh);
-    print STDERR " Add: $tg ($ln) -> ";
+    print STDERR " Add: $tg ($ln) -> " if $debug > 1;
     $rv =
       $self->pop_call( 'add_message_to_bucket', to_bucketname($tg), $tmp_doc );
     my $ln = length($$rtxt);
-    print STDERR "$rv\n";
+    print STDERR "$rv\n" if $debug > 1;
     unlink($tmp_doc);
 }
 
@@ -972,7 +971,7 @@ sub pdf_class_file {
     my $md5   = shift;
     my $class = shift;    # undef returns class else set class a '-' as the first char removes the class
 
-    print STDERR "Add tag: $class\n" if $Docconf::config->{debug} > 0;
+    print STDERR "Add tag: $class\n" if $debug > 0;
     if ( $class =~ m|^(-?)(.*/.*)| ) {
         # allow multiple tags at once
 	my $r="";
@@ -1024,7 +1023,7 @@ sub pdf_class_file {
             ( $ln = $1, last ) if m/X-POPFile-Link:\s*(.*?)\s*$/;
         }
 
-        print STDERR "$r\nLink: $ln\n";
+        print STDERR "$r\nLink: $ln\n" if $debug > 1;
         close($rh_out);
         unlink($tmp_out);
 
@@ -1035,7 +1034,7 @@ sub pdf_class_file {
     close($fh_out);
     $db_op->execute( $md5, $class );
     unlink($tmp_doc);
-    printf STDERR "Class: $rv\n";
+    printf STDERR "Class: $rv\n" if $debug > 1;
 
     return ( $ln, $rv );
 }
@@ -1066,7 +1065,7 @@ sub do_convert_pdf {
     my ( $in, $out ) = @_;
     $in  = abs_path($in);
     $out = abs_path($out);
-    print STDERR "convert: $in $out\n";
+    print STDERR "convert: $in $out\n" if $debug > 1;
     $in  =~ s/"/\\"/g;
     $out =~ s/"/\\"/g;
     qexec("convert", $in, $out);
@@ -1076,7 +1075,7 @@ sub do_convert_pdf {
 sub qexec
 {
   local $/;
-  print STDERR ">".join(":",@_)."<\n" if $Docconf::config->{debug} > 3;
+  print STDERR ">".join(":",@_)."<\n" if $debug > 3;
   open(my $f,"-|",@_);
   my $r=<$f>;
   close($f);
@@ -1100,7 +1099,7 @@ sub do_convert_icon {
         $pn, "-l", $pn, $fn, "-"
     );
 
-    print STDERR "X:" . join( " ", @cmd ) . "\n";
+    print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug > 1;
     my $png = qexec(@cmd);
     print STDERR "L:" . length($png) . "\n" if $main::debug > 1;
     return $png;
@@ -1115,11 +1114,11 @@ sub do_tesseract {
     my $r=qx{@ckori};
 
     if ($r =~ /Orientation in degrees: 180/) {
-        print STDERR "Rotate...\n";
+        print STDERR "Rotate...\n" if $debug > 1;
 	my $oi=$image;
         $oi =~ s/(\.[^\.]*)$/_rot$1/;
 	my @rot= ( $convert , $image,qw{-rotate 180},$oi);
-	$msg .= "CMD: " . join( " ", @rot, "\n" ) if $Docconf::config->{debug} > 3;
+	$msg .= "CMD: " . join( " ", @rot, "\n" ) if $debug > 3;
 	system(@rot);
 	$image=$oi;
     }
@@ -1127,8 +1126,8 @@ sub do_tesseract {
     my @cmd1 = ( $tesseract, $image, $outpage, qw{ -l deu+eng --psm 1 --oem 1 pdf} );
 
 
-    $msg .= "CMD: " . join( " ", @cmd, "\n" ) if $Docconf::config->{debug} > 3;
-    print STDERR "$msg" if $Docconf::config->{debug} > 3;
+    $msg .= "CMD: " . join( " ", @cmd, "\n" ) if $debug > 3;
+    print STDERR "$msg" if $debug > 3;
     $outpage .= ".pdf";
     $fail += ( system(@cmd) && system(@cmd1) ? 1 : 0 ) unless -f $outpage;
     print STDERR "Done $outpage\n";
@@ -1142,7 +1141,7 @@ sub do_pdftocairo {
     my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
     symlink( $inpdf, "$tmpdir/in.pdf" );
     my @cmd = ( qw{pdftocairo -r 300 -jpeg}, "$tmpdir/in.pdf", $pages );
-    print STDERR "CMD: " . join( " ", @cmd, "\n" ) if $Docconf::config->{debug} > 3;
+    print STDERR "CMD: " . join( " ", @cmd, "\n" ) if $debug > 3;
     my $fail += ( system(@cmd) ? 1 : 0 );
     unlink("$tmpdir/in.pdf");
     rmdir($tmpdir) or die "DIr: $!";
@@ -1157,7 +1156,7 @@ sub do_pdfstamp {
     open(my $ver,"version.txt");
     chomp($creator=<$ver>);
     close($ver);
-    print STDERR "Stamp: $cmt\n" if  $Docconf::config->{debug} > 3;
+    print STDERR "Stamp: $cmt\n" if  $debug > 3;
     my @tg="-Producer=$creator";
     push @tg,"-Keywords=$cmt" if $cmt;
     qexec("exiftool",@tg,"-overwrite_original_in_place",$outpdf);
@@ -1173,7 +1172,7 @@ sub do_pdfunite {
     #pdfunite croaks if only a single page is united
     @cmd = ( qw{ cp }, @cpages, $outpdf )
       if ( scalar(@cpages) == 1 );
-    print STDERR "CMD: " . join( " ", @cmd, "\n" ) if $Docconf::config->{debug} > 3;
+    print STDERR "CMD: " . join( " ", @cmd, "\n" ) if $debug > 3;
     $fail += ( system(@cmd) ? 1 : 0 ) unless -f $outpdf;
 
     print STDERR "Unite into: $outpdf\n" if $debug>1;
@@ -1197,7 +1196,7 @@ sub do_calibrepdf {
     my ( $in, $out ) = @_;
     $in  = abs_path($in);
     $out = abs_path($out);
-    print STDERR "convert: $in\n";
+    print STDERR "convert: $in\n" if $debug > 1;
     main::lock();
     qexec("ebook-convert", $in ,$out);
     main::unlock();
@@ -1209,7 +1208,7 @@ sub do_ascii2pdf {
     my ( $in, $out ) = @_;
     $in  = abs_path($in);
     $out = abs_path($out);
-    print STDERR "ascii 2 pdf: $in\n";
+    print STDERR "ascii 2 pdf: $in\n" if $debug > 1;
     qx{a2ps -o - "$in" | ps2pdf - "$out"};
     die "failed: -o $out $in" unless -f $out;
     return;
@@ -1219,7 +1218,7 @@ sub do_unopdf {
     my ( $in, $out ) = @_;
     $in  = abs_path($in);
     $out = abs_path($out);
-    print STDERR "convert: $in\n";
+    print STDERR "convert: $in\n" if $debug > 1;
     main::lock();
     qexec(qw{unoconv -o}, $out,$in);
     main::unlock();
