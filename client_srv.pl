@@ -115,48 +115,7 @@ $SIG{WINCH} = sub {
     Docconf::get_config();
 };
 
-local *OcrWtr;
-socketpair(OcrRdr, OcrWtr, AF_UNIX, SOCK_STREAM, PF_UNSPEC)
-                                       ||  die "socketpair: $!";
-
-print STDERR " F:".\*OcrWtr."\n";
-OcrRdr->autoflush(1);
-OcrWtr->autoflush(1);
-
-# Queue OCR jobs to run in separate thread
-sub push_job
-{
-    my ( $idx,$inpdf, $outpdf, $ascii, $md5 ) = @_;
-    open(FLG,">job.dmp") && print FLG Dumper(\@_); close(FLG);
-    print STDERR " <- $inpdf\n";
-    print STDERR " -> $outpdf\n";
-    my $s=encode_json(\@_);
-    print main::OcrWtr  "$s\n";
-    print STDERR " md5 $md5\n";
-    return "OCR Conversion queued for processing\n";
-}
-
-# Make OCR thread
-if ( fork == 0 ) {
-	my $pdfidx  = pdfidx->new(0);
-	close *OcrWtr;
-	print STDERR "Starting listener\n";
-	while(<OcrRdr>) {
-		print STDERR "Reveived: $_";
-		my $o=from_json($_);
-		print STDERR Dumper($o);
-	        open(FLG,">>job1.dmp") && print FLG Dumper($o); close(FLG);
-		$pdfidx->ocrpdf_offline(@$o);
-	}
-	close OcrRdr;
-	print STDERR "Ocr pipe-end stopping\n";
-	exit 0;
-}
-close OcrRdr;
-# close OcrWtr;
-# waitpid($pid, 0);
-
-
+start_ocrservice();
 while (1) {
 exit 0 if -r "stop";
 my $chldno=0;
@@ -686,3 +645,52 @@ sub auth_check {
 	}
 	return $auth->{$ID} || 0;
 }
+
+###############################
+local *OcrWtr;
+# Queue OCR jobs to run in separate thread
+sub push_job
+{
+    my ( $idx,$inpdf, $outpdf, $ascii, $md5 ) = @_;
+    open(FLG,">job.dmp") && print FLG Dumper(\@_); close(FLG);
+    # print STDERR " <- $inpdf\n";
+    # print STDERR " -> $outpdf\n";
+    my $s=encode_json(\@_);
+    print main::OcrWtr  "$s\n";
+    print STDERR "Defer OCR for md5 $md5\n";
+    return "OCR Conversion queued for processing\n";
+}
+
+sub start_ocrservice
+{
+
+    socketpair(OcrRdr, OcrWtr, AF_UNIX, SOCK_STREAM, PF_UNSPEC)
+					   ||  die "socketpair: $!";
+
+    print STDERR " F:".\*OcrWtr."\n";
+    OcrRdr->autoflush(1);
+    OcrWtr->autoflush(1);
+
+    # Make OCR thread
+    if ( fork == 0 ) {
+	    my $pdfidx  = pdfidx->new(0);
+	    $pdfidx->{"fixup_cache"}=\&ld_r::updated_idx;
+	    close *OcrWtr;
+	    print STDERR "Starting OCR listener\n";
+	    while(<OcrRdr>) {
+		    print STDERR "Reveived OCR request: $_";
+		    my $o=from_json($_);
+		    # print STDERR Dumper($o);
+		    open(FLG,">>job1.dmp") && print FLG Dumper($o); close(FLG);
+		    $pdfidx->ocrpdf_offline(@$o);
+	    }
+	    close OcrRdr;
+	    print STDERR "Ocr pipe-end stopping\n";
+	    exit 0;
+    }
+    close OcrRdr;
+    # close OcrWtr;
+    # waitpid($pid, 0);
+}
+
+
