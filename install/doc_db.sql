@@ -1,3 +1,6 @@
+DROP TRIGGER IF EXISTS inmtime;
+DROP TRIGGER IF EXISTS intxt;
+DROP TRIGGER IF EXISTS inclass;
 CREATE TABLE ocr ( idx integer, text text);
 CREATE TABLE metadata ( idx integer, tag text, value text, unique ( idx,tag) );
 CREATE TABLE IF NOT EXISTS "cache_old" (item text,idx integer,data blob,date integer, unique (item,idx));
@@ -75,14 +78,6 @@ CREATE TRIGGER class_del after delete on metadata when old.tag = "Class" begin
 CREATE TRIGGER class_ins after insert on metadata when new.tag = "Class" begin 
 	insert into class (idx,class) values (new.idx,new.value); 
     end;
-CREATE TRIGGER inmtime after insert on metadata when 
-	                    new.tag = "mtime" begin 
-			    insert into mtime (idx,mtime) values (new.idx,new.value); 
-		end;
-CREATE TRIGGER inclass after insert on metadata when 
-	                    new.tag = "Class" begin 
-			    insert into class (idx,class) values (new.idx,new.value); 
-		end;
 CREATE TRIGGER intxt after insert on metadata when new.tag = "text" begin 
 			insert into text (docid,content) values (new.idx,new.value); 
 					end;

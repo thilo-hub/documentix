@@ -106,17 +106,6 @@ q{CREATE TABLE if not exists class ( idx integer primary key, class text )},
 					delete from mtime where mtime.idx=old.idx;
 					delete from class where class.idx=old.idx;
 				 end;},
-        q{CREATE TRIGGER if not exists inmtime after insert on metadata when
-	                    new.tag = "mtime" begin
-			    insert into mtime (idx,mtime) values (new.idx,new.value);
-		end;},
-        q{CREATE TRIGGER if not exists inclass after insert on metadata when
-	                    new.tag = "Class" begin
-			    insert into class (idx,class) values (new.idx,new.value);
-		end;},
-q{CREATE TRIGGER if not exists intxt after insert on metadata when new.tag = "text" begin
-			insert into text (docid,content) values (new.idx,new.value);
-					end;},
         q{ CREATE INDEX if not exists mtags on metadata(tag)},
 q{commit}
     );
@@ -305,11 +294,13 @@ sub ocrpdf_offline
         if ($t) {
 	    $self->{"idx"}=$idx;
             $t =~ s/[ \t]+/ /g;
+	    $self->del_meta($idx,"Text");
             $self->ins_e( $idx, "Text", $t );
 
             # short version
             $t =~ m/^\s*(([^\n]*\n){24}).*/s;
             my $c = $1 || "";
+	    $self->del_meta($idx,"Content");
             $self->ins_e( $idx, "Content", $c );
             # $meta->{"Text"}    = $t;
             # $meta->{"Content"} = $c;
@@ -380,6 +371,8 @@ print STDERR Dumper(\$self,\$qr);
 
 	    $fail += do_pdfunite( $outpdf, @cpages );
 	    $fail += do_pdfstamp( $outpdf, $md5 );
+	    $self->del_meta($self->{"idx"},"pdfinfo");
+	    $self->ins_e($self->{"idx"},"pdfinfo", $self->pdf_info($outpdf));
 	    $txt = do_pdftotext($outpdf);
 	}
 	unlink(@outpages) unless $debug > 2;
@@ -581,11 +574,18 @@ sub index_pdf {
 
 }
 
+sub del_meta {
+    my ( $self, $idx, $t, ) = @_;
+    $self->{"del_meta"} = $self->{"dh"}->prepare(
+        "delete from metadata where idx=? and tag=?"
+    ) unless $self->{"del_meta"};
+    $self->{"del_meta"}->execute($idx,$t);
+}
 sub ins_e {
     my ( $self, $idx, $t, $c, $bin ) = @_;
     $bin = SQL_BLOB if defined $bin;
     $self->{"new_e"} = $self->{"dh"}->prepare(
-        "insert or replace into metadata (idx,tag,value)
+        "insert into metadata (idx,tag,value)
 			 values (?,?,?)"
     ) unless $self->{"new_e"};
     $self->{"new_e"}->bind_param( 1, $idx, SQL_INTEGER );
