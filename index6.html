@@ -147,7 +147,7 @@ $('#fire').on(
                     </script>
                     <script id="template_result_items" type="text/x-jsrender">
                         
-	<li class="rbox"
+			    <li class="rbox {{if tg.match("deleted")}} deleted {{/if}}"
 				onclick="Showpdf('web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}.pdf',event)" 
 	>
 	    <td id="{{:md5}}" >

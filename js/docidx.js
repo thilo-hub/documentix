@@ -70,6 +70,9 @@ $(function() {
             if (ncl == clname) {
                 // reset tag
                 ncl = "";
+		if (clname  == "deleted") {
+		    $(".deleted").hide();
+		}
             }
 	    $("input#search").val("");
             $("#result").html("");
@@ -290,6 +293,10 @@ $(function() {
             last_item = new_last_item;
             last_e = -1;
             $('#result').html(itm);
+	    if (clname  == "deleted") {
+		$(".deleted").show();
+	    }
+
             // Assume classes do not change from page to page
             var tl = data.classes;
             $('#taglist').html(tl);

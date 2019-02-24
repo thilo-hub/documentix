@@ -293,6 +293,9 @@ unsel {
     list-style-type: none
 }
 
+.deleted {
+	display: none;
+}
 .rbox {
     border: inset #CCC;
     width: 240px;
