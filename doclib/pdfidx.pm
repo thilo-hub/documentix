@@ -179,10 +179,13 @@ sub get_file {
 sub get_metas {
     my $self = shift;
     my $dh   = $self->{"dh"};
-    my ($fn) = @_;
+    my ($md5) = @_;
     my $res  = $dh->selectall_hashref(
         "select tag,value from hash natural join metadata where md5=?",
-        "tag", undef, $fn );
+        "tag", undef, $md5 );
+    foreach ( keys %$res ) {
+	    $res->{$_}=$res->{$_}->{"value"};
+    }
     return $res;
 }
 
@@ -298,6 +301,7 @@ sub ocrpdf_offline
 {
 	my $self=shift;
 	my $idx=shift;
+my $odb=$self->set_debug($debug+5);
 	$self->{"idx"}=$idx;
         $t = $self->ocrpdf(@_);
         if ($t) {
@@ -312,6 +316,7 @@ sub ocrpdf_offline
             $self->ins_e( $idx, "Content", $c );
 	    $self->{"fixup_cache"}($self,$idx) if $self->{"fixup_cache"};
         }
+$self->set_debug($odb);
 }
 sub ocrpdf {
     my $self = shift;
@@ -396,8 +401,8 @@ my ($self,$qrm,$pg,$ofile,$md5)=@_;
     my $qro = "Front"; $qro =  "Back" if $qrm eq $qro;
     my $dh   = $self->{"dh"};
     my $mt = $self->get_metas($md5);
-    my $mtime = $mt->{"mtime"}->{"value"};
-    my $npages = $& if ( $mt->{"pdfinfo"}->{"value"} =~ m|^<tr><td>Pages</td><td>.*|m);
+    my $mtime = $mt->{"mtime"};
+    my $npages = $& if ( $mt->{"pdfinfo"} =~ m|^<tr><td>Pages</td><td>.*|m);
 
 print STDERR "Check if merge for $pg:$qrm possible\n" if $debug > 1;
     $sel_qr = q{select b.idx,b.value,md5,file
@@ -507,7 +512,7 @@ sub index_pdf {
     my ($idx) =
       $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
 
-   #return $idx if $idx;   # already indexed -- TODO:potentially check timestamp
+    return $self->get_metas($md5_f) if $idx;   # already indexed -- TODO:potentially check timestamp
 
     $dh->do("begin exclusive transaction");
     $dh->prepare("insert or ignore into file (md5,file,host) values(?,?,?)")
