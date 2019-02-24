@@ -94,7 +94,6 @@ sub setup_db {
     my @slist = (
 q{begin exclusive transaction},
 q{create table if not exists hash ( idx integer primary key autoincrement, md5 text unique )},
-q{create table if not exists file ( md5 text primary key, file text unique)},
 q{create table if not exists data ( idx integer primary key , thumb text, ico text, html text) },
         q{create table if not exists ocr ( idx integer, text text)},
 q{create table if not exists metadata ( idx integer, tag text, value text, unique ( idx,tag) )},
@@ -113,7 +112,6 @@ q{CREATE TABLE if not exists class ( idx integer primary key, class text )},
 					delete from mtime where mtime.idx=old.idx;
 					delete from class where class.idx=old.idx;
 				 end;},
-        q{ CREATE INDEX if not exists mtags on metadata(tag)},
 q{commit}
     );
     foreach (@slist) {

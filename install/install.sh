@@ -83,8 +83,11 @@ case $OPT in
 		test -f popuser/popfile.pid ||
 			./run_local.sh perl start_pop.pl $PWD  || exit 96
 		test -f popuser/popfile.pid || exit 95
-		echo " Add first document...."
-		./run_local.sh ./load_documents.pl  Documentation/FirstRun.pdf   || exit 91
+		if [ ! -f .firstdoc ]; then
+			echo " Add first document...."
+			./run_local.sh ./load_documents.pl  Documentation/FirstRun.pdf   || exit 91
+			touch .firstdoc
+		fi
 		./run_local.sh perl client_srv.pl || exit 95
 		;;
 	stop)

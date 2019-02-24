@@ -52,9 +52,7 @@ CREATE INDEX class_i on class(class);
 CREATE INDEX mtime_i on mtime(mtime);
 CREATE INDEX idx_sessions on sessions (username);
 CREATE INDEX idx_users on Users (login);
-CREATE INDEX mtag  on metadata(tag);
 CREATE INDEX tags_i on metadata(tag);
-CREATE INDEX mtags on metadata(tag);
 CREATE VIEW pages as select id,md5, snippet docn,qidx from cache_q natural join hash;
 CREATE TRIGGER text_del after delete on metadata when old.tag = "Text" begin
 	delete from text where docid=old.idx; 
