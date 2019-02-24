@@ -286,7 +286,7 @@ sub ocrpdf_async {
 	open (FH,">$outpdf.wip");
 	print FH "WIP\n";
 	close(FH);
-	return main::push_job($self->{"idx"},@_);
+	return Ocr::push_job($self->{"idx"},@_);
 }
 
 sub ocrpdf_offline
