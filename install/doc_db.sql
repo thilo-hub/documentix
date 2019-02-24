@@ -40,13 +40,7 @@ CREATE TABLE IF NOT EXISTS "dates"(date INT,mtext TEXT,idx integer);
 CREATE TABLE cache_lst ( qidx integer primary key autoincrement,
 		query text unique, nresults integer, last_used integer );
 CREATE TABLE cache_q ( qidx integer, idx integer, id integer, snippet text, unique(qidx,idx));
-CREATE TABLE nfile1(md5 TEXT,file);
 CREATE VIRTUAL TABLE "text" using fts4;
-CREATE TABLE IF NOT EXISTS 'text_content'(docid INTEGER PRIMARY KEY, 'c0content');
-CREATE TABLE IF NOT EXISTS 'text_segments'(blockid INTEGER PRIMARY KEY, block BLOB);
-CREATE TABLE IF NOT EXISTS 'text_segdir'(level INTEGER,idx INTEGER,start_block INTEGER,leaves_end_block INTEGER,end_block INTEGER,root BLOB,PRIMARY KEY(level, idx));
-CREATE TABLE IF NOT EXISTS 'text_docsize'(docid INTEGER PRIMARY KEY, size BLOB);
-CREATE TABLE IF NOT EXISTS 'text_stat'(id INTEGER PRIMARY KEY, value BLOB);
 CREATE INDEX file_md5 on file(md5);
 CREATE INDEX class_i on class(class);
 CREATE INDEX mtime_i on mtime(mtime);
