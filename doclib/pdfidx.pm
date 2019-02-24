@@ -371,12 +371,12 @@ print STDERR Dumper(\$self,\$qr) if $debug > 1;
 	    push @cpages, $_ if -f $_;
 	}
 	if ( @cpages ) {
-
 	    $fail += do_pdfunite( $outpdf, @cpages );
+	    my $cmt=$md5;
 	    if ( $qr && $qr =~ /(\d+):QR-Code:(Front|Back) Page/ ) {
-		$self->try_merge_pages($2,$1,$outpdf,$md5)
+		$cmt .= $self->try_merge_pages($2,$1,$outpdf,$md5);
 	    }
-	    $fail += do_pdfstamp( $outpdf, $md5 );
+	    $fail += do_pdfstamp( $outpdf, $cmt );
 	    $self->del_meta($self->{"idx"},"pdfinfo");
 	    $self->ins_e($self->{"idx"},"pdfinfo", $self->pdf_info($outpdf));
 	    $txt = do_pdftotext($outpdf);
@@ -391,6 +391,7 @@ print STDERR Dumper(\$self,\$qr) if $debug > 1;
 sub try_merge_pages
 {
 my ($self,$qrm,$pg,$ofile,$md5)=@_;
+    my $cmt="";
 
     my $qro = "Front"; $qro =  "Back" if $qrm eq $qro;
     my $dh   = $self->{"dh"};
@@ -412,7 +413,9 @@ print STDERR "Check if merge for $pg:$qrm possible\n" if $debug > 1;
     $doc->{"out"} =~ s/\.pdf/_combined.pdf/;
     while ( my $r = $sel_qr->fetchrow_hashref() ) {
 	    print STDERR "merge is possible\n" if $debug > 1;
+	    print STDERR "Merging documents: $r->{md5} + $md5\n";
 	    my $opage=$1 if $r->{"value"} =~ /(\d+):QR-Code:$qro Page/;
+	    $r->{"file"} = $self->pdf_filename($r->{"md5"});
 	    if ( $qrm eq "Back" ) {
 		    $doc->{"even"} = $ofile;
 		    $doc->{"even_skip"}=$pg;
@@ -428,10 +431,15 @@ print STDERR "Check if merge for $pg:$qrm possible\n" if $debug > 1;
 	    join_pdf($doc);
 	    unlink($ofile);
 	    rename($doc->{"out"},$ofile);
+	    print STDERR "remove merged file $r->{md5}\n" if $debug > 2;
 	    # Remove from DB the merged other file
 	    die "DBerror :$? $r->{md5} " . $dh->errstr unless
 		$dh->do(q{delete from hash where md5=?},undef,$r->{"md5"});
+	    die "DBerror :$? $r->{md5} $ofile " . $dh->errstr unless
+		$dh->do(q{update file set file=? where md5=?},undef,$ofile,$md5);
+	    $cmt .= " Merged($r->{md5})";
     }
+return $cmt;
 }
 
 sub join_pdf
