@@ -52,5 +52,10 @@ sub start_ocrservice
     # close Wtr;
     # waitpid($pid, 0);
 }
+sub stop_ocrservice
+{
+   close $Wtr;
+   wait;
+}
 1;
 

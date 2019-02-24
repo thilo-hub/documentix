@@ -15,6 +15,8 @@ use Date::Parse;
 use Docconf;
 use doclib::pdfidx;
 use ld_r;
+use Ocr;
+
 
 
 
@@ -68,6 +70,7 @@ foreach ( @onserver )
 }
 
 if (@new) {
+	Ocr::start_ocrservice();
 	my $pdfidx = pdfidx->new();
 	sub lock   { }
 	sub unlock { }
@@ -98,5 +101,7 @@ if (@new) {
 	my $ld_r    = ld_r->new();
 	$ld_r->update_caches();
 	print "Finished processing\n";
+	Ocr::stop_ocrservice();
 }
+wait;
 
