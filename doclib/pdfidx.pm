@@ -264,22 +264,20 @@ sub w_load {
         if ( $pid > 0 && $childs{$pid} ) {
 		delete $childs{$pid};
 		$err++ if $? != 0;
-		print STDERR "Errs: $err\n" if $err>0;
 	}
 	if ( $pid < 0 ) {
-		print STDERR "Failed .. no mor childs\n";
+		print STDERR "Failed .. no more childs\n";
 		print Dumper(\%childs);
 		return 0;
 	}
     }
-print STDERR "Errs: ...  $err\n" if $err>0;
     return $err;
 }
 
 sub ocrpdf_async {
 	my $self=shift;
 	my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
-	# Otherwise the directory would be deleted 
+	# Otherwise the directory would be deleted
 	open (FH,">$outpdf.wip");
 	print FH "WIP\n";
 	close(FH);
@@ -302,9 +300,6 @@ sub ocrpdf_offline
             my $c = $1 || "";
 	    $self->del_meta($idx,"Content");
             $self->ins_e( $idx, "Content", $c );
-            # $meta->{"Text"}    = $t;
-            # $meta->{"Content"} = $c;
-            # $meta->{"pdfinfo"} = $self->pdf_info($self->{"file"});
         }
 }
 sub ocrpdf {
@@ -370,6 +365,9 @@ print STDERR Dumper(\$self,\$qr);
 	if ( @cpages ) {
 
 	    $fail += do_pdfunite( $outpdf, @cpages );
+	    if ( $qr && $qr =~ /(\d+):QR-Code:(Front|Back) Page/ ) {
+		$self->try_merge_pages($2,$1,$outpdf,$md5)
+	    }
 	    $fail += do_pdfstamp( $outpdf, $md5 );
 	    $self->del_meta($self->{"idx"},"pdfinfo");
 	    $self->ins_e($self->{"idx"},"pdfinfo", $self->pdf_info($outpdf));
@@ -484,7 +482,7 @@ sub index_pdf {
 	$idx=$type;
     }
     datelib::fixup_dates($dh);
-    
+
     return $idx, \%meta;
 
     sub tp_any {
@@ -593,6 +591,7 @@ sub ins_e {
     $self->{"new_e"}->bind_param( 3, $c,   $bin );
     die "DBerror :$? $idx:$t:$c: " . $self->{"new_e"}->errstr
       unless $self->{"new_e"}->execute;
+print STDERR "ins_e: $idx: $t (".length($c).")\n";
 }
 
 #
@@ -1050,7 +1049,7 @@ sub do_tesseract {
     my @cmd = ( $tesseract, $image, $outpage, qw{ -l deu+eng --psm 1 pdf} );
     my @cmd1 = ( $tesseract, $image, $outpage, qw{ -l deu+eng --psm 1 --oem 1 pdf} );
 
-    
+
     $msg .= "CMD: " . join( " ", @cmd, "\n" ) if $Docconf::config->{debug} > 3;
     print STDERR "$msg" if $Docconf::config->{debug} > 3;
     $outpage .= ".pdf";

@@ -124,7 +124,7 @@ OcrRdr->autoflush(1);
 OcrWtr->autoflush(1);
 
 # Queue OCR jobs to run in separate thread
-sub push_job 
+sub push_job
 {
     my ( $idx,$inpdf, $outpdf, $ascii, $md5 ) = @_;
     open(FLG,">job.dmp") && print FLG Dumper(\@_); close(FLG);
@@ -133,7 +133,7 @@ sub push_job
     my $s=encode_json(\@_);
     print main::OcrWtr  "$s\n";
     print STDERR " md5 $md5\n";
-    return "Conversion submitted ()";
+    return "OCR Conversion queued for processing\n";
 }
 
 # Make OCR thread
@@ -391,7 +391,7 @@ sub http_child {
 	        print STDERR " + ";
 		my $m=qx{$f};
                 $m = HTTP::Response->new( RC_OK, undef, undef, $m );
-		$c->{"c"}->send_response( $m); 
+		$c->{"c"}->send_response( $m);
 		return undef;
             }
             return "Failed: cgi scripts are disabled";
