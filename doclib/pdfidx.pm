@@ -62,6 +62,11 @@ sub new {
     return $self;
 }
 
+# Enable temporal debug:
+#
+# my $odb=$self->set_debug($debug+3);
+# $self->set_debug($odb);
+#
 sub set_debug {
   my $self=shift;
   my $odebug=$debug;
