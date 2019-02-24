@@ -204,6 +204,7 @@ sub pdf_info($$) {
     my $self = shift;
     my $fn   = shift;
     my $res  = qexec($pdfinfo ,$fn);
+    $res =~ s/\0//g;
     $res =~ s|:\s|</td><td>|mg;
     $res =~ s|\n|</td></tr>\n<tr><td>|gs;
     $res =~ s|^(.*)$|<table><tr><td>$1</td></tr></table>|s;
