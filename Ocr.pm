@@ -42,8 +42,6 @@ sub start_ocrservice
 	    while(<$Rdr>) {
 		    print STDERR "Reveived OCR request: $_";
 		    my $o=from_json($_);
-		    # print STDERR Dumper($o);
-		    open(FLG,">>job1.dmp") && print FLG Dumper($o); close(FLG);
 		    $pdfidx->ocrpdf_offline(@$o);
 	    }
 	    close $Rdr;
