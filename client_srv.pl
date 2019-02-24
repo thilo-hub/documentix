@@ -122,6 +122,7 @@ exit 0 if -r "stop";
 my $chldno=0;
     if ( $O{'listen-clients'} ) {
 
+	while (1) {
         # prefork all at once
         for ( scalar( keys %chld ) .. $O{'listen-clients'} - 1 ) {
             Docconf::get_config();
@@ -143,7 +144,10 @@ my $chldno=0;
 	    $chldno++;
         }
 
-        wait;
+        my $pid=wait;
+        print STDERR "Starting new child\n"  if $chld{$pid};
+        delete $chld{$pid} if $chld{$pid};
+	}
     }
     else {
         http_child($d,$chldno);
