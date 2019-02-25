@@ -240,6 +240,7 @@ function widgEditor(replacedTextareaID)
 	this.theInput.id = this.theTextarea.id;
 	this.theInput.name = this.theTextarea.name;
 	this.theInput.value = this.theTextarea.value;
+	this.theInput.value = localStorage.ScratchPad;
 
 	this.theToolbar = new widgToolbar(this);
 	
@@ -577,6 +578,30 @@ widgEditor.prototype.convertSPANs = function(theSwitch)
 
 
 /* Check for pasted content */
+widgEditor.prototype.detectDrop = function(e)
+{
+	var theEvent = null;
+	
+	if (e)
+	{
+		theEvent = e;
+	}
+	else
+	{
+		theEvent = event;
+	}
+	
+
+  theEvent.preventDefault();
+  var data = theEvent.dataTransfer.getData("text/html");
+  var n=document.createElement("DIV")
+  n.innerHTML=data
+  theEvent.target.appendChild(n)
+  localStorage.ScratchPad=this.theIframe.contentWindow.document.getElementsByTagName("body")[0].innerHTML;
+ return true;
+}
+
+/* Check for pasted content */
 widgEditor.prototype.detectPaste = function(e)
 {
 	var keyPressed = null;
@@ -600,6 +625,7 @@ widgEditor.prototype.detectPaste = function(e)
 		/* Because Mozilla can't access the clipboard directly, must rely on timeout to check pasted differences in main content */
 		setTimeout(function(){self.cleanPaste(); return true;}, 100);
 	}
+	localStorage.ScratchPad=this.theIframe.contentWindow.document.getElementsByTagName("body")[0].innerHTML;
 
 	return true;
 }
@@ -638,6 +664,7 @@ widgEditor.prototype.initEdit = function()
 		this.theIframe.contentWindow.document.addEventListener("mouseup", function(){widgToolbarCheckState(self); return true;}, false);
 		this.theIframe.contentWindow.document.addEventListener("keyup", function(){widgToolbarCheckState(self); return true;}, false);
 		this.theIframe.contentWindow.document.addEventListener("keydown", function(e){self.detectPaste(e); return true;}, false);
+		this.theIframe.contentWindow.document.addEventListener("drop", function(e){self.detectDrop(e); return true;}, false);
 	}
 	/* IE event capturing */
 	else
