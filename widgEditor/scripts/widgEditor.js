@@ -595,7 +595,7 @@ widgEditor.prototype.detectDrop = function(e)
   theEvent.preventDefault();
   var data = theEvent.dataTransfer.getData("text/html");
   var n=document.createElement("DIV")
-  n.innerHTML=data
+  n.innerHTML=data+"<hr>";
   theEvent.target.appendChild(n)
   localStorage.ScratchPad=this.theIframe.contentWindow.document.getElementsByTagName("body")[0].innerHTML;
  return true;
