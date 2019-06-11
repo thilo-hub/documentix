@@ -63,6 +63,7 @@ sub g_tmp
 	my $p = $prev;
 	$prev = $cur;
 	if ( $p && $p->{pages} == $cur->{pages} ) {
+print STDERR "Start combine...\n";
 	    my $out = mkout($p->{file});
 	    if ($p->{part}  eq "Front" && $cur->{part} eq "Back") {
 			join_pdf($p->{file},$cur->{file},$out,$p->{qr_page},$cur->{qr_page});

@@ -67,4 +67,8 @@ sub get_cache {
     return ( $type, $data );
 }
 
+sub rm_cache {
+ my ($self, $md5 ) = @_;
+ $self->{"dh"}->do(q{delete from cache  where ref like ?},undef,"$md5%");
+}
 1;

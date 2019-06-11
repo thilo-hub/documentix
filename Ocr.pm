@@ -5,6 +5,7 @@ use Socket;
 use IO::Socket;
 use Docconf;
 use doclib::pdfidx;
+use ld_r;
 
 my ($Wtr,$Rdr);
 #local $Wtr;

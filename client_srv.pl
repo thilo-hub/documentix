@@ -40,6 +40,7 @@ my $cgi_re="sh|pm|pl|cgi";
 my $pwfile=".htpasswd";
 open(LOGGER,">>/tmp/documentix.log");
 { my $oh=select LOGGER; $|=1; select $oh; }
+# print "Setpgid: ".POSIX::setpgid(0,$$);
 
 sub Log
 {
@@ -200,7 +201,7 @@ sub http_child {
 
         my $kk = $c->sockname;
         my ( $port, $myaddr ) = sockaddr_in($kk);
-        my $host = scalar gethostbyaddr( $myaddr, AF_INET );
+        my $host = scalar gethostbyaddr( $myaddr, AF_INET )|| inet_ntoa($myaddr) || "X:$myaddr";
 
         $ENV{"SERVER_ADDR"} = "http://$host:$port";
         $rq=sprintf( "[%s] %s %s",

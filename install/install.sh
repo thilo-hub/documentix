@@ -88,7 +88,7 @@ case $OPT in
 			./run_local.sh ./load_documents.pl  Documentation/FirstRun.pdf   || exit 91
 			touch .firstdoc
 		fi
-		./run_local.sh perl client_srv.pl || exit 95
+		exec ./run_local.sh perl client_srv.pl || exit 95
 		;;
 	stop)
 		test -f popuser/popfile.pid &&

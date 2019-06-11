@@ -335,16 +335,19 @@ sub ocrpdf {
     my @inpages = glob( $tmpdir->dirname . "/page*" );
 
     print STDERR "Convert ".scalar(@inpages)." pages\n" if $debug > 1;
-    my $qr;
+    my @qr;
     foreach $in (@inpages) {
         my $outim   = $in . ".jpg";
 
-        my $qrc=qexec($zbarimg,"-q", $in);
+        my $inx=$in.".png";
+        qexec("convert",$in,"-resize","800",$inx);
+        my $qrc=qexec($zbarimg,"-q", $inx);
 	if ( $qrc ) {
-		# print STDERR "RV: $qrc\n";
+		print STDERR "$pg:$qrc" if $debug>0;
 		chomp($qrc);
-		$qrc =~ s/\n/\n$pg:/gs;
-		$qr .= "$pg:$qrc";
+		foreach (split(/\n/,$qrc)) {
+			push @qr,"$pg:$_";
+		}
         }
         my $outpage = $tmpdir->dirname . "/o-page-" . $pg++;
         if ( $maxcpu<=1 || ( $pid = fork() ) == 0 ) {
@@ -378,9 +381,12 @@ print STDERR Dumper(\$self,\$qr) if $debug > 1;
 	if ( @cpages ) {
 	    $fail += do_pdfunite( $outpdf, @cpages );
 	    my $cmt=$md5;
-	    if ( $qr && $qr =~ /(\d+):QR-Code:(Front|Back) Page/ ) {
-		$cmt .= $self->try_merge_pages($2,$1,$outpdf,$md5);
-	    }
+	    $cmt .= ",SCAN:".join(",SCAN:",@qr) if @qr;
+	    #if ( $qr && $qr =~ /(\d+):QR-Code:(Front|Back) Page/ ) {
+		# $cmt .= $self->try_merge_pages($2,$1,$outpdf,$md5);
+		#$qr =~ s/\n/,/gs;
+		#$cmt .= "Q:$qr";
+		#}
 	    $fail += do_pdfstamp( $outpdf, $cmt );
 	    $self->del_meta($self->{"idx"},"pdfinfo");
 	    $self->ins_e($self->{"idx"},"pdfinfo", $self->pdf_info($outpdf));
@@ -393,18 +399,23 @@ print STDERR Dumper(\$self,\$qr) if $debug > 1;
     return $txt;
 }
 
+# if an other file can be found that contains the other qr code,
+# join both files and store the output
+# remove db entries to both old files
+# create new file with name suffix _combined
+#
 sub try_merge_pages
 {
-my ($self,$qrm,$pg,$ofile,$md5)=@_;
+my ($self,$this_page_code,$this_page_qr,$this_file,$this_file_md5)=@_;
     my $cmt="";
 
-    my $qro = "Front"; $qro =  "Back" if $qrm eq $qro;
+    my $other_page_code = "Front"; $other_page_code =  "Back" if $this_page_code eq $other_page_code;
     my $dh   = $self->{"dh"};
-    my $mt = $self->get_metas($md5);
+    my $mt = $self->get_metas($this_file_md5);
     my $mtime = $mt->{"mtime"};
     my $npages = $& if ( $mt->{"pdfinfo"} =~ m|^<tr><td>Pages</td><td>.*|m);
 
-print STDERR "Check if merge for $pg:$qrm possible\n" if $debug > 1;
+print STDERR "Check if merge for $this_page_qr:$this_page_code possible\n" if $debug > 1;
     $sel_qr = q{select b.idx,b.value,md5,file
 		      from metadata a join metadata b  using (idx) join metadata c  using (idx)  natural join hash natural join file
 		      where a.tag="pdfinfo" and a.value like ?
@@ -413,42 +424,45 @@ print STDERR "Check if merge for $pg:$qrm possible\n" if $debug > 1;
 		};
     $sel_qr =$dh->prepare($sel_qr);
     die "DBerror :$? $idx:$t:$c: " . $sel_qr->errstr unless
-	$sel_qr->execute("%$npages%","%QR-Code:$qro Page%",$mtime,$mtime);
-    my $doc->{"out"}=$ofile;
+	$sel_qr->execute("%$npages%","%QR-Code:$other_page_code Page%",$mtime,$mtime);
+    my $doc->{"out"}=$this_file;
     $doc->{"out"} =~ s/\.pdf/_combined.pdf/;
     while ( my $r = $sel_qr->fetchrow_hashref() ) {
 	    print STDERR "merge is possible\n" if $debug > 1;
-	    print STDERR "Merging documents: $r->{md5} + $md5\n";
-	    my $opage=$1 if $r->{"value"} =~ /(\d+):QR-Code:$qro Page/;
+	    print STDERR "Merging documents: $r->{md5} + $this_file_md5\n";
+	    my $opage=$1 if $r->{"value"} =~ /(\d+):QR-Code:$other_page_code Page/;
 	    $r->{"file"} = $self->pdf_filename($r->{"md5"});
-	    if ( $qrm eq "Back" ) {
-		    $doc->{"even"} = $ofile;
-		    $doc->{"even_skip"}=$pg;
+	    if ( $this_page_code eq "Back" ) {
+		    $doc->{"even"} = $this_file;
+		    $doc->{"even_skip"}=$this_page_qr;
 		    $doc->{"odd"}  = $r->{"file"};
 		    $doc->{"odd_skip"}= $opage;
 	    } else {
-		    $doc->{"odd"} = $ofile;
-		    $doc->{"odd_skip"}=$pg;
+		    $doc->{"odd"} = $this_file;
+		    $doc->{"odd_skip"}=$this_page_qr;
 		    $doc->{"even"}  = $r->{"file"};
 		    $doc->{"even_skip"}= $opage;
 	    }
 	    print STDERR ">>($opage):".Dumper($r,$doc) if $debug > 1;
-	    join_pdf($doc);
-	    unlink($ofile);
-	    rename($doc->{"out"},$ofile);
+	    $self->join_pdf($doc);
+	    unlink($this_file);
+	    rename($doc->{"out"},$this_file);
 	    print STDERR "remove merged file $r->{md5}\n" if $debug > 2;
 	    # Remove from DB the merged other file
 	    die "DBerror :$? $r->{md5} " . $dh->errstr unless
 		$dh->do(q{delete from hash where md5=?},undef,$r->{"md5"});
-	    die "DBerror :$? $r->{md5} $ofile " . $dh->errstr unless
-		$dh->do(q{update file set file=? where md5=?},undef,$ofile,$md5);
+	    die "DBerror :$? $r->{md5} $this_file " . $dh->errstr unless
+		$dh->do(q{update file set file=? where md5=?},undef,$this_file,$this_file_md5);
 	    $cmt .= " Merged($r->{md5})";
     }
 return $cmt;
 }
 
+
+
 sub join_pdf
 {
+    my $self=shift;
     $doc=shift;
     print STDERR "Join $doc->{odd} $doc->{even} -> $doc->{out}\n" if $debug>0;
     warn "Output $doc->{out} already exists" if -f $doc->{"out"};
@@ -468,8 +482,18 @@ sub join_pdf
     qexec("pdfseparate",  $doc->{"odd"}  ,"$tmp/page-%03d-a.pdf");
     my @o=sort {$a cmp $b}  glob("$tmp/page*.pdf");
     print STDERR "Joining ".(scalar(@o)-scalar(@l))." front pages and ".scalar(@l)." back pages to $doc->{out}\n" if $debug > 1;
+    my @out;
     splice(@o,($doc->{"odd_skip"}-1)*2,2);
-    qexec("pdfunite",@o,$doc->{"out"});
+    if (false ) {
+    foreach my $tf (@o) {
+	    my $qb=qexec("zbarimg","-q",$tf);
+	    push (@out,$tf )unless $qb =~ /QR-Code:(Front|Back) Page/;
+	    print "$tf: $qb";
+	    # undef $tf;
+	    # unshift @out;
+    }
+    }
+    qexec("pdfunite",@out,$doc->{"out"});
     unlink @o or die "failed remove @o";
 }
 
@@ -675,7 +699,7 @@ sub ins_e {
     my ( $self, $idx, $t, $c, $bin ) = @_;
     $bin = SQL_BLOB if defined $bin;
     $self->{"new_e"} = $self->{"dh"}->prepare(
-        "insert into metadata (idx,tag,value)
+        "insert or ignore into metadata (idx,tag,value)
 			 values (?,?,?)"
     ) unless $self->{"new_e"};
     $self->{"new_e"}->bind_param( 1, $idx, SQL_INTEGER );
