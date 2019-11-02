@@ -56,7 +56,9 @@ sub start_ocrservice
 sub stop_ocrservice
 {
    close $Wtr;
-   wait;
+   while ( ( my $kid = wait ) > 0 ) {
+            print "Stopped: $kid\n";
+        }
 }
 1;
 
