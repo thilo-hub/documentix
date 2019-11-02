@@ -1,5 +1,5 @@
 #!/bin/sh
-INSTALL_V="Documentix V0.02 - alpha"
+INSTALL_V="Documentix V0.03 - alpha"
 ERR=0;
 OPT="$@"
 

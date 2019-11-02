@@ -75,7 +75,7 @@ CREATE TRIGGER intxt after insert on metadata when new.tag = "text" begin
 					end;
 CREATE TRIGGER file_ins after insert  on file begin
 	insert or ignore into hash (md5,refcnt) values(new.md5,0);
-	update hash set idx= case when refcnt = 0 then new.rowid else idx end ,refcnt=refcnt+1  where hash.md5=new.md5; 
+	update hash set idx= case when refcnt = 0 then hash.rowid else idx end ,refcnt=refcnt+1  where hash.md5=new.md5; 
     end;
 CREATE TRIGGER cache_del before delete on cache_lst begin delete 
 		from cache_q where cache_q.qidx = old.qidx ; 

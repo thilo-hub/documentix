@@ -12,7 +12,7 @@ use Cwd 'abs_path';
 use Data::Dumper;
 use doclib::datelib;
 # $File::Temp::KEEP_ALL = 1;
-my $debug  = $Docconf::config->{debug};
+#my $debug  = $Docconf::config->{debug};
 
 my $tools = "/usr/pkg/bin";
 $tools = "/home/thilo/documentix/tools" unless -d $tools;
@@ -57,7 +57,7 @@ sub new {
     $self->set_debug(undef);
     $self->{"setup_db"} = \&setup_db;
     $self->{"dh1"}      = $dh;
-    trace_db($dh) if $debug > 3;
+    trace_db($dh) if  $Docconf::config->{debug} > 3;
     setup_db($self) unless $chldno;
     return $self;
 }
@@ -70,7 +70,7 @@ sub new {
 sub set_debug {
   my $self=shift;
   my $odebug=$debug;
-  $debug = shift or $Docconf::config->{debug};
+  $debug = shift @_  || Docconf::config->{"debug"};
   return $debug;
 }
 
@@ -387,7 +387,7 @@ print STDERR Dumper(\$self,\$qr) if $debug > 1;
 		#$qr =~ s/\n/,/gs;
 		#$cmt .= "Q:$qr";
 		#}
-	    $fail += do_pdfstamp( $outpdf, $cmt );
+	    $fail += do_pdfstamp( $outpdf, $cmt,$inpdf );
 	    $self->del_meta($self->{"idx"},"pdfinfo");
 	    $self->ins_e($self->{"idx"},"pdfinfo", $self->pdf_info($outpdf));
 	    $txt = do_pdftotext($outpdf);
@@ -484,7 +484,7 @@ sub join_pdf
     print STDERR "Joining ".(scalar(@o)-scalar(@l))." front pages and ".scalar(@l)." back pages to $doc->{out}\n" if $debug > 1;
     my @out;
     splice(@o,($doc->{"odd_skip"}-1)*2,2);
-    if (false ) {
+    if (0 ) {
     foreach my $tf (@o) {
 	    my $qb=qexec("zbarimg","-q",$tf);
 	    push (@out,$tf )unless $qb =~ /QR-Code:(Front|Back) Page/;
@@ -509,6 +509,7 @@ sub index_pdf {
     print STDERR "index_pdf $fn\n" if $debug > 1;
 
     # make sure we skip already ocred docs
+    my $fn_orig=$fn;
     $fn =~ s/\.ocr\.pdf$/\.pdf/;
 
     my $md5_f = file_md5_hex($fn);
@@ -552,6 +553,7 @@ sub index_pdf {
     $meta{"Docname"} = $fn;
     $meta{"Docname"} =~ s/^.*\///s;
     $self->{"file"} = $fn;
+    $self->{"file_o"} = $fn_orig;
     $self->{"idx"} = $idx;
     chomp( my $type =
           qexec(qw{file --dereference --brief  --mime-type}, $fn ));
@@ -680,7 +682,8 @@ sub index_pdf {
             my $c = $1 || "";
             $meta->{"Text"}    = $t;
             $meta->{"Content"} = $c;
-            $meta->{"pdfinfo"} = $self->pdf_info($self->{"file"});
+            my $fn=$self->{"file"};
+            $meta->{"pdfinfo"} = $self->pdf_info($self->{"file_o"});
         }
         my $l = length($t) || "-FAILURE-";
         return "FINISH ($l)";
@@ -1094,7 +1097,8 @@ sub do_convert_ocr {
     my ( $in, $outim ) = @_;
     @cmd = (
         qw{convert -density 300 },
-        $in, qw {-trim -quality 70 -flatten -sharpen 0x1.0}, $outim
+        $in, qw {-trim -quality 70 -flatten -sharpen 0x1.0 -deskew 40% -set option:deskew:auto-crop 10},
+        $outim
     );
     $msg .= "CMD: " . join( " ", @cmd, "\n" );
     $fail += ( system(@cmd) ? 1 : 0 );
@@ -1189,7 +1193,7 @@ sub do_pdftocairo {
 }
 
 sub do_pdfstamp {
-    my ( $outpdf,$cmt ) = @_;
+    my ( $outpdf,$cmt,$orig ) = @_;
     my $outpdf1=$outpdf.".pdf";
     my $creator;
     my $fail=0;
@@ -1197,11 +1201,16 @@ sub do_pdfstamp {
     chomp($creator=<$ver>);
     close($ver);
     print STDERR "Stamp: $cmt\n" if  $debug > 3;
-    my @tg="-Producer=$creator";
+    my @tg;
+    push @tg,"-tagsFromFile=$orig" if -r $orig;
+    push @tg,"-Producer=$creator";
     push @tg,"-Keywords=$cmt" if $cmt;
-    qexec("exiftool",@tg,"-overwrite_original_in_place",$outpdf);
+    push @tg,"-overwrite_original_in_place";
+    qexec("exiftool",@tg,$outpdf);
     qexec("qpdf","--linearize",$outpdf,$outpdf1);
+
     $fail++ unless  -r $outpdf1;
+    qexec("touch","-r",$orig,$outpdf1) if $orig && !$fail;
     rename $outpdf1,$outpdf unless $fail;
     return $fail;
 }

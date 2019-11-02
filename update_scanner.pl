@@ -5,7 +5,7 @@ use strict;
 use warnings;
 #use old smb version;
 
-$ENV{"LD_LIBRARY_PATH"}="/tmp/samba/private";
+$ENV{"LD_LIBRARY_PATH"}="/tmp/samba/private:/freenas-build/_BE/objs/world/usr/local/lib";
 $ENV{"PATH"} =~ s|^|/tmp/samba:|;
 
 
