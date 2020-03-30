@@ -38,6 +38,7 @@ $config = {
     root_dir              => "Documents",
     auth_disable          => 1,   #   Not finalized 
     unclassified_folder   => "Unsorted|unclassified", # Regular case insensitive regex for folders ignored at classifications
+    xmlrpc_port           => 28081,
 
     server_listen_if => "127.0.0.1:28080",
 };

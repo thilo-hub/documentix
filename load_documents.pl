@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-use lib ".";
 use doclib::pdfidx;
 use Ocr;
 use Data::Dumper;

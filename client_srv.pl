@@ -3,7 +3,6 @@
 
 use strict;
 use warnings;
-use lib ".";
 
 use Docconf;
 use Ocr;
@@ -35,9 +34,11 @@ my $session="/tmp/doc.sessions";
 my $session_time=24*3600; # seconds valid
 my $login_timeout=60; # seconds valid
 my $nthreads = $Docconf::config->{number_server_threads};
-my $doc_re="html|css|js|png|jpeg|jpg|gif|js\.map|properties";
-my $cgi_re="sh|pm|pl|cgi";
+my $doc_re=qr/\.(?:html|css|js|png|jpeg|jpg|gif|js\.map|properties)$/;
+my $cgi_re=qr/\.(?:sh|pm|pl|cgi)$/;
 my $pwfile=".htpasswd";
+my $public=$0; 
+$public =~ s|[^/]*$|public|;
 open(LOGGER,">>/tmp/documentix.log");
 { my $oh=select LOGGER; $|=1; select $oh; }
 # print "Setpgid: ".POSIX::setpgid(0,$$);
@@ -206,7 +207,7 @@ sub http_child {
         $ENV{"SERVER_ADDR"} = "http://$host:$port";
         $rq=sprintf( "[%s] %s %s",
             $c->peerhost, $r->method, $r->uri->as_string );
-        print "$rq\n";
+        print "$rq";
 
         my $matches = 0;
 
@@ -272,6 +273,7 @@ sub http_child {
         }
         $c->send_error(RC_FORBIDDEN)
           unless $matches;
+	print "\n";
 
         $c->close();
         undef $c;
@@ -332,39 +334,30 @@ sub http_child {
 
     sub do_anycgi {
         my $c = shift;
-        my $f = "." . $c->{request}->uri->path;
+        my $uri = $c->{request}->uri->path;
+        $uri =~ s|/\.\.|/|g;
 
-        # TODO:  make files more secure
-        # Restrict files to certain paths
-        # Make file an absolute path,
-        # return readable files from eq www
-        # executables only from eq cgi
+        my $file=$public.$uri;
 
-        if ( $f =~ /\.($doc_re)$/ && -r $f )
+        if ( $uri =~ m/$doc_re/ && -r $file )
         {    # Standard files that can be returned
-            $c->{"c"}->send_file_response($f);
-	    print STDERR " + ";
+	    print " + ";
+            $c->{"c"}->send_file_response($file);
             return undef;
         }
-        elsif ( $f =~ /\.($cgi_re)$/ && -x $f ) {
-            if ( $Docconf::config->{"cgi_enabled"} ) {
-
-                #print  Dumper($c);
-                my $json = JSON->new->utf8;
-                my $rv = $json->encode( { "args" => $c->{"args"} } );
-                local $ENV{"ARGS"} = $rv;
-	        print STDERR " + ";
-		my $m=qx{$f};
-                $m = HTTP::Response->new( RC_OK, undef, undef, $m );
-		$c->{"c"}->send_response( $m);
-		return undef;
-            }
-            return "Failed: cgi scripts are disabled";
+        elsif ( $Docconf::config->{"cgi_enabled"} &&  $uri =~ m/$cgi_re/ && -x $file ) {
+	    print " + ";
+	    my $json = JSON->new->utf8;
+	    my $rv = $json->encode( { "args" => $c->{"args"} } );
+	    local $ENV{"ARGS"} = $rv;
+	    my $m=qx{$file};
+	    $m = HTTP::Response->new( RC_OK, undef, undef, $m );
+	    $c->{"c"}->send_response( $m);
+	    return undef;
         }
-        print STDERR " - ";
+        print STDERR " - $file ";
         $c->{"c"}->send_error(RC_NOT_FOUND);
         return undef;
-        return "Failed $f";
     }
 
     sub do_ldres {
@@ -397,7 +390,7 @@ sub http_child {
         my $c = shift;
 	$c->{"c"}->send_basic_header;
 	$c->{"c"}->send_header("x-frame-options"=> "DENY");
-        $c->{"c"}->send_file_response( $Docconf::config->{"index_html"} );
+        $c->{"c"}->send_file_response( $public."/".$Docconf::config->{"index_html"} );
         return undef;
     }
     sub do_auth {

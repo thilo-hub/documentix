@@ -900,12 +900,8 @@ sub set_class_content {
 }
 
 {
-    my $pop_xml;
+    my $pop_xml="http://localhost:".$Docconf::config->{xmlrpc_port}."/RPC2";
 
-    $pop_xml = "http://localhost:"
-      . qx{awk '/xmlrpc_port/{printf "%s",\$2}' popuser/popfile.cfg} . "/RPC2";
-
-    #$pop_xml = "http://localhost:8180/RPC2";
     my $pop_cnt = 0;
 
     sub pop_call {
