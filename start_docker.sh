@@ -18,9 +18,9 @@ echo "Incoming: $INCOMING"
 
 docker run -p $PORT:80/tcp  -p $PORT2:18080/tcp \
 	--rm --detach \
-	--mount type=bind,src=$DOCUMENTS,dst=/documentix/Documents/Documents,readonly \
-	--mount type=bind,src=$INCOMING,dst=/documentix/Documents/incoming  \
-	--volume Database:/documentix/db\
+	--mount type=bind,src=$DOCUMENTS,dst=/volumes/Documents/Documents,readonly \
+	--mount type=bind,src=$INCOMING,dst=/volumes/Documents/incoming  \
+	--volume Database:/volumes/db\
 	--name documentix \
 	thiloj/documentix
 
