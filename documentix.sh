@@ -33,7 +33,6 @@ else
 	echo
 	echo "Please manually recheck the created configuration in: $DEFAULT_POPUSER/popuser_default.cfg  and Docconf.js"
 	echo and restart and connect to: "http://$INF" to complete configuration
-	kill $PID
 	wait
 fi
 

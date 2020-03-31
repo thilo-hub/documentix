@@ -560,6 +560,7 @@ sub index_pdf {
     print STDERR "Type: $type\n";
     $meta{"Mime"} = $type;
     my %mime_handler = (
+        "application/zip" => \&tp_unzip,
         "application/x-gzip" => \&tp_gzip,
         "application/pdf"    => \&tp_pdf,
         "application/msword" => \&tp_any,
@@ -655,6 +656,25 @@ sub index_pdf {
         my $of = $self->get_store( $meta->{"hash"},0);
         $self->{"file"} = $of . "/" . basename($i) . ".pdf";
         do_calibrepdf( $i, $self->{file} );
+        my $type = do_file( $self->{file} );
+        return $type;
+    }
+
+    sub tp_unzip {
+        my $self = shift;
+        my $meta = shift;
+        my $i    = $self->{"file"};
+	my $d    =  $self->get_store($meta->{"hash"});
+	foreach( qx{echo A | unzip -d "$d" "$i"} ) {
+		next unless /extracting:\s+(.*)\s*$/;
+		die "unzip problem? >$1<" unless -r $1;
+		print STDERR "Do: $1\n" if $debug > 1;
+		my $txt = $self->index_pdf( $1 );
+	}
+        $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
+        $self->{"file"} = $self->{"fh"}->filename;
+        # do_ungzip( $i, $self->{file} );
+
         my $type = do_file( $self->{file} );
         return $type;
     }
