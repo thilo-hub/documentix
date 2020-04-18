@@ -5,8 +5,8 @@ use strict;
 use warnings;
 #use old smb version;
 
-$ENV{"LD_LIBRARY_PATH"}="/tmp/samba/private:/freenas-build/_BE/objs/world/usr/local/lib";
-$ENV{"PATH"} =~ s|^|/tmp/samba:|;
+# $ENV{"LD_LIBRARY_PATH"}="/tmp/samba/private:/freenas-build/_BE/objs/world/usr/local/lib";
+# $ENV{"PATH"} =~ s|^|/tmp/samba:|;
 
 
 
@@ -70,8 +70,8 @@ foreach ( @onserver )
 }
 
 if (@new) {
-	Ocr::start_ocrservice();
 	my $pdfidx = pdfidx->new();
+	Ocr::start_ocrservice();
 	sub lock   { }
 	sub unlock { }
 	foreach(@new)

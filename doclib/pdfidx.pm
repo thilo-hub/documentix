@@ -1145,7 +1145,7 @@ sub qexec
 sub do_convert_thumb {
     my ( $fn, $pn ) = @_;
     $fn .= "[$pn]";
-    my @cmd = ( $convert, $fn, qw{-trim -normalize -thumbnail 400 png:-} );
+    my @cmd = ( $convert, $fn, qw{-trim -normalize -define png:exclude-chunk=iCCP,zCCP -thumbnail 400 png:-} );
     print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug>2;
     my $png = qexec(@cmd);
     return $png;

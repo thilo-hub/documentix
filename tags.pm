@@ -44,7 +44,7 @@ sub add_tag {
     return undef unless $json_text;
     $json_text = uri_unescape($json_text);
 
-    print STDERR Dumper($json_text);
+    # print STDERR Dumper($json_text);
     my $json        = JSON->new->utf8;
     my $perl_scalar = $json->decode($json_text);
 
