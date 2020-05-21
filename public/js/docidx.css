@@ -1,0 +1,387 @@
+div.snippet {
+    background: yello;
+    display: none
+}
+span.glyphicon {
+    font-size: 20px;  
+}
+.tagb { margin: 8px; float: left }
+.glyphicon-refresh-animate {
+    -animation: spin .7s infinite linear;
+    -webkit-animation: spin2 .7s infinite linear;
+}
+
+@-webkit-keyframes spin2 {
+    from { -webkit-transform: rotate(0deg);}
+    to { -webkit-transform: rotate(360deg);}
+}
+
+@keyframes spin {
+    from { transform: scale(1) rotate(0deg);}
+    to { transform: scale(1) rotate(360deg);}
+}
+
+span.info {
+    font-size:9px;
+
+}
+
+
+div.top {
+    padding: 0px;
+    width: 100%;
+    height: 40px
+}
+
+div#configbtn {
+    background: red;
+    position: absolute;
+    z-index: 20;
+
+}
+div#config {
+    position: absolute;
+    background: #b28d13;
+    // width: 100%;
+    // height: 100%;
+    //height: 300px;
+    border: black;
+    border-width: thick;
+    z-index: 9;
+    display: none;
+}
+.config { 
+    list-style-type: none
+}
+.confvalue { 
+    // color:green;
+    // width: 300px;
+}
+.confkey {
+    // color: brown;
+    width:100px;
+}
+
+
+div.left {
+    position: fixed;
+    padding: 0px;
+    width: 20%;
+    float: left;
+    padding: 0px
+}
+
+div.right {
+    word-wrap: break-word;
+    padding: 0px;
+    width: 78%;
+    float: right;
+    background: #eee
+}
+
+div.header {
+    border: thin inset blue;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    font-size: 22px;
+}
+
+div.menu {
+    border: none;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    float: left
+}
+
+#pagesel {
+    border: inset thin magenta;
+    height: 20px;
+    width: 100%
+}
+
+#taglist {
+    border: inset thin red;
+    _disabled_height: 120px
+}
+
+#fmsg {
+  height: 400px;
+  overflow-y: scroll;
+}
+#msg {
+    border: inset thin blue;
+    height: 30%;
+    float: left;
+    text-align: left;
+    width: 100%;
+    word-wrap: break-word
+}
+#droplist {
+    border: inset thin blue;
+    float: left;
+    text-align: left;
+    width: 100%;
+    word-wrap: break-word
+}
+
+div.results {
+    border: none;
+    width: 100%;
+    height: 100%;
+    float: right
+}
+
+a.doclink {
+    border: green;
+    color: green;
+    word-wrap: break-word;
+    z-index: 5
+}
+
+div.rcell {
+    border: none;
+    background-color: #f83
+}
+
+a.dtags {
+    background-color: #333
+}
+
+.tagfield:hover {
+    background-color: #fcc
+}
+
+.tagfield {
+    background-color: #ddd
+}
+
+.tagbox.filtered {
+	color: grey;
+}
+.tagbox {
+    background-color: transparent;
+    border: none;
+    font-style: italic;
+    padding: 1px;
+    z-index: 50;
+}
+
+img.thumbX {
+    width: 64px;
+    max-height: 64px;
+    padding-right: 5px;
+}
+
+
+img.thumb {
+    width: 100%;
+    max-height: 115px;
+    padding-right: 5px;
+}
+
+a.thumb {
+    border: none;
+    width: 100%;
+    float: left;
+}
+
+div.thumb {
+    background-color: #ccc;
+    border: none;
+    float: left;
+    width: 30%
+}
+
+div.descr {
+    border: none;
+    background: transparent;
+    width: 68%;
+    float: left;
+    padding-left: 4px;
+    font-size: 9pt;
+}
+
+input {
+	background: none;
+}
+.pageno {
+    padding: 0px;
+    _disabled_border: inset blue;
+    _disabled_background: grey;
+    width: 16px;
+}
+
+.this_page {
+    padding: 0px;
+    _disabled_border: inset blue;
+    background: grey;
+    color: red;
+    width: 16px;
+}
+
+#set_page {
+    padding: 0px;
+    _disabled_border: inset thin magenta;
+    background: none;
+    _disabled_height: 20px;
+    width: 100%
+}
+
+.p_content {
+    display: hidden
+}
+
+#nresults {
+    float: left;
+    padding-right: 10px
+}
+
+#idx {
+    float: left
+}
+
+#XXXpageno {
+    float: right;
+    height: 20px;
+}
+
+#query {
+    float: left;
+    border: solid grey
+}
+
+#XXXpages {
+    display: none;
+    position: fixed;
+    width: 100% ;
+    border: inset red
+}
+
+#tree1 {
+  height: 400px;
+  overflow-y: scroll;
+  user-select: none;
+}
+
+#classes {
+    display: none;
+    border: blue
+}
+
+.hidden {
+    display: none
+}
+
+input.tagbox_l {
+    border: 1px solid #CCC;
+    background: #cccc00;
+    padding: 2px;
+    border-radius: 10px;
+}
+
+unsel {
+    background: #cccccc;
+}
+
+.X_results {
+    width: 100%;
+    list-style-type: none
+}
+
+.deleted {
+	display: none;
+}
+.rbox {
+    border: inset #CCC;
+    width: 240px;
+    height: 120px;
+    float: left;
+    list-style-type: none;
+    z-index: -2 
+}
+.framed {
+    border-style:round; 
+    border-width: 8px;
+    border-color:red;
+
+}
+.rbox:hover {
+   background: #cccccc;
+}
+
+div.tagsinput {
+    border: 1px solid #CCC;
+    background: #EEE;
+    padding: 5px;
+    width: 15%;
+    height: 50px;
+    overflow-y: auto;
+}
+
+div#progress {
+    font-family: monospace;
+    font-weight: bold;
+    color: #82ad2b;
+}
+
+div.tagsinput span.tag a {
+    font-weight: bold;
+    color: #82ad2b;
+    text-decoration: none;
+    font-size: 11px;
+}
+
+div.tagsinput input {
+    width: 80px;
+    margin: 0px;
+    font-family: helvetica;
+    font-size: 13px;
+    border: 1px solid transparent;
+    padding: 5px;
+    background: transparent;
+    color: #000;
+    outline: 0px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+div.tagsinput div {
+    display: block;
+    float: left;
+}
+
+.tags_clear {
+    clear: both;
+    width: 100%;
+    height: 0px;
+}
+
+.not_valid {
+    background: #FBD8DB !important;
+    color: #90111A !important;
+}
+
+#tagedit {
+    display: none;
+    postion: absolute
+}
+
+div.tagsinput span.tag {
+    border: 1px solid #ddd;
+    -moz-border-radius: 2px;
+    -webkit-border-radius: 2px;
+    display: block;
+    float: left;
+    padding: 2px;
+    text-decoration: none;
+    background: transparent;
+    color: #333;
+    margin-right: 2px;
+    margin-bottom: 1px;
+    font-family: helvetica;
+    font-size: 13px;
+    font-style: italic
+}
+

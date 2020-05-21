@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="stylesheet" href="js/docidx.css" type="text/css"></link>
+<script type="text/javascript" src="lib/jquery-latest.js"></script>
+<script src="lib/jsrender.min.js" integrity="sha256-2Ly7Yu5hq6SvdjNVLSIhZAy29DsdFoUD6CZSNnqDXr0=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="js/tagmgmt.js"></script>
+<script type="text/javascript" src="js/docidx3.js"></script>
+
+  <style>
+  Xul {
+    list-style-type: none;
+      margin: 0;
+        padding: 0;
+  }
+  Xli {
+    color: green;
+    width: 80px;
+    float: left;
+    border: inset #0f0;
+    
+  }
+  div.dbg { 
+	  height: 20px;
+	  width: 100px;
+  }
+  .rbox {
+    	width: 200px;
+  }
+
+  span {
+    color: red;
+    display: inline;
+  }
+  .lb {
+    width: 839px;
+    height: 600px;
+    overflow-y: scroll;
+    float: left;
+    border: inset #ccc;
+    padding-inline-start: 0px;
+  }
+    
+  }
+  </style>
+
+
+  <meta charset="utf-8">
+  <title>scroll demo</title>
+	<script src="lib/jquery.tagsinput.min.js" integrity="sha256-IkytFcY/Z/rLvRE9rYyZvybaitAWr1y2jS/+eyxXky8=" crossorigin="anonymous"></script>
+<script>
+
+  
+var Xmonitor = function(win,st) {
+
+	var scrollWindow=win;
+	var scrollWindowHeight=scrollWindow.height();
+	var lastElement=win.children("li:last"); 
+	var state = st;
+
+
+	var Xwatcher = function() {
+
+	  var o = lastElement.offset().top - scrollWindow.offset().top;
+	  while ( o < scrollWindowHeight){
+	  
+	      lastElement = 
+		  state.getMore(state).appendTo(scrollWindow);
+		  
+	      o = lastElement.offset().top - scrollWindow.offset().top;
+	  }
+	  
+	  $( "span" ).css( "display", "none" ).fadeIn( "slow" );
+	  m = scrollWindow.scrollTop() + " " + scrollWindow.offset().top + " ";
+	  $("#R").html( state.n)
+	}
+	Xwatcher();
+        win.scroll( Xwatcher );
+}
+</script>
+</head>
+<body>
+<style>
+ .pdfviewer {
+   top: 0px;
+   right: 0px;
+   width: 800px;
+   height: 800px;
+   background: "#3c4";
+   float: right;
+   display:none;
+   position: absolute;
+ }
+.framed {
+    border-style:round; 
+    border-width: 3px;
+    border-style: inset;
+
+}
+</style>
+
+<iframe id="pdfview" name="pdfviewer" src="" class="pdfviewer"></iframe>
+<script type="text/javascript" src="js/3rd/wz_tooltip.js"></script>
+
+<input id="search" type="text" class="form-control"  placeholder="empty"/>
+ 
+<div>
+  <ul id="result" class="lb">
+  </ul>
+</div>
+<style>
+.cl_1, .cl_2, .cl_3 { font-size:9px; }
+.cl_4, .cl_5, .cl_6 { font-size:10px; }
+.cl_7 { font-size:11px; }
+.cl_8 { font-size:13px; }
+.cl_9 { font-size:15px; }
+.cl_10 { font-size:17px; }
+.cl_11 { font-size:24px; }
+.tags {
+
+  word-wrap: break-word;
+  margin: 2px;
+  border: black;
+  border-width: 1px;
+  border-radius: 20px;
+  /* background: #73AD21; */
+  padding: 2px;
+  border: 1px solid #afb2ac;
+}
+#taglist {
+  width: 200px;
+  height: 200px;
+  float: right;
+  color: blue;
+}
+
+  .tagfilter {
+    font-size: 20px;
+    color: red;
+  }
+
+
+</style>
+<div id="taglist"></div>
+<div class="dbg" id="fmsg">Debug Field</div>
+<div class="dbg" id="status">Status Field</div>
+
+
+
+
+ <script>
+
+var getMore = function(state) {
+var e = $("<li></li>").text(state.n++);
+ return e;
+}
+$.scrollbarWidth = function() {
+    var parent, child, width;
+
+    if(width===undefined) {
+          parent = $('<div style="width:50px;height:50px;overflow:auto"><div/></div>').appendTo('body');
+          child=parent.children();
+          width=child.innerWidth()-child.height(99).innerWidth();
+          parent.remove();
+        }
+
+   return width;
+};
+$(function(){ 
+
+  console.log("ScrollW:"+$.scrollbarWidth()); 
+});
+
+
+
+// Xmonitor($(".lb:first>ul"),{n:100,getMore: getMore});
+
+
+</script>
+<script id="template_result" type="text/x-jsrender">
+ {{for items tmpl="template_result_items"/}}
+</script>
+<script id="template_result_items" type="text/x-jsrender">
+  <li class="rbox {{if tg.match("deleted")}} deleted {{/if}}"
+    onclick="Showpdf('web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}.pdf',event)" >
+    <td id="{{:md5}}" >
+      <div class="rcell" >
+	<div class="thumb">
+	  <a class="thumb" 
+	    href='docs/raw/{{:md5}}/{{:doc}}{{:doct}}'
+	    ondragstart="Dropit('{{:md5}}','{{:doc}}{{:doct}}')"
+	    onmouseout="UnTip()" 
+	    onmouseover="Tip('{{:tip}}')"
+	  >
+	    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}.ico" />
+	  </a>
+	</div>
+	<div class="descr">
+	  <div class="doclink" onclick="event.stopPropagation()">
+	    <a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}{{:doct}}" download> {{:doc}}</a> 
+	  </div>
+	  <a class="dtags">
+	    <p class="tagfield" >
+	      <input onclick="tageditor(event)" class="tagbox" xid="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
+	    </p>
+	  </a>
+	  {{:dt}}
+	  <span class="info"><p> Pages: {{:pg}} / {{:sz}}</p></span>
+	</div>
+      </div>
+    </td>
+  </li> 
+</script>
+
