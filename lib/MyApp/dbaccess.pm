@@ -1,6 +1,7 @@
 package dbaccess;
 use XMLRPC::Lite;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
+use File::Basename;
 use MyApp::Docconf;
 
 use parent DBI;
@@ -32,13 +33,15 @@ sub new {
 
 # Retp
 # input either hash or idxY
+# return mime-type and path
 sub getFilePath {
 	my ( $self,$hash,$type ) = @_;
 
     my $dh    = $self->{"dh"};
     die "Bad input"  unless $hash =~ m/^[0-9a-f]{32}$/;
 
-    my $q = "select file from file where md5=?";
+    my $q = "select file,value Mime from file natural join hash natural join metadata  where md5=? and tag='Mime'";
+    # my $q = "select file from file where md5=? ";
     my $ph=$dh->prepare_cached($q);
 
     $ph->execute($hash);
@@ -47,18 +50,46 @@ sub getFilePath {
     #my $fn = $dh->selectcol_arrayref( $q, undef, $hash );
 
 
-    while( my $ra = $ph->fetchrow_arrayref ) {
-	next unless -r $$ra[0];
+    while( my $ra = $ph->fetchrow_hashref ) {
+	next unless -r $ra->{"file"};
 	$ph->finish();
-	return { file => $$ra[0]}  if $type eq "raw";
+	return $ra  if $type eq "raw"; # shortcut
 
 	# Not raw - 
-	if ( $type eq "pdf" ) {
-	}
+	return converter($type,$ra);
     }
     return {};
     die "DB outdated";
 }
+sub converter
+{
+	my ($totype,$ra)=@_;
+	my $cv = {
+		"raw" => sub { return $ra; },
+		"pdf" => \&get_bestpdf,
+		"ico" => \&get_icon,
+
+	};
+	my $c=$cv->{$totype};
+	return   { file=>"icon/Keys-icon.png" } unless $c;
+	return &$c($ra);
+}
+sub get_bestpdf
+{
+	my ($ra)=shift;
+
+	my ($name,$path,$suffix) = fileparse($ra->{file},qw{ocr.pdf pdf});
+	foreach( $path.$name."ocr.pdf",$path.$name.$suffix ) {
+		return {file => $_} if -r $_;
+	}
+	return  { file=>"public/icon/Keys-icon.png" };
+}
+ sub get_icon{ 
+	 my $ra=shift;
+	 return  { file=>"public/icon/Keys-icon.png" };
+ }
+
+
 
 #
 # Return hash of meta(s)

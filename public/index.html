@@ -187,8 +187,8 @@ $(function(){
       <div class="rcell" >
 	<div class="thumb">
 	  <a class="thumb" 
-	    href='docs/raw/{{:md5}}/{{:doc}}{{:doct}}'
-	    ondragstart="Dropit('{{:md5}}','{{:doc}}{{:doct}}')"
+	    href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}'
+	    ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')"
 	    onmouseout="UnTip()" 
 	    onmouseover="Tip('{{:tip}}')"
 	  >
@@ -197,7 +197,7 @@ $(function(){
 	</div>
 	<div class="descr">
 	  <div class="doclink" onclick="event.stopPropagation()">
-	    <a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}{{:doct}}" download> {{:doc}}</a> 
+	    <a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}</a> 
 	  </div>
 	  <a class="dtags">
 	    <p class="tagfield" >

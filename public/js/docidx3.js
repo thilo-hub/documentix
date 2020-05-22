@@ -106,13 +106,12 @@ var nsrch = "";
     do_tags = function(classes) {
 	var tg=$("#taglist").html("");
 	//classes.sort((a, b) => a.value - b.value);
-	for (let [key, value] of Object.entries(classes)) {
-	     var v= "cl_"+value+ " tags";;
-	      if ( key == clname )
+	classes.sort((a,b)=>b.count-a.count).forEach(function (e) {
+		var v = "cl_"+e.tagname + " tags";
+	      if ( e.tagname == clname )
 		v += " tagfilter ";
-	      tg.append('<a class="'+v+'" >'+key+'</a>');
-	      // console.log(`${key}: ${value}`);
-	}
+	      tg.append('<a class="'+v+'" >'+e.tagname+'</a>');
+	})
     }
 
 $(function() {

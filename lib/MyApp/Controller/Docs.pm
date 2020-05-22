@@ -8,7 +8,7 @@ my $ld=dbaccess->new();
 my $ld_r=ld_r->new();
 
 my $emptydoc = Mojo::Asset::File->new;
-$emptydoc->add_chunk('foo bar baz');
+# $emptydoc->add_chunk('foo bar baz');
 
 # This action will render a template
 sub senddoc {
