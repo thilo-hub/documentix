@@ -809,31 +809,6 @@ q{select value from hash natural join metadata where md5=? and tag="Text"},
 
     return $self->pdf_totext( $fn, $md5 );
 }
-
-sub pdf_thumb {
-    my $self = shift;
-    my $fn   = shift;
-    my $pn   = ( shift || 1 ) - 1;
-    $fn .= ".pdf" if ( -f $fn . ".pdf" );
-    my $png = do_convert_thumb( $fn, $pn );
-    return undef unless length($png);
-    return ( "image/png", $png );
-}
-
-sub pdf_icon {
-    my $self = shift;
-    my $fn   = shift;
-    my $pn   = ( shift || 1 ) - 1;
-    my $rot  = shift;
-    my $tmp  = tmpnam();
-
-    $fn .= ".pdf" if ( -f $fn . ".pdf" );
-    my $png = do_convert_icon( $fn, $pn );
-    return undef unless length($png);
-    return ( "image/png", $png );
-
-# return sprintf "Content-Type: image/png\nContent-Length: %d\n\n%s", length($png), $png;
-}
 ################# popfile interfaces
 # classify unclassified
 
@@ -1148,20 +1123,6 @@ sub do_convert_thumb {
     my @cmd = ( $convert, $fn, qw{-trim -normalize -define png:exclude-chunk=iCCP,zCCP -thumbnail 400 png:-} );
     print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug>2;
     my $png = qexec(@cmd);
-    return $png;
-}
-
-sub do_convert_icon {
-    my ( $fn, $pn ) = @_;
-
-    my @cmd = (
-        $pdftocairo, "-scale-to", $Docconf::config->{icon_size}, "-png", "-singlefile","-f",
-        $pn, "-l", $pn, $fn, "-"
-    );
-
-    print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug > 1;
-    my $png = qexec(@cmd);
-    print STDERR "L:" . length($png) . "\n" if $main::debug > 1;
     return $png;
 }
 

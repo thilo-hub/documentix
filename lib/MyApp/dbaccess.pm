@@ -1,15 +1,22 @@
 package dbaccess;
+use Carp;
 use XMLRPC::Lite;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 use File::Basename;
 use MyApp::Docconf;
+use doclib::cache;
+use MyApp::Converter;
+use Mojo::Asset;
 
 use parent DBI;
 use DBI qw(:sql_types);
 
 my $debug = 2;
+my $ph;
 
-
+my $cache;
+my $error_file= Mojo::Asset::File->new(path => "public/icon/Keys-icon.png") ;
+my $error_pdf= Mojo::Asset::File->new(path => "public/Error.pdf") ;
 sub new {
     my $class  = shift;
 
@@ -27,6 +34,10 @@ sub new {
     #$self->{"dh1"}      = $dh;
     # trace_db($dh) if  $Docconf::config->{debug} > 3;
     # setup_db($self) unless $chldno;
+    #$self->{"cache"}  
+    $cache = cache->new();
+    my $q = "select file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
+    $ph=$dh->prepare_cached($q);
     return $self;
 }
 
@@ -35,70 +46,56 @@ sub new {
 # input either hash or idxY
 # return mime-type and path
 sub getFilePath {
-	my ( $self,$hash,$type ) = @_;
+    my ( $self,$hash,$type ) = @_;
 
-    my $dh    = $self->{"dh"};
+    my $dh = $self->{"dh"};
     die "Bad input"  unless $hash =~ m/^[0-9a-f]{32}$/;
 
-    my $q = "select file,value Mime from file natural join hash natural join metadata  where md5=? and tag='Mime'";
-    # my $q = "select file from file where md5=? ";
-    my $ph=$dh->prepare_cached($q);
+    # my $q = "select file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
+    # my $ph=$dh->prepare_cached($q);
 
     $ph->execute($hash);
-
-
-    #my $fn = $dh->selectcol_arrayref( $q, undef, $hash );
-
-
     while( my $ra = $ph->fetchrow_hashref ) {
 	next unless -r $ra->{"file"};
 	$ph->finish();
-	return $ra  if $type eq "raw"; # shortcut
 
-	# Not raw - 
+	$ra->{"hash"} = $hash;
 	return converter($type,$ra);
     }
-    return {};
-    die "DB outdated";
+    return $error_pdf;
 }
 sub converter
 {
 	my ($totype,$ra)=@_;
 	my $cv = {
-		"raw" => sub { return $ra; },
+		"raw" => sub { return Mojo::Asset::File->new(path=>$ra->{"file"}) },
 		"pdf" => \&get_bestpdf,
 		"ico" => \&get_icon,
 
 	};
 	my $c=$cv->{$totype};
+	return   $error_file  unless $c;
 	return   { file=>"icon/Keys-icon.png" } unless $c;
 	return &$c($ra);
 }
 sub get_bestpdf
 {
 	my ($ra)=shift;
+	
+	croak "Wrong file-type: $ra->{Mime}" unless $ra->{Mime} =~ m|application/pdf|;
 
 	my ($name,$path,$suffix) = fileparse($ra->{file},qw{ocr.pdf pdf});
+	# search path
 	foreach( $path.$name."ocr.pdf",$path.$name.$suffix ) {
-		return {file => $_} if -r $_;
+		return Mojo::Asset::File->new(path => $_)  if -r $_;
 	}
-	return  { file=>"public/icon/Keys-icon.png" };
+	return $error_pdf;
 }
  sub get_icon{ 
 	 my $ra=shift;
-	 return  { file=>"public/icon/Keys-icon.png" };
+	 my ( $m, $res ) = $cache->get_cache( $ra->{"file"}, "$ra->{hash}-ico", \&Converter::mk_ico,$self );
+	 
+	 return Mojo::Asset::Memory->new()->add_chunk($res);
  }
 
-
-
-#
-# Return hash of meta(s)
-# input either hash or idxY
-#
-sub getMeta {
-	my ($self,$hash,$tag) = @_;
-	my $meta={ content => "No content yet" };
-	return $meta;
-}
-	
 1;

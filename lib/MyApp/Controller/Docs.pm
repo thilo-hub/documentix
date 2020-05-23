@@ -3,24 +3,21 @@ use Mojo::Base 'Mojolicious::Controller';
 use MyApp::Docconf;
 use MyApp::dbaccess;;
 use MyApp::ld_r;
+use Mojo::Asset;
 
 my $ld=dbaccess->new();
 my $ld_r=ld_r->new();
 
-my $emptydoc = Mojo::Asset::File->new;
-# $emptydoc->add_chunk('foo bar baz');
 
 # This action will render a template
 sub senddoc {
-#  my $self = shift;
    my $c   = shift;
    my $type = $c->stash('type');
    my $hash = $c->stash('hash');
    my $doc = $c->stash('doc');
-   my $res = $ld->getFilePath($hash,$type);
-   return $c->reply->file( $res->{file} ) if $res->{file};
 
-  return $c->reply->asset($emptydoc);
+   my $res = $ld->getFilePath($hash,$type);
+   return $c->reply->asset($res);
 }
 
 # Multipart upload handler

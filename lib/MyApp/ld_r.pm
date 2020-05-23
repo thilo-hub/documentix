@@ -22,7 +22,7 @@ my $myhost = hostname();
 my $ANY = "*ANY*";
 
 my $cached_search = q{insert or ignore into cache_q ( qidx,idx,snippet ) 
-                                select ?,docid,snippet(text,1,"<b>","</b>","...",3) 
+                                select ?,docid,snippet(text,1,"<b>","</b>","...",10) 
 					from text  join hash on (docid=idx) where text match ? order by rank  };
 
 # Extend search to include date range
@@ -225,62 +225,60 @@ sub ldres {
 	$get_res=qq{ select *  from cache_q natural join hash natural join ftime natural join pdfinfo where qidx=?};
         push @sargs,$idx;
 
-	 # CREATE VIEW fileinfo as
-	 # select idx,md5,mtime,pdfinfo,file,group_concat(tagname) tags from hash natural join file natural join ftime natural join pdfinfo natural left join ( select idx,tagname from tags natural join tagname) group by idx
-	 # /* fileinfo(idx,md5,mtime,pdfinfo,file,tags) */;
-	# Return query ($idx) result
-
-
 	# TODO: only if idx=0 first page
 	# get tags in result set
-	$classes=q{select tagname,count(*) count  from tags natural join tagname where idx in (select idx  from cache_q where qidx=?) group by tagid};
 	$ndata = qq{select nresults from cache_lst where qidx=?};
+    $ndata   = $dh->prepare_cached($ndata);
+    $ndata -> execute($idx);
 
-	my $sel_t=$dh->prepare_cached($classes);
-	$sel_t->execute($idx);
-	$classes = $sel_t->fetchall_arrayref({});
-	# get number of results
-        $ndata   = $dh->prepare_cached($ndata);
-        $ndata -> execute($idx);
-
+	if ($idx0 eq 1){
+	    $classes=q{select tagname,count(*) count  from tags natural join tagname where idx in (select idx  from cache_q where qidx=?) group by tagid};
+	    my $sel_t=$dh->prepare_cached($classes);
+	    $sel_t->execute($idx);
+	    $classes = $sel_t->fetchall_arrayref({});
+	}
+	#
 	# get display list
     }
     else {
 	# Return all
-
-	$classes = qq{ select tagname,count(*) count from $subsel tags natural join tagname group by tagid};
-	my $sel_t=$dh->prepare_cached($classes);
-	$sel_t->execute();
-	$classes = $sel_t->fetchall_arrayref({});
-	$ndata = qq{ select count(*) from $subsel hash };
-	#$get_res=qq{ select fileinfo.*,Content snippet  from fileinfo natural join Content order by mtime desc };
 	$get_res=qq{ select *,Content snippet  from hash natural join Content natural join ftime natural join pdfinfo};
-        $ndata   = $dh->prepare_cached($ndata);
-        $ndata -> execute();
+
+
+	if ($idx0 eq 1){
+	    $classes = qq{ select tagname,count(*) count from $subsel tags natural join tagname group by tagid};
+	    my $sel_t=$dh->prepare_cached($classes);
+	    $sel_t->execute();
+	    $classes = $sel_t->fetchall_arrayref({});
+	}
+	$ndata = qq{ select count(*) from $subsel hash };
+    $ndata   = $dh->prepare_cached($ndata);
+    $ndata -> execute();
     }
     # class list
     if ( $class ) {
-       $get_res =~ s/from/from (select idx  from tagname natural join tags where tagname = ?)/;
+       $get_res =~ s/from/from (select idx  from tagname natural join tags where tagname = ? limit ? offset ?) natural join/;
        unshift @sargs,$class;
+    } else {
+	$get_res .= " limit ? offset ?";
     }
 
     # Assemble final query
-    $get_res .= " limit ? offset ?";
     push @sargs,$ppage,int($idx0-1);
 
     $get_res=qq{ select idx,md5,mtime,pdfinfo,file,tags,snippet  from ($get_res) natural left join taglist natural left join file group by idx };
+
     # total count
-    $ndata   = $dh->selectrow_array($ndata);
+    # get number of results
+    my $hh=$ndata;
+    $ndata   = $hh->fetchrow_array();
+    $hh->finish;
 
     #  Add selection of slice wanted
 
     $get_res = $dh->prepare_cached($get_res);
     $get_res->execute(@sargs);
 
-    # unshift @$classes,[$ANY,$ndata];
-    # $classes=[map{ join(':',@$_)} @$classes];
-
-    # my $out = load_results( $dh, $get_res );
     my $out = $get_res->fetchall_arrayref({});
     foreach ( @$out ) {
 	if ( my $mpdf = $_->{"pdfinfo"} ){
