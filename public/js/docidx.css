@@ -118,14 +118,6 @@ div.menu {
     width: 100%;
     word-wrap: break-word
 }
-#droplist {
-    border: inset thin blue;
-    float: left;
-    text-align: left;
-    width: 100%;
-    word-wrap: break-word
-}
-
 div.results {
     border: none;
     width: 100%;
@@ -300,12 +292,6 @@ unsel {
     float: left;
     list-style-type: none;
     z-index: -2 
-}
-.framed {
-    border-style:round; 
-    border-width: 8px;
-    border-color:red;
-
 }
 .rbox:hover {
    background: #cccccc;

@@ -11,8 +11,18 @@ sub startup {
   # Configure the application
   $self->secrets($config->{secrets});
 
+  # Job queue (requires a background worker process)
+  #
+  #   $ script/linkcheck minion worker
+  #
+  $self->plugin(Minion => {SQLite => $config->{cache_db}});
+  $self->plugin('Minion::Admin');
+  $self->plugin('MyApp::Task::Processor');
+
+
   # Router
   my $r = $self->routes;
+  $self->max_request_size(100*2**20);
 
   # Normal route to controller
   $r->get('/')->to('example#welcome');

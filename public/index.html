@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html lang="en">
 <head>
 <link rel="stylesheet" href="js/docidx.css" type="text/css"></link>
@@ -91,12 +91,19 @@ var Xmonitor = function(win,st) {
    display:none;
    position: absolute;
  }
-.framed {
+.viewing {
     border-style:round; 
     border-width: 3px;
     border-style: inset;
+    border-color:red;
 
 }
+.selecting {
+    border-style:round; 
+    border-width: 3px;
+    border-color:green;
+}
+
 </style>
 
 <iframe id="pdfview" name="pdfviewer" src="" class="pdfviewer"></iframe>
@@ -108,6 +115,37 @@ var Xmonitor = function(win,st) {
   <ul id="result" class="lb">
   </ul>
 </div>
+
+
+
+<style>
+.filedrop {
+  background: grey;
+  width: 100px;
+  float: right;
+  
+}
+#droplist {
+    border: inset thin blue;
+    float: left;
+    text-align: left;
+    width: 100%;
+    height: 50px;
+    word-wrap: break-word
+}
+
+</style>
+<script type="text/javascript" src="js/3rd/filedrop.js"></script>
+<div class="filedrop">
+<hr>
+<fieldset id="zone">
+    <legend>Drop a file inside &hellip;</legend>
+    <div id="droplist"></div>
+</fieldset>
+<script type="text/javascript" src="js/upload.js"></script>
+</div>
+
+
 <style>
 .cl_1, .cl_2, .cl_3 { font-size:9px; }
 .cl_4, .cl_5, .cl_6 { font-size:10px; }
@@ -149,7 +187,6 @@ var Xmonitor = function(win,st) {
 
 
  <script>
-
 var getMore = function(state) {
 var e = $("<li></li>").text(state.n++);
  return e;
@@ -174,6 +211,13 @@ $(function(){
 
 
 // Xmonitor($(".lb:first>ul"),{n:100,getMore: getMore});
+function DoViewer(event) {
+  var rb=$(event.target).closest(".rbox");
+ // Showpdf('web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}.pdf',event)" > 
+   var id=$(rb).attr("id")
+   var doc=$(rb).attr("docname")
+   Showpdf('web/viewer.html?file=../docs/pdf/'+id+'/'+doc+'.pdf',event);
+}
 
 
 </script>
@@ -182,8 +226,9 @@ $(function(){
 </script>
 <script id="template_result_items" type="text/x-jsrender">
   <li class="rbox {{if tg.match("deleted")}} deleted {{/if}}"
-    onclick="Showpdf('web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}.pdf',event)" >
-    <td id="{{:md5}}" >
+    id="{{:md5}}" docname="{{:doc}}"
+    oncontextmenu="DoContext(event)"
+    onclick="DoViewer(event)"
       <div class="rcell" >
 	<div class="thumb">
 	  <a class="thumb" 
@@ -208,7 +253,89 @@ $(function(){
 	  <span class="info"><p> Pages: {{:pg}} / {{:sz}}</p></span>
 	</div>
       </div>
-    </td>
   </li> 
+</script>
+
+<style>
+.custom-menu {
+    display: none;
+    z-index: 1000;
+    position: absolute;
+    overflow: hidden;
+    border: 1px solid #CCC;
+    white-space: nowrap;
+    font-family: sans-serif;
+    background: #FFF;
+    color: #333;
+    border-radius: 5px;
+    padding: 0;
+}
+
+/* Each of the items in the list */
+.custom-menu li {
+    padding: 8px 12px;
+    cursor: pointer;
+    list-style-type: none;
+    transition: all .3s ease;
+    user-select: none;
+}
+
+.custom-menu li:hover {
+    background-color: #DEF;
+}
+</style>
+<ul class='custom-menu'>
+  <li data-action="log">Record in notepad</li>
+</ul>
+<script>
+
+function DoContext(event) {
+    
+    // Avoid the real one
+    event.preventDefault();
+
+   var rb=$(event.target).closest(".rbox");
+   var id=$(rb).attr("id")
+   var doc=$(rb).attr("docname")
+    rb.addClass("selecting");
+    // Show contextmenu
+
+    $(document).one("mousedown", function(e) {
+	    if (!$(e.target).parents(".custom-menu").length > 0) {
+		e.preventDefault();
+		$("li.rbox").removeClass("selecting");
+		// Hide it
+		$(".custom-menu").hide(100);
+	    }
+    });
+ 
+    $(".custom-menu").finish().toggle(100).
+    
+    // In the right position (the mouse)
+    css({
+        top: event.pageY + "px",
+        left: event.pageX + "px"
+    });
+};
+
+
+// If the menu element is clicked
+$(".custom-menu li").click(function(){
+    
+    // This is the triggered action name
+    switch($(this).attr("data-action")) {
+        
+        // A case for each action. Your actions here
+	case "log": 
+          var j=$("li.rbox.selecting").clone()
+          $("#fmsg").append(j);
+	break;
+    }
+  
+    // Hide it AFTER the action was triggered
+    $(".custom-menu").hide(100);
+    $("li.rbox").removeClass("selecting");
+  });
+
 </script>
 

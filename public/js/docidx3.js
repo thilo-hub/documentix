@@ -117,11 +117,14 @@ var nsrch = "";
 $(function() {
     Showpdf = function(u,e) {
 	    var p=$('#pdfview');
-	    if ( $(e.currentTarget).hasClass("framed") )
+	    if ( $(e.currentTarget).hasClass("viewing") ) {
+	        $(".rbox").removeClass("viewing");
+		p.hide();
 	    	return false;
+	    }
 	    //RED frame
-	    $(".rbox").removeClass("framed");
-	    $(e.currentTarget).addClass("framed");
+	    $(".rbox").removeClass("viewing");
+	    $(e.currentTarget).addClass("viewing");
 
 	    if ( p.length ) {
 		    var r=$("#result");

@@ -7,6 +7,7 @@ use MyApp::Docconf;
 use doclib::cache;
 use MyApp::Converter;
 use Mojo::Asset;
+use File::MimeInfo;
 
 use parent DBI;
 use DBI qw(:sql_types);
@@ -97,5 +98,80 @@ sub get_bestpdf
 	 
 	 return Mojo::Asset::Memory->new()->add_chunk($res);
  }
+
+ #return 
+use Digest::MD5 qw(md5 md5_hex md5_base64);
+ sub load_file {
+	my ($self,$app,$asset,$name) = @_;
+	my $dh = $self->{"dh"};
+   $DB::single = 1;
+	 my $md5 = Digest::MD5->new;
+	 $dgst = $md5->add($asset->slurp)->hexdigest;
+
+	 # Check db if content exist
+	 my $add_hash = $dh->prepare_cached(q{insert or ignore into hash (md5,refcnt) values(?,1)});
+	 my $rv = $add_hash->execute($dgst);
+	 if ( $rv == 0E0 ) {
+		 # return know info
+		 return "Known",item($self,$dgst);
+	 }
+	 $name =~ m|([^/]*)(\.[^\.]*)$|;
+	 my $file = $1;
+	 my $ext  = $2;
+	 $dgst =~ /^(..)/;
+
+	 # Locate storage place
+	 my $ob="uploads/$1";
+	 mkdir $ob unless -d $ob;
+	 $ob .= "/$dgst";
+	 mkdir $ob unless -d $ob;
+	 $ob .= "/$name";
+	 $asset->move_to($ob);
+	 $fh= $asset->handle();
+         my $type = mimetype($fh);
+	 $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
+	 $add_file->execute($dgst,$ob);
+	 my $id = $app->minion->enqueue(loader => [$dgst,$ob,$type]);
+
+
+	 return "Loading",{ md5 => $dgst,
+		  doc => $file,
+		  doct=> $ext,
+		  tg  => 'processing',
+		  pg  => '?',
+		  tip => 'processing='. $id,
+		  dt  => 'DATE',
+		  sz  => conv_size($asset->size),
+	  };
+  }
+
+sub conv_size
+{  
+
+	my $s=shift;
+	return sprintf("%.1f Gb",$s/2**30) if $s > 2**30;
+	return sprintf("%.1f Mb",$s/2**20) if $s > 2**20;
+	return sprintf("%.1f kb",$s/2**10);
+}
+
+sub item
+{
+	my ($self,$md5)=@_;
+	my $dh = $self->{"dh"};
+	my $get=$dh->prepare_cached(qq{ select md5,tags tg,content.value tip,file doc,pdfinfo from fileinfo natural join metadata content where md5=? and content.tag = 'Content' limit 1});
+	$get->execute($md5);
+	my $hash_ref = $get->fetchall_hashref( "md5" );
+	$hash_ref=$hash_ref->{$md5};
+	 $hash_ref->{doc} =~ s|^.*/([^/]*)(\.[^\.]+)$|$1|;
+	 $hash_ref->{doct} = $2;
+	 $hash_ref->{dt} =$1 if  $hash_ref->{pdfinfo} =~ m|<td>ModDate</td><td>\s+(.*?)</td>|;
+	 $hash_ref->{pg} =$1 if  $hash_ref->{pdfinfo} =~ m|<td>Pages</td><td>\s+(.*?)</td>|;
+	 $hash_ref->{sz} =conv_size($1) if  $hash_ref->{pdfinfo} =~ m|<td>File size</td><td>\s+(\d+) bytes</td>|;
+	 delete $hash_ref->{pdfinfo};
+	 return $hash_ref;
+ }
+
+
+
 
 1;

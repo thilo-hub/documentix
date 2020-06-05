@@ -4,7 +4,16 @@ use MyApp::Docconf;
 use MyApp::dbaccess;;
 use MyApp::ld_r;
 use Mojo::Asset;
+use Mojo::Upload;
+use Mojo::Util;
+ use Mojo::Log;
+use Data::Dumper;
+use File::MimeInfo::Magic;
+use IO::Scalar;
 
+
+
+my $log = Mojo::Log->new;
 my $ld=dbaccess->new();
 my $ld_r=ld_r->new();
 
@@ -28,13 +37,23 @@ sub upload {
    return $c->render(text => 'File is too big.', status => 200)
      if $c->req->is_limit_exceeded;
 
-   # Process uploaded file
-   # return $c->redirect_to('form') 
-   return $c->render(test => "Wrong") unless my $example = $c->param('example');
-   my $size = $example->size;
-   my $name = $example->filename;
-   $c->render(text => "Thanks for uploading $size byte file $name.");
- };
+   my $f=Mojo::Asset::File->new()->add_chunk($c->req->body);
+   $f->mtime(str2time($c->req->headers->header('X-File-Date'))) if $c->res->headers->header('X-File-Date');
+   my ($status,$rv)=$ld->load_file($c,$f,$c->req->headers->header('X-File-Name'));
+
+    my $hash = $c->req->headers->to_hash();
+    # my $name = Dumper(  $hash ); $log->debug($name);
+
+my $resp = {
+	'nitems' => 9999,
+	'items' => [ $rv ],
+	'nresults' => 12433,
+	'msg' => $status,
+};
+
+   my $size = length $c->req->body;
+   $c->render(json => $resp );
+};
 
   ## Render template "example/welcome.html.ep" with message
   #$self->render(msg => 'Welcome to the Mojolicious real-time web framework!');
