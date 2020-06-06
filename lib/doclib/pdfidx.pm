@@ -13,6 +13,8 @@ use Data::Dumper;
 use doclib::datelib;
 # $File::Temp::KEEP_ALL = 1;
 #my $debug  = $Docconf::config->{debug};
+my $debug=5;
+my $minion=undef;
 
 my $tools = "/usr/pkg/bin";
 $tools = "/home/thilo/documentix/tools" unless -d $tools;
@@ -297,11 +299,25 @@ sub ocrpdf_async {
 	return Ocr::push_job($self->{"idx"},@_);
 }
 
+sub ocrpdf_sync {
+	my $self=shift;
+	my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
+	print STDERR "ocrpdf_sync: ".Dumper(\@_);
+	# Otherwise the directory would be deleted
+	open (FH,">$outpdf.wip");
+	print FH "WIP\n";
+	close(FH);
+	return $self->ocrpdf_offline($self->{"idx"},@_);
+}
+
+# do OCR of pdf and fix metadata
+#
+# ARGS:  $self, $idx, $inpdf, $outpdf, $ascii, $md5
+# RET:   $text
 sub ocrpdf_offline
 {
 	my $self=shift;
 	my $idx=shift;
-my $odb=$self->set_debug($debug+5);
 	$self->{"idx"}=$idx;
         $t = $self->ocrpdf(@_);
         if ($t) {
@@ -310,19 +326,39 @@ my $odb=$self->set_debug($debug+5);
             $self->ins_e( $idx, "Text", $t );
 
             # short version
-            $t =~ m/^\s*(([^\n]*\n){24}).*/s;
-            my $c = $1 || "";
+	    my $c = summary(\$t);
 	    $self->del_meta($idx,"Content");
             $self->ins_e( $idx, "Content", $c );
 	    $self->{"fixup_cache"}($self,$idx) if $self->{"fixup_cache"};
         }
-$self->set_debug($odb);
+	return count_text($t);
 }
+# Return text sizes
+sub count_text {
+	my $t = shift;
+	$t =~ s/[^\s]+/X/gs;
+	my $w = $t;
+	$w =~ s/[^X]//g;
+	$w = length($w);
+	my $p = $t;
+	$p =~ s/[^\f]//gs;
+	$p = length($p);
+	return "Pages: $p Words: $w";
+}
+# Create summary of text -- can be imporved
+sub summary {
+    my $t = shift;
+    $$t =~ m/^\s*(([^\n]*\n){24}).*/s;
+    return  $1 || "";
+}
+# ARGS:  $inpdf, $outpdf, $ascii, $md5
+# RET:   $text
 sub ocrpdf {
     my $self = shift;
     my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
     my $maxcpu = $Docconf::config->{number_ocr_threads};
     my @outpages;
+$DB::single = 1;
     print STDERR "ocrpdf $inpdf $outpdf\n" if $debug > 1;
     $inpdf  = abs_path($inpdf);
     $outpdf = abs_path($outpdf);
@@ -500,19 +536,197 @@ sub join_pdf
 
 # Read input pdf and join the given html file
 
+sub index_pdf_raw {
+    my $self = shift;
+    my $dh   = $self->{"dh"};
+    my $fn   = shift;
+    my $wdir = shift;
+    my $class= shift;
+    my $md5_f= shift;
+    my $type = shift;
+    $minion  = shift;
+    print STDERR "index_pdf $fn\n" if $debug > 1;
+
+    my ($idx) =
+      $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
+
+    my %meta;
+    $meta{"Docname"} = basename($fn);
+    $self->{"file"} = $fn;
+    $self->{"file_o"} = $fn;
+    $self->{"idx"} = $idx;
+    chomp( $type =
+          qexec(qw{file --dereference --brief  --mime-type}, $fn ))
+  	unless $type;
+    print STDERR "Type: $type\n";
+    $meta{"Mime"} = $type;
+    my %mime_handler = (
+        "application/zip" => \&tp_unzip,
+        "application/x-gzip" => \&tp_gzip,
+        "application/pdf"    => \&tp_pdf,
+        "application/msword" => \&tp_any,
+        "image/png"         => \&tp_jpg,
+        "image/jpeg"         => \&tp_jpg,
+        "image/jpg"         => \&tp_jpg,
+	"text/plain"	     => \&tp_ascii,
+"application/vnd.openxmlformats-officedocument.presentationml.presentation"
+          => \&tp_any,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" =>
+          \&tp_any,
+"application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          => \&tp_any,
+        "application/epub+zip"          => \&tp_ebook,
+        "application/vnd.ms-powerpoint" => \&tp_any
+    );
+
+    $meta{"size"} = ( stat($fn) )[7];
+    $meta{"mtime"} = ( stat($fn) )[9];
+    $meta{"hash"}  = $md5_f;
+    $type =~ s/;.*//;
+    $type = $mime_handler{$type}( $self, \%meta ) while $mime_handler{$type};
+
+    print STDERR " -> $type\n";
+
+    $meta{"Image"} = '<img src="?type=thumb&send=#hash#">';
+    ( $meta{"PopFile"}, $meta{"Class"} ) =
+      ( $self->pdf_class_file( $fn, \$meta{"Text"}, $meta{"hash"}, $class ) );
+
+    $meta{"keys"} = join( ' ', keys(%meta) );
+
+    foreach ( keys %meta ) {
+        $self->ins_e( $idx, $_, $meta{$_} );
+    }
+    $meta->{"Text"} = count_text($meta->{"Text"}) if $meta->{"Text"};
+    
+    if ($type eq "FAILED")
+    {
+	# roll back new data
+	$dh->prepare(q{delete from file where file=?})->execute($fn);
+	$idx=$type;
+    }
+    datelib::fixup_dates($dh);
+
+    return $idx, \%meta;
+
+    sub tp_any {
+        my $self = shift;
+        my $meta = shift;
+        return "FAILED" unless $Docconf::config->{unoconv_enabled};
+        my $i = $self->{"file"};
+
+        # Output will generally be created in the local_storage (and kept)
+        my $of = $self->get_store( $meta->{"hash"},0);
+        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
+        do_unopdf( $i, $self->{file} )
+		unless -r $self->{file};
+        my $type = do_file( $self->{file} );
+        return $type;
+    }
+    sub tp_jpg {
+        my $self = shift;
+        my $meta = shift;
+        my $i = $self->{"file"};
+
+        # Output will generally be created in the local_storage (and kept)
+        my $of = $self->get_store( $meta->{"hash"},0);
+        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
+        do_convert_pdf( $i, $self->{file} );
+        my $type = do_file( $self->{file} );
+        return $type;
+    }
+
+    sub tp_ascii {
+        my $self = shift;
+        my $meta = shift;
+        my $i = $self->{"file"};
+
+        # Output will generally be created in the local_storage (and kept)
+        my $of = $self->get_store( $meta->{"hash"},0);
+        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
+        do_ascii2pdf( $i, $self->{file} );
+        my $type = do_file( $self->{file} );
+        return $type;
+    }
+
+    sub tp_ebook {
+        my $self = shift;
+        my $meta = shift;
+        return "FAILED" unless $Docconf::config->{ebook_convert_enabled};
+        my $i = $self->{"file"};
+
+        # Output will generally be created in the local_storage (and kept)
+        my $of = $self->get_store( $meta->{"hash"},0);
+        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
+        do_calibrepdf( $i, $self->{file} );
+        my $type = do_file( $self->{file} );
+        return $type;
+    }
+
+    sub tp_unzip {
+        my $self = shift;
+        my $meta = shift;
+        my $i    = $self->{"file"};
+	my $d    =  $self->get_store($meta->{"hash"});
+	foreach( qx{echo A | unzip -d "$d" "$i"} ) {
+		next unless /extracting:\s+(.*)\s*$/;
+		die "unzip problem? >$1<" unless -r $1;
+		print STDERR "Do: $1\n" if $debug > 1;
+		my $txt = $self->index_pdf( $1 );
+	}
+        $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
+        $self->{"file"} = $self->{"fh"}->filename;
+        # do_ungzip( $i, $self->{file} );
+
+        my $type = do_file( $self->{file} );
+        return $type;
+    }
+
+    sub tp_gzip {
+        my $self = shift;
+        my $i    = $self->{"file"};
+        $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
+        $self->{"file"} = $self->{"fh"}->filename;
+        do_ungzip( $i, $self->{file} );
+
+        my $type = do_file( $self->{file} );
+        return $type;
+    }
+
+    sub tp_pdf {
+        my $self = shift;
+        my $meta = shift;
+        my $t    = $self->pdf_text( $self->{"file"}, $meta->{"hash"} );
+        if ($t) {
+            $t =~ s/[ \t]+/ /g;
+
+            # short version
+            $t =~ m/^\s*(([^\n]*\n){1,24}).*/s;
+            my $c = $1 || "";
+            $meta->{"Text"}    = $t;
+            $meta->{"Content"} = $c;
+            my $fn=$self->{"file"};
+            $meta->{"pdfinfo"} = $self->pdf_info($self->{"file_o"});
+        }
+        my $l = length($t) || "-FAILURE-";
+        return "FINISH ($l)";
+    }
+
+}
+
 sub index_pdf {
     my $self = shift;
     my $dh   = $self->{"dh"};
     my $fn   = shift;
     my $wdir = shift;
     my $class= shift;
+    my $md5_f= shift;
     print STDERR "index_pdf $fn\n" if $debug > 1;
 
     # make sure we skip already ocred docs
     my $fn_orig=$fn;
     $fn =~ s/\.ocr\.pdf$/\.pdf/;
 
-    my $md5_f = file_md5_hex($fn);
+    $md5_f = file_md5_hex($fn) unless $md5_f;
 
     # Hack?
     # if a source document is not in a writable directory,
@@ -788,6 +1002,8 @@ sub pdf_totext {
 print STDERR "XXXXXX> $lcl_store_dir \n" if $debug > 1;
     # do the ocr conversion
     mkdir($lcl_store_dir) unless -d $lcl_store_dir;
+    return $minion->enqueue(ocr=> [$fn, $lcl_store .".ocr.pdf",undef,$md5]=>{priority=>0} ) if $minion;
+    return $self->ocrpdf_sync( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
     return $self->ocrpdf_async( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
 }
 

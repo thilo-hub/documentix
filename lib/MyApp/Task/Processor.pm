@@ -2,29 +2,34 @@ package MyApp::Task::Processor;
 use Mojo::Base 'Mojolicious::Plugin';
 
 use Mojo::URL;
+use doclib::pdfidx;
+my $pdfidx  = pdfidx->new(0);
 
+my $minion;
 sub register {
   my ($self, $app) = @_;
-  $app->minion->add_task(loader => \&_loader);
+  $minion=$app->minion;
+  $minion->add_task(loader => \&_loader);
+  $minion->add_task(ocr => \&_ocr);
+}
+
+sub _ocr {
+  my ($job, @args)=@_;
+  $job->finish( $pdfidx->ocrpdf_sync(@args));
 }
 
 sub _loader {
-  my ($job, $url) = @_;
+  my ($job, $dgst,$fn,$type,$wdir) = @_;
+  my $class = undef;
 
   my @results=@_;
-  say 'Here';
-  sleep 1;
+  say 'Process';
+  # sleep 1;
+  $DB::single = 1;
+  my $txt = $pdfidx->index_pdf_raw( $fn, $wdir,$class,$dgst ,$type,$minion);
+  # $ld_r->update_caches();
   say 'done';
-#  my $ua  = $job->app->ua;
-#  my $res = $ua->get($url)->result;
-#  push @results, [$url, $res->code];
-#
-#  for my $link ($res->dom->find('a[href]')->map(attr => 'href')->each) {
-#    my $abs = Mojo::URL->new($link)->to_abs(Mojo::URL->new($url));
-#    $res = $ua->head($abs)->result;
-#    push @results, [$link, $res->code];
-#  }
-#
+  $results[5] = $txt;
   $job->finish(\@results);
 }
 

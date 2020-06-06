@@ -1,12 +1,14 @@
 package MyApp;
 use Mojo::Base 'Mojolicious';
+use Minion::Command::minion::worker;
 
+my $config;
 # This method will run once at server start
 sub startup {
   my $self = shift;
 
   # Load configuration from hash returned by config file
-  my $config = $self->plugin('Config');
+  $config = $self->plugin('Config');
 
   # Configure the application
   $self->secrets($config->{secrets});
@@ -19,6 +21,8 @@ sub startup {
   $self->plugin('Minion::Admin');
   $self->plugin('MyApp::Task::Processor');
 
+  #my $worker = Minion::Command::minion::worker->new;
+  #$worker->run;
 
   # Router
   my $r = $self->routes;

@@ -7,7 +7,9 @@ use MyApp::Docconf;
 use doclib::cache;
 use MyApp::Converter;
 use Mojo::Asset;
-use File::MimeInfo;
+#use File::MimeInfo;
+use File::MimeInfo::Magic;
+
 
 use parent DBI;
 use DBI qw(:sql_types);
@@ -109,7 +111,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	 $dgst = $md5->add($asset->slurp)->hexdigest;
 
 	 # Check db if content exist
-	 my $add_hash = $dh->prepare_cached(q{insert or ignore into hash (md5,refcnt) values(?,1)});
+	 my $add_hash = $dh->prepare_cached(q{insert or ignore into hash (md5) values(?)});
 	 my $rv = $add_hash->execute($dgst);
 	 if ( $rv == 0E0 ) {
 		 # return know info
@@ -125,13 +127,14 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	 mkdir $ob unless -d $ob;
 	 $ob .= "/$dgst";
 	 mkdir $ob unless -d $ob;
+	 my $wdir = $ob;
 	 $ob .= "/$name";
 	 $asset->move_to($ob);
 	 $fh= $asset->handle();
-         my $type = mimetype($fh);
+         my $type = mimetype($ob);
 	 $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
 	 $add_file->execute($dgst,$ob);
-	 my $id = $app->minion->enqueue(loader => [$dgst,$ob,$type]);
+	 my $id = $app->minion->enqueue(loader => [$dgst,$ob,$type,$wdir] => {priority => 5});
 
 
 	 return "Loading",{ md5 => $dgst,

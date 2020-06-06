@@ -242,7 +242,7 @@ sub ldres {
     }
     else {
 	# Return all
-	$get_res=qq{ select *,Content snippet  from hash natural join Content natural join ftime natural join pdfinfo};
+	$get_res=qq{ select *,Content snippet  from hash natural join Content natural join ftime natural join pdfinfo order by idx desc};
 
 
 	if ($idx0 eq 1){

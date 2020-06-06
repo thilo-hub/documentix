@@ -26,9 +26,9 @@ $config = {
     debug_js              => 1,
     results_per_page      => 10,
     number_server_threads => 4,
-    number_ocr_threads    => 4,
+    number_ocr_threads    => 8,
     browser_start         => 1,
-    local_storage         => "Documents/incoming",
+    local_storage         => "uploads",
     link_local            => 0,              # symlink files into local_storage
     ebook_convert_enabled => 1,
     unoconv_enabled       => 1,
@@ -38,7 +38,7 @@ $config = {
     root_dir              => "Documents",
     auth_disable          => 1,   #   Not finalized 
     unclassified_folder   => "Unsorted|unclassified", # Regular case insensitive regex for folders ignored at classifications
-    xmlrpc_port           => 28081,
+    xmlrpc_port           => 18081,
 
     server_listen_if => "127.0.0.1:28080",
 };
