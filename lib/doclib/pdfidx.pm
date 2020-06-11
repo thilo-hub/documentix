@@ -1,7 +1,6 @@
 package pdfidx;
 use XMLRPC::Lite;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
-use parent MyApp::Docconf;
 
 use parent DBI;
 use DBI qw(:sql_types);
@@ -12,7 +11,6 @@ use Cwd 'abs_path';
 use Data::Dumper;
 use doclib::datelib;
 # $File::Temp::KEEP_ALL = 1;
-#my $debug  = $Docconf::config->{debug};
 my $debug=5;
 my $minion=undef;
 
@@ -46,20 +44,23 @@ my $cleanup = 0;
 sub new {
     my $class  = shift;
     my $chldno = shift;
+    my $config = shift;
 
-    my $dbn    = $Docconf::config->{database_provider};
-    my $d_name = $Docconf::config->{database};
-    my $user   = $Docconf::config->{database_user};
-    my $pass   = $Docconf::config->{database_pass};
+$DB::single = 1;
+    my $dbn    = $config->{database_provider};
+    my $d_name = $config->{database};
+    my $user   = $config->{database_user};
+    my $pass   = $config->{database_pass};
 
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
+    $dh->sqlite_busy_timeout(60000);
     print STDERR "New pdf conn: $dh\n" if $debug > 0;
-    my $self = bless { dh => $dh, dbname => $d_name }, $class;
-    $self->set_debug(undef);
+    my $self = bless { dh => $dh, dbname => $d_name, config => $config }, $class;
+    $self->set_debug($config->{"debug"});
     $self->{"setup_db"} = \&setup_db;
     $self->{"dh1"}      = $dh;
-    trace_db($dh) if  $Docconf::config->{debug} > 3;
+    trace_db($dh) if  $config->{debug} > 3;
     setup_db($self) unless $chldno;
     return $self;
 }
@@ -72,7 +73,7 @@ sub new {
 sub set_debug {
   my $self=shift;
   my $odebug=$debug;
-  $debug = shift @_  || Docconf::config->{"debug"};
+  $debug = shift @_;
   return $debug;
 }
 
@@ -356,7 +357,7 @@ sub summary {
 sub ocrpdf {
     my $self = shift;
     my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
-    my $maxcpu = $Docconf::config->{number_ocr_threads};
+    my $maxcpu = $self->{config}->{number_ocr_threads};
     my @outpages;
 $DB::single = 1;
     print STDERR "ocrpdf $inpdf $outpdf\n" if $debug > 1;
@@ -552,8 +553,8 @@ sub index_pdf_raw {
 
     my %meta;
     $meta{"Docname"} = basename($fn);
-    $self->{"file"} = $fn;
-    $self->{"file_o"} = $fn;
+    $meta{"_file"} = $fn;
+    $meta{"_file_o"} = $fn;
     $self->{"idx"} = $idx;
     chomp( $type =
           qexec(qw{file --dereference --brief  --mime-type}, $fn ))
@@ -611,61 +612,61 @@ sub index_pdf_raw {
     sub tp_any {
         my $self = shift;
         my $meta = shift;
-        return "FAILED" unless $Docconf::config->{unoconv_enabled};
-        my $i = $self->{"file"};
+        return "FAILED" unless $self->{config}->{unoconv_enabled};
+        my $i = $meta{"_file"};
 
         # Output will generally be created in the local_storage (and kept)
         my $of = $self->get_store( $meta->{"hash"},0);
-        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
-        do_unopdf( $i, $self->{file} )
-		unless -r $self->{file};
-        my $type = do_file( $self->{file} );
+        $meta{"_file"} = $of . "/" . basename($i) . ".pdf";
+        do_unopdf( $i, $meta{_file} )
+		unless -r $meta{_file};
+        my $type = do_file( $meta{_file} );
         return $type;
     }
     sub tp_jpg {
         my $self = shift;
         my $meta = shift;
-        my $i = $self->{"file"};
+        my $i = $meta{"_file"};
 
         # Output will generally be created in the local_storage (and kept)
         my $of = $self->get_store( $meta->{"hash"},0);
-        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
-        do_convert_pdf( $i, $self->{file} );
-        my $type = do_file( $self->{file} );
+        $meta{"_file"} = $of . "/" . basename($i) . ".pdf";
+        do_convert_pdf( $i, $meta{_file} );
+        my $type = do_file( $meta{_file} );
         return $type;
     }
 
     sub tp_ascii {
         my $self = shift;
         my $meta = shift;
-        my $i = $self->{"file"};
+        my $i = $meta{"_file"};
 
         # Output will generally be created in the local_storage (and kept)
         my $of = $self->get_store( $meta->{"hash"},0);
-        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
-        do_ascii2pdf( $i, $self->{file} );
-        my $type = do_file( $self->{file} );
+        $meta{"_file"} = $of . "/" . basename($i) . ".pdf";
+        do_ascii2pdf( $i, $meta{_file} );
+        my $type = do_file( $meta{_file} );
         return $type;
     }
 
     sub tp_ebook {
         my $self = shift;
         my $meta = shift;
-        return "FAILED" unless $Docconf::config->{ebook_convert_enabled};
-        my $i = $self->{"file"};
+        return "FAILED" unless $self->{config}->{ebook_convert_enabled};
+        my $i = $meta{"_file"};
 
         # Output will generally be created in the local_storage (and kept)
         my $of = $self->get_store( $meta->{"hash"},0);
-        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
-        do_calibrepdf( $i, $self->{file} );
-        my $type = do_file( $self->{file} );
+        $meta{"_file"} = $of . "/" . basename($i) . ".pdf";
+        do_calibrepdf( $i, $meta{_file} );
+        my $type = do_file( $meta{_file} );
         return $type;
     }
 
     sub tp_unzip {
         my $self = shift;
         my $meta = shift;
-        my $i    = $self->{"file"};
+        my $i    = $meta{"_file"};
 	my $d    =  $self->get_store($meta->{"hash"});
 	foreach( qx{echo A | unzip -d "$d" "$i"} ) {
 		next unless /extracting:\s+(.*)\s*$/;
@@ -674,28 +675,28 @@ sub index_pdf_raw {
 		my $txt = $self->index_pdf( $1 );
 	}
         $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
-        $self->{"file"} = $self->{"fh"}->filename;
+        $meta{"_file"} = $meta{"_fh"}->filename;
         # do_ungzip( $i, $self->{file} );
 
-        my $type = do_file( $self->{file} );
+        my $type = do_file( $meta{_file} );
         return $type;
     }
 
     sub tp_gzip {
         my $self = shift;
-        my $i    = $self->{"file"};
+        my $i    = $meta{"_file"};
         $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
-        $self->{"file"} = $self->{"fh"}->filename;
-        do_ungzip( $i, $self->{file} );
+        $meta{"_file"} = $meta{"_fh"}->filename;
+        do_ungzip( $i, $meta{_file} );
 
-        my $type = do_file( $self->{file} );
+        my $type = do_file( $meta{_file} );
         return $type;
     }
 
     sub tp_pdf {
         my $self = shift;
         my $meta = shift;
-        my $t    = $self->pdf_text( $self->{"file"}, $meta->{"hash"} );
+        my $t    = $self->pdf_text( $meta->{"_file"}, $meta->{"hash"} );
         if ($t) {
             $t =~ s/[ \t]+/ /g;
 
@@ -704,8 +705,8 @@ sub index_pdf_raw {
             my $c = $1 || "";
             $meta->{"Text"}    = $t;
             $meta->{"Content"} = $c;
-            my $fn=$self->{"file"};
-            $meta->{"pdfinfo"} = $self->pdf_info($self->{"file_o"});
+            my $fn=$meta->{"_file"};
+            $meta->{"pdfinfo"} = $self->pdf_info($meta->{"_file_o"});
         }
         my $l = length($t) || "-FAILURE-";
         return "FINISH ($l)";
@@ -734,8 +735,8 @@ sub index_pdf {
     # pointing to the source document.
     # the incoming, can then hold the OCR and whatever other stuff we need
     # HACK: I don't see a better way right now
-    if ( $Docconf::config->{link_local}
-        && !( $fn =~ /$Docconf::config->{local_storage}/ ) )
+    if ( $self->{config}->{link_local}
+        && !( $fn =~ /$self->{config}->{local_storage}/ ) )
     {
         my $f_dir = dirname($fn);
         my $new   = $self->get_store( $md5_f,0);
@@ -766,9 +767,9 @@ sub index_pdf {
     my %meta;
     $meta{"Docname"} = $fn;
     $meta{"Docname"} =~ s/^.*\///s;
-    $self->{"file"} = $fn;
-    $self->{"file_o"} = $fn_orig;
-    $self->{"idx"} = $idx;
+    $meta{"_file"} = $fn;
+    $meta{"_file_o"} = $fn_orig;
+    $meta{"_idx"} = $idx;
     chomp( my $type =
           qexec(qw{file --dereference --brief  --mime-type}, $fn ));
     print STDERR "Type: $type\n";
@@ -804,6 +805,10 @@ sub index_pdf {
     ( $meta{"PopFile"}, $meta{"Class"} ) =
       ( $self->pdf_class_file( $fn, \$meta{"Text"}, $meta{"hash"}, $class ) );
 
+    foreach ( keys %meta ) {
+	delete $meta{$_}  if /^_/;
+    }
+
     $meta{"keys"} = join( ' ', keys(%meta) );
 
     foreach ( keys %meta ) {
@@ -823,61 +828,61 @@ sub index_pdf {
     sub tp_any {
         my $self = shift;
         my $meta = shift;
-        return "FAILED" unless $Docconf::config->{unoconv_enabled};
-        my $i = $self->{"file"};
+        return "FAILED" unless $self->{config}->{unoconv_enabled};
+        my $i = $meta->{"_file"};
 
         # Output will generally be created in the local_storage (and kept)
         my $of = $self->get_store( $meta->{"hash"},0);
-        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
-        do_unopdf( $i, $self->{file} )
-		unless -r $self->{file};
-        my $type = do_file( $self->{file} );
+        $meta->{"_file"} = $of . "/" . basename($i) . ".pdf";
+        do_unopdf( $i, $meta->{_file} )
+		unless -r $meta->{_file};
+        my $type = do_file( $meta->{_file} );
         return $type;
     }
     sub tp_jpg {
         my $self = shift;
         my $meta = shift;
-        my $i = $self->{"file"};
+        my $i = $meta->{"_file"};
 
         # Output will generally be created in the local_storage (and kept)
         my $of = $self->get_store( $meta->{"hash"},0);
-        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
-        do_convert_pdf( $i, $self->{file} );
-        my $type = do_file( $self->{file} );
+        $meta->{"_file"} = $of . "/" . basename($i) . ".pdf";
+        do_convert_pdf( $i, $meta->{_file} );
+        my $type = do_file( $meta->{_file} );
         return $type;
     }
 
     sub tp_ascii {
         my $self = shift;
         my $meta = shift;
-        my $i = $self->{"file"};
+        my $i = $meta->{"_file"};
 
         # Output will generally be created in the local_storage (and kept)
         my $of = $self->get_store( $meta->{"hash"},0);
-        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
-        do_ascii2pdf( $i, $self->{file} );
-        my $type = do_file( $self->{file} );
+        $meta->{"_file"} = $of . "/" . basename($i) . ".pdf";
+        do_ascii2pdf( $i, $meta->{_file} );
+        my $type = do_file( $meta->{_file} );
         return $type;
     }
 
     sub tp_ebook {
         my $self = shift;
         my $meta = shift;
-        return "FAILED" unless $Docconf::config->{ebook_convert_enabled};
-        my $i = $self->{"file"};
+        return "FAILED" unless $self->{config}->{ebook_convert_enabled};
+        my $i = $meta->{"_file"};
 
         # Output will generally be created in the local_storage (and kept)
         my $of = $self->get_store( $meta->{"hash"},0);
-        $self->{"file"} = $of . "/" . basename($i) . ".pdf";
-        do_calibrepdf( $i, $self->{file} );
-        my $type = do_file( $self->{file} );
+        $meta->{"_file"} = $of . "/" . basename($i) . ".pdf";
+        do_calibrepdf( $i, $meta->{_file} );
+        my $type = do_file( $meta->{_file} );
         return $type;
     }
 
     sub tp_unzip {
         my $self = shift;
         my $meta = shift;
-        my $i    = $self->{"file"};
+        my $i    = $meta->{"_file"};
 	my $d    =  $self->get_store($meta->{"hash"});
 	foreach( qx{echo A | unzip -d "$d" "$i"} ) {
 		next unless /extracting:\s+(.*)\s*$/;
@@ -886,28 +891,29 @@ sub index_pdf {
 		my $txt = $self->index_pdf( $1 );
 	}
         $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
-        $self->{"file"} = $self->{"fh"}->filename;
-        # do_ungzip( $i, $self->{file} );
+        $meta->{"_file"} = $meta->{"_fh"}->filename;
+        # do_ungzip( $i, $meta->{_file} );
 
-        my $type = do_file( $self->{file} );
+        my $type = do_file( $meta->{_file} );
         return $type;
     }
 
     sub tp_gzip {
         my $self = shift;
-        my $i    = $self->{"file"};
+	my $meta = shift;
+        my $i    = $meta->{"_file"};
         $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
-        $self->{"file"} = $self->{"fh"}->filename;
-        do_ungzip( $i, $self->{file} );
+        $meta->{"_file"} = $meta->{"_fh"}->filename;
+        do_ungzip( $i, $meta->{_file} );
 
-        my $type = do_file( $self->{file} );
+        my $type = do_file( $meta->{_file} );
         return $type;
     }
 
     sub tp_pdf {
         my $self = shift;
         my $meta = shift;
-        my $t    = $self->pdf_text( $self->{"file"}, $meta->{"hash"} );
+        my $t    = $self->pdf_text( $meta->{"_file"}, $meta->{"hash"} );
         if ($t) {
             $t =~ s/[ \t]+/ /g;
 
@@ -916,8 +922,8 @@ sub index_pdf {
             my $c = $1 || "";
             $meta->{"Text"}    = $t;
             $meta->{"Content"} = $c;
-            my $fn=$self->{"file"};
-            $meta->{"pdfinfo"} = $self->pdf_info($self->{"file_o"});
+            my $fn=$meta->{"_file"};
+            $meta->{"pdfinfo"} = $self->pdf_info($meta->{"_file_o"});
         }
         my $l = length($t) || "-FAILURE-";
         return "FINISH ($l)";
@@ -997,6 +1003,7 @@ sub pdf_totext {
     # return if some text is found
     return $txt if length($txt) > 300;
     # give up if we already use an ocr version
+    print STDERR "XXXXXX:  text: $txt<<<\n";
     return $txt if ( $fn =~ /.ocr.pdf$/);
 
 print STDERR "XXXXXX> $lcl_store_dir \n" if $debug > 1;
@@ -1111,7 +1118,9 @@ sub set_class_content {
 }
 
 {
-    my $pop_xml="http://localhost:".$Docconf::config->{xmlrpc_port}."/RPC2";
+    my $pop_xml="http://localhost:".$MyApp::config->{xmlrpc_port}."/RPC2";
+
+$DB::single = 1;
 
     my $pop_cnt = 0;
 
@@ -1483,7 +1492,7 @@ sub get_store {
     my $self = shift;
     my $digest=shift;
     my $md = shift || 0;
-    my $wdir = $Docconf::config->{local_storage};
+    my $wdir = $self->{config}->{local_storage};
     mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
     $wdir  = abs_path($wdir);
     $digest =~ m/^(..)/;

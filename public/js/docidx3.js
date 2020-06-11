@@ -72,6 +72,25 @@ var nsrch = "";
 			}
 		    });
 		}
+    //  callback when new data arrive
+    // Update page idx with json data
+    insert_item = function(data) {
+        if ( data.items.length > 0 ) {
+        var dup= $("#"+data.items[0].md5);
+	if (dup)
+		dup.parents("li").remove();
+	data.URL=document.location.origin;
+        var itm = template.render(data);
+        var rv=$('#result').prepend(itm);
+        var msg = data.msg;
+	$('#msg').html("Item:" + data.doc + "</br>");
+        if (msg)
+            $('#msg').append(msg);
+	return $("#"+data.items[0].md5);
+	}
+        return;
+    }
+
 		$.ajax({
 		    url: "ldres",
 		    dataType: 'json',
@@ -96,7 +115,6 @@ var nsrch = "";
 		});
 	    });
     };
-
       
     dbg_msg = function(msg) {
 	  if (msg)

@@ -37,7 +37,7 @@ fd.jQuery();
 		    //$('#droplist').append(this.name+" done<br>");
 		    if ( rv && drop_count === 1) {
 			    var u= $(rv).find("a.thumb").prop("href");
-			    Showpdf(u);
+			    Showpdf(u,{currentTarget: rv});
 			}
 		    
 		  });

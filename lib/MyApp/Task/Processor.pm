@@ -3,7 +3,6 @@ use Mojo::Base 'Mojolicious::Plugin';
 
 use Mojo::URL;
 use doclib::pdfidx;
-my $pdfidx  = pdfidx->new(0);
 
 my $minion;
 sub register {
@@ -15,6 +14,7 @@ sub register {
 
 sub _ocr {
   my ($job, @args)=@_;
+  my $pdfidx  = pdfidx->new(0,$MyApp::config);
   $job->finish( $pdfidx->ocrpdf_sync(@args));
 }
 
@@ -22,6 +22,7 @@ sub _loader {
   my ($job, $dgst,$fn,$type,$wdir) = @_;
   my $class = undef;
 
+  my $pdfidx  = pdfidx->new(0,$MyApp::config);
   my @results=@_;
   say 'Process';
   # sleep 1;

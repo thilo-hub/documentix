@@ -2,12 +2,20 @@ package MyApp;
 use Mojo::Base 'Mojolicious';
 use Minion::Command::minion::worker;
 
-my $config;
+$MyApp::config=undef;
+
 # This method will run once at server start
 sub startup {
   my $self = shift;
 
+$self->hook(before_dispatch => sub {
+  my $c=shift;
+  $c->req->url->base->path('/documentix/') if
+   $c->req->headers->header('X-Forwarded-Host');
+});
+
   # Load configuration from hash returned by config file
+  our $config;
   $config = $self->plugin('Config');
 
   # Configure the application
@@ -18,7 +26,7 @@ sub startup {
   #   $ script/linkcheck minion worker
   #
   $self->plugin(Minion => {SQLite => $config->{cache_db}});
-  $self->plugin('Minion::Admin');
+  $self->plugin('Minion::Admin'); #  => {route => $self->routes->any('/testing')});
   $self->plugin('MyApp::Task::Processor');
 
   #my $worker = Minion::Command::minion::worker->new;
@@ -26,7 +34,7 @@ sub startup {
 
   # Router
   my $r = $self->routes;
-  $self->max_request_size(100*2**20);
+  $self->max_request_size(300*2**20);
 
   # Normal route to controller
   $r->get('/')->to('example#welcome');

@@ -9,6 +9,8 @@ use MyApp::Converter;
 use Mojo::Asset;
 #use File::MimeInfo;
 use File::MimeInfo::Magic;
+use MyApp::ld_r;
+use Date::Parse;
 
 
 use parent DBI;
@@ -30,6 +32,7 @@ sub new {
 
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
       || die "Err database connection $!";
+    $dh->sqlite_busy_timeout(60000);
     print STDERR "New pdf conn: $dh\n" if $debug > 0;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
     #$self->set_debug(undef);
@@ -117,6 +120,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 		 # return know info
 		 return "Known",item($self,$dgst);
 	 }
+	 $name =~ s/%20/ /g; # 
 	 $name =~ m|([^/]*)(\.[^\.]*)$|;
 	 my $file = $1;
 	 my $ext  = $2;
@@ -143,7 +147,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 		  tg  => 'processing',
 		  pg  => '?',
 		  tip => 'processing='. $id,
-		  dt  => 'DATE',
+		  dt  => ld_r::pr_time(time()),
 		  sz  => conv_size($asset->size),
 	  };
   }
@@ -167,7 +171,8 @@ sub item
 	$hash_ref=$hash_ref->{$md5};
 	 $hash_ref->{doc} =~ s|^.*/([^/]*)(\.[^\.]+)$|$1|;
 	 $hash_ref->{doct} = $2;
-	 $hash_ref->{dt} =$1 if  $hash_ref->{pdfinfo} =~ m|<td>ModDate</td><td>\s+(.*?)</td>|;
+	 $hash_ref->{doc} =~ s|%20| |g;
+	 $hash_ref->{dt} = ld_r::pr_time(str2time($1)) if  $hash_ref->{pdfinfo} =~ m|<td>ModDate</td><td>\s+(.*?)</td>|;
 	 $hash_ref->{pg} =$1 if  $hash_ref->{pdfinfo} =~ m|<td>Pages</td><td>\s+(.*?)</td>|;
 	 $hash_ref->{sz} =conv_size($1) if  $hash_ref->{pdfinfo} =~ m|<td>File size</td><td>\s+(\d+) bytes</td>|;
 	 delete $hash_ref->{pdfinfo};

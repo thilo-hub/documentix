@@ -1,10 +1,14 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html lang="en">
-<head>
-<link rel="stylesheet" href="js/docidx.css" type="text/css"></link>
+<!DOCTYPE html
+        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+         "lib/xhtml1-transitional.dtd">
+<html xmlns="lib/xhtml" lang="en-US" xml:lang="en-US">
+    <head>
+	<title>Documentix Document Manager</title>
+<link rel="stylesheet" href="js/docidx.css" type="text/css"/>
 <script type="text/javascript" src="lib/jquery-latest.js"></script>
-<script src="lib/jsrender.min.js" integrity="sha256-2Ly7Yu5hq6SvdjNVLSIhZAy29DsdFoUD6CZSNnqDXr0=" crossorigin="anonymous"></script>
+<script src="lib/jsrender.min.js" integrity="sha256-jCkC+X+pO2BXAAX0QCzoPNXDJKA7XY1luH2l/Tpzb1Y=" crossorigin="anonymous"></script>
 <script type="text/javascript" src="js/tagmgmt.js"></script>
+<script type="text/javascript" src="js/clipboard.min.js"></script>
 <script type="text/javascript" src="js/docidx3.js"></script>
 
   <style>
@@ -40,13 +44,10 @@
     border: inset #ccc;
     padding-inline-start: 0px;
   }
-    
-  }
   </style>
 
 
   <meta charset="utf-8">
-  <title>scroll demo</title>
 	<script src="lib/jquery.tagsinput.min.js" integrity="sha256-IkytFcY/Z/rLvRE9rYyZvybaitAWr1y2jS/+eyxXky8=" crossorigin="anonymous"></script>
 <script>
 
@@ -80,6 +81,7 @@ var Xmonitor = function(win,st) {
 </script>
 </head>
 <body>
+<script type="text/javascript" src="js/3rd/wz_tooltip.js"></script>
 <style>
  .pdfviewer {
    top: 0px;
@@ -107,7 +109,6 @@ var Xmonitor = function(win,st) {
 </style>
 
 <iframe id="pdfview" name="pdfviewer" src="" class="pdfviewer"></iframe>
-<script type="text/javascript" src="js/3rd/wz_tooltip.js"></script>
 
 <input id="search" type="text" class="form-control"  placeholder="empty"/>
  
@@ -195,7 +196,7 @@ $.scrollbarWidth = function() {
     var parent, child, width;
 
     if(width===undefined) {
-          parent = $('<div style="width:50px;height:50px;overflow:auto"><div/></div>').appendTo('body');
+	    parent = $('<div style="width:50px;height:50px;overflow:auto"><div></div></div>').appendTo('body');
           child=parent.children();
           width=child.innerWidth()-child.height(99).innerWidth();
           parent.remove();
@@ -222,21 +223,16 @@ function DoViewer(event) {
 
 </script>
 <script id="template_result" type="text/x-jsrender">
- {{for items tmpl="template_result_items"/}}
+{{for items tmpl="template_result_items"/}}
 </script>
 <script id="template_result_items" type="text/x-jsrender">
-  <li class="rbox {{if tg.match("deleted")}} deleted {{/if}}"
+<li class="rbox {{if tg.match("deleted")}} deleted {{/if}}"
     id="{{:md5}}" docname="{{:doc}}"
     oncontextmenu="DoContext(event)"
     onclick="DoViewer(event)"
       <div class="rcell" >
 	<div class="thumb">
-	  <a class="thumb" 
-	    href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}'
-	    ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')"
-	    onmouseout="UnTip()" 
-	    onmouseover="Tip('{{:tip}}')"
-	  >
+	  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" onmouseover="Tip('{{:tip}}')">
 	    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}.ico" />
 	  </a>
 	</div>
@@ -284,7 +280,8 @@ function DoViewer(event) {
     background-color: #DEF;
 }
 </style>
-<ul class='custom-menu'>
+<ul class="custom-menu">
+  <li data-action="copy"><img width="20" height="20" src="icon/clippy.svg" alt="copy URL"> </li>
   <li data-action="log">Record in notepad</li>
 </ul>
 <script>
@@ -330,6 +327,14 @@ $(".custom-menu li").click(function(){
           var j=$("li.rbox.selecting").clone()
           $("#fmsg").append(j);
 	break;
+	case "copy": 
+          var url=$("li.rbox.selecting a.doclink")[0].href;
+	   navigator.clipboard.writeText(url).then(
+		  function(){ console.log("copied html")}
+		  );
+		break;
+
+        
     }
   
     // Hide it AFTER the action was triggered
@@ -338,4 +343,5 @@ $(".custom-menu li").click(function(){
   });
 
 </script>
-
+</body>
+</html>

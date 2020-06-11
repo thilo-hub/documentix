@@ -7,6 +7,7 @@ use Cwd 'abs_path';
 use POSIX;
 use JSON;
 use Sys::Hostname;
+use Date::Parse;
 
 use MyApp::Docconf;
 use doclib::pdfidx;
@@ -40,7 +41,7 @@ sub new {
     my $chldno = shift;
 
     my $self = {};
-    $self->{pd} = pdfidx->new($chldno);
+    $self->{pd} = pdfidx->new($chldno,$MyApp::config);
     $self->{dh} = $self->{pd}->{dh};
     setup_db( $self->{dh} );
     print STDERR "Child number:$chldno\n" if $Docconf::config->{debug} > 2;
@@ -59,7 +60,7 @@ sub update_caches {
         q{ create table if not exists config (var primary key unique,value)},
         q{ delete from cache_lst where query like '%...%' },
         q{ create temporary table cache_q1 as
-    select a.*,b.docid idx,snippet(text) snippet  from cache_lst a,text b
+    select a.*,b.docid idx,snippet(text,1,"<b>","</b>","...",10) snippet  from cache_lst a,text b
            where text match a.query and idx >
                      (select value from config where var="max_idx") ;},
 q{ create temporary table cache_q2 as select qidx,count(*) n from cache_q1 group by qidx;},
@@ -73,6 +74,7 @@ q{ insert or replace  into config (var,value) select "max_idx",max(idx) from has
     );
 
     foreach (@sql) {
+	# print STDERR "SQL: $_\n";
         $dh->do($_) or die "Error $_";
     }
 
@@ -150,8 +152,13 @@ sub search {
    
     # Check if search is already available
     $dh->do("begin transaction");
+    # the fts search should have a ':' in only quoted....
+    # here we simply reject such queries
+    # Check if we could escape it...
+    return undef if $search =~ m/:/; 
     my $n = $dh->do( $cache_setup, undef, $search );
     my $idx = $dh->selectrow_array( $cache_lookup, undef, $search );
+$DB::single = 1;
     if ( $n != 0  ) {
 	    # we have a new search
 
@@ -161,8 +168,7 @@ sub search {
 
 	    # if a date-range is mentioned, fix the search sql to select the time range only
 	    my $date_match = '\s*(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d)(\s*|$)';
-	    if ( $search && $search =~ s/date:$date_match//i ) {
-
+	    if ( $search && $search =~ s/date$date_match//i ) {
 		# daterange specified...
 		# remove range from search string and process normally
 		# Search restrict to date-range ( will reduce output list )
@@ -266,7 +272,7 @@ sub ldres {
     # Assemble final query
     push @sargs,$ppage,int($idx0-1);
 
-    $get_res=qq{ select idx,md5,mtime,pdfinfo,file,tags,snippet  from ($get_res) natural left join taglist natural left join file group by idx };
+    $get_res=qq{ select idx,md5,mtime dt,pdfinfo,file,tags,snippet  from ($get_res) natural left join taglist natural left join file group by idx };
 
     # total count
     # get number of results
@@ -284,7 +290,7 @@ sub ldres {
 	if ( my $mpdf = $_->{"pdfinfo"} ){
 		$_->{sz}= conv_size($1) if $mpdf =~ /File size\s*<\/td><td>\s*(\d+)/;
 		$_->{pg}= $1 if $mpdf =~ /Pages\s*<\/td><td>\s*(\d+)\s*<\/td>/;
-		$_->{mtime}= $1 if $mpdf =~ /CreationDate\s*<\/td><td>\s*(.*?)\s*<\/td>/;
+		$_->{dt}= pr_time(str2time($1)) if $mpdf =~ /CreationDate\s*<\/td><td>\s*(.*?)\s*<\/td>/;
 		delete $_->{"pdfinfo"};
 	}
 	my $f=$_->{file}; delete $_->{file};
@@ -292,10 +298,13 @@ sub ldres {
 	$f =~ s|\.([^\.]*)$||;
 	$_->{doct} = $1;
 	$_->{doc}  = $f;
+	$_->{doc}  =~ s/%20/ /g;
 
 	# $_->{tip}  => $tip,
 	# $_->dt   => $day,
 	$_->{tip} = $_->{snippet}; delete $_->{"snippet"};
+	$_->{tip} =~ s/["']/&quot;/g;
+	$_->{tip} =~ s/\n/<br>/g;
 	$_->{tg} = $_->{tags}|| ""; delete $_->{"tags"};
     }
     my $msg = "results: $ndata<br>";
@@ -327,6 +336,21 @@ sub conv_size
     return sprintf("%.1f Mb",$s/2**20) if $s > 2**20;
     return sprintf("%.1f kb",$s/2**10);
 }
+
+#
+# print formated short time string depending on how long ago
+sub pr_time {
+	my $t   = shift;
+	my $dt = time() - $t;
+	my @str = ( "%a %H:%M",  "last %a",         "%b-%d",             "%b %Y" );
+	my @off = ( 24 * 60 * 60, 7 * 24 * 60 * 60, 180 * 24 * 60 * 60 );
+	foreach (@off) { 
+		last if $dt < $_; 
+		shift @str; 
+	}
+	return strftime( $str[0], localtime($t) );
+}
+
 #TJ
 #TJ    my $short_name = $meta->{"Docname"}->{"value"} || "-";
 #TJ    $short_name =~ s/^.*\///;
