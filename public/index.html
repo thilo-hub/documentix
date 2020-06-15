@@ -5,343 +5,82 @@
     <head>
 	<title>Documentix Document Manager</title>
 <link rel="stylesheet" href="js/docidx.css" type="text/css"/>
+<link rel="stylesheet" href="js/style.css" type="text/css"/>
 <script type="text/javascript" src="lib/jquery-latest.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 <script src="lib/jsrender.min.js" integrity="sha256-jCkC+X+pO2BXAAX0QCzoPNXDJKA7XY1luH2l/Tpzb1Y=" crossorigin="anonymous"></script>
 <script type="text/javascript" src="js/tagmgmt.js"></script>
 <script type="text/javascript" src="js/clipboard.min.js"></script>
 <script type="text/javascript" src="js/docidx3.js"></script>
 
-  <style>
-  Xul {
-    list-style-type: none;
-      margin: 0;
-        padding: 0;
-  }
-  Xli {
-    color: green;
-    width: 80px;
-    float: left;
-    border: inset #0f0;
-    
-  }
-  div.dbg { 
-	  height: 20px;
-	  width: 100px;
-  }
-  .rbox {
-    	width: 200px;
-  }
 
-  span {
-    color: red;
-    display: inline;
-  }
-  .lb {
-    width: 839px;
-    height: 600px;
-    overflow-y: scroll;
-    float: left;
-    border: inset #ccc;
-    padding-inline-start: 0px;
-  }
-  </style>
+<meta charset="utf-8">
+<script src="lib/jquery.tagsinput.min.js" integrity="sha256-IkytFcY/Z/rLvRE9rYyZvybaitAWr1y2jS/+eyxXky8=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="js/script.js"></script>
+<script type="text/javascript" src="js/3rd/filedrop.js"></script>
 
-
-  <meta charset="utf-8">
-	<script src="lib/jquery.tagsinput.min.js" integrity="sha256-IkytFcY/Z/rLvRE9rYyZvybaitAWr1y2jS/+eyxXky8=" crossorigin="anonymous"></script>
-<script>
-
-  
-var Xmonitor = function(win,st) {
-
-	var scrollWindow=win;
-	var scrollWindowHeight=scrollWindow.height();
-	var lastElement=win.children("li:last"); 
-	var state = st;
-
-
-	var Xwatcher = function() {
-
-	  var o = lastElement.offset().top - scrollWindow.offset().top;
-	  while ( o < scrollWindowHeight){
-	  
-	      lastElement = 
-		  state.getMore(state).appendTo(scrollWindow);
-		  
-	      o = lastElement.offset().top - scrollWindow.offset().top;
-	  }
-	  
-	  $( "span" ).css( "display", "none" ).fadeIn( "slow" );
-	  m = scrollWindow.scrollTop() + " " + scrollWindow.offset().top + " ";
-	  $("#R").html( state.n)
-	}
-	Xwatcher();
-        win.scroll( Xwatcher );
-}
-</script>
 </head>
 <body>
 <script type="text/javascript" src="js/3rd/wz_tooltip.js"></script>
-<style>
- .pdfviewer {
-   top: 0px;
-   right: 0px;
-   width: 800px;
-   height: 800px;
-   background: "#3c4";
-   float: right;
-   display:none;
-   position: absolute;
- }
-.viewing {
-    border-style:round; 
-    border-width: 3px;
-    border-style: inset;
-    border-color:red;
 
-}
-.selecting {
-    border-style:round; 
-    border-width: 3px;
-    border-color:green;
-}
+<div class="page">
+	<div class="navigator">
+		<input class="search" id="search" type="text" placeholder="search string"/>
+		<div class="filedrop">
+		<fieldset id="zone">
+		    <legend>Drop a file inside &hellip;</legend>
+		    <div id="droplist"></div>
+		</fieldset>
+		</div>
+		<script type="text/javascript" src="js/upload.js"></script>
 
-</style>
+		<div id="taglist"></div>
+		<div class="dbg" id="fmsg">Debug Field</div>
+		<div class="dbg" id="status">Status Field</div>
 
-<iframe id="pdfview" name="pdfviewer" src="" class="pdfviewer"></iframe>
+	</div>
+	<div class=main id="resview" >
+	  <ul id="result" class="lb">
 
-<input id="search" type="text" class="form-control"  placeholder="empty"/>
- 
-<div>
-  <ul id="result" class="lb">
-  </ul>
+	  </ul>
+	<script id="template_result" type="text/x-jsrender">
+	{{for items tmpl="template_result_items"/}}
+	</script>
+	<script id="template_result_items" type="text/x-jsrender">
+	<li class="rbox {{if tg.match("deleted")}} deleted {{/if}}"
+	    id="{{:md5}}" docname="{{:doc}}"
+	    oncontextmenu="DoContext(event)"
+	    onclick="DoViewer(event)">
+	      <div class="rcell" >
+		<div class="thumb">
+		  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" onmouseover="Tip('{{:tip}}')">
+		    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}.ico" />
+		  </a>
+		</div>
+		<div class="descr">
+		  <div class="doclink" onclick="event.stopPropagation()">
+		    <a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}</a> 
+		  </div>
+		  <a class="dtags">
+		    <p class="tagfield" >
+		      <input onclick="tageditor(event)" class="tagbox" xid="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
+		    </p>
+		  </a>
+		  {{:dt}}
+		  <span class="info"><p> Pages: {{:pg}} / {{:sz}}</p></span>
+		</div>
+	      </div>
+	  </li> 
+	</script>
+	</div>
+<iframe id="pdfview" class="main" name="pdfviewer" src="" class="pdfviewer"></iframe>
 </div>
 
 
 
-<style>
-.filedrop {
-  background: grey;
-  width: 100px;
-  float: right;
-  
-}
-#droplist {
-    border: inset thin blue;
-    float: left;
-    text-align: left;
-    width: 100%;
-    height: 50px;
-    word-wrap: break-word
-}
-
-</style>
-<script type="text/javascript" src="js/3rd/filedrop.js"></script>
-<div class="filedrop">
-<hr>
-<fieldset id="zone">
-    <legend>Drop a file inside &hellip;</legend>
-    <div id="droplist"></div>
-</fieldset>
-<script type="text/javascript" src="js/upload.js"></script>
-</div>
-
-
-<style>
-.cl_1, .cl_2, .cl_3 { font-size:9px; }
-.cl_4, .cl_5, .cl_6 { font-size:10px; }
-.cl_7 { font-size:11px; }
-.cl_8 { font-size:13px; }
-.cl_9 { font-size:15px; }
-.cl_10 { font-size:17px; }
-.cl_11 { font-size:24px; }
-.tags {
-
-  word-wrap: break-word;
-  margin: 2px;
-  border: black;
-  border-width: 1px;
-  border-radius: 20px;
-  /* background: #73AD21; */
-  padding: 2px;
-  border: 1px solid #afb2ac;
-}
-#taglist {
-  width: 200px;
-  height: 200px;
-  float: right;
-  color: blue;
-}
-
-  .tagfilter {
-    font-size: 20px;
-    color: red;
-  }
-
-
-</style>
-<div id="taglist"></div>
-<div class="dbg" id="fmsg">Debug Field</div>
-<div class="dbg" id="status">Status Field</div>
-
-
-
-
- <script>
-var getMore = function(state) {
-var e = $("<li></li>").text(state.n++);
- return e;
-}
-$.scrollbarWidth = function() {
-    var parent, child, width;
-
-    if(width===undefined) {
-	    parent = $('<div style="width:50px;height:50px;overflow:auto"><div></div></div>').appendTo('body');
-          child=parent.children();
-          width=child.innerWidth()-child.height(99).innerWidth();
-          parent.remove();
-        }
-
-   return width;
-};
-$(function(){ 
-
-  console.log("ScrollW:"+$.scrollbarWidth()); 
-});
-
-
-
-// Xmonitor($(".lb:first>ul"),{n:100,getMore: getMore});
-function DoViewer(event) {
-  var rb=$(event.target).closest(".rbox");
- // Showpdf('web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}.pdf',event)" > 
-   var id=$(rb).attr("id")
-   var doc=$(rb).attr("docname")
-   Showpdf('web/viewer.html?file=../docs/pdf/'+id+'/'+doc+'.pdf',event);
-}
-
-
-</script>
-<script id="template_result" type="text/x-jsrender">
-{{for items tmpl="template_result_items"/}}
-</script>
-<script id="template_result_items" type="text/x-jsrender">
-<li class="rbox {{if tg.match("deleted")}} deleted {{/if}}"
-    id="{{:md5}}" docname="{{:doc}}"
-    oncontextmenu="DoContext(event)"
-    onclick="DoViewer(event)"
-      <div class="rcell" >
-	<div class="thumb">
-	  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" onmouseover="Tip('{{:tip}}')">
-	    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}.ico" />
-	  </a>
-	</div>
-	<div class="descr">
-	  <div class="doclink" onclick="event.stopPropagation()">
-	    <a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}</a> 
-	  </div>
-	  <a class="dtags">
-	    <p class="tagfield" >
-	      <input onclick="tageditor(event)" class="tagbox" xid="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
-	    </p>
-	  </a>
-	  {{:dt}}
-	  <span class="info"><p> Pages: {{:pg}} / {{:sz}}</p></span>
-	</div>
-      </div>
-  </li> 
-</script>
-
-<style>
-.custom-menu {
-    display: none;
-    z-index: 1000;
-    position: absolute;
-    overflow: hidden;
-    border: 1px solid #CCC;
-    white-space: nowrap;
-    font-family: sans-serif;
-    background: #FFF;
-    color: #333;
-    border-radius: 5px;
-    padding: 0;
-}
-
-/* Each of the items in the list */
-.custom-menu li {
-    padding: 8px 12px;
-    cursor: pointer;
-    list-style-type: none;
-    transition: all .3s ease;
-    user-select: none;
-}
-
-.custom-menu li:hover {
-    background-color: #DEF;
-}
-</style>
-<ul class="custom-menu">
-  <li data-action="copy"><img width="20" height="20" src="icon/clippy.svg" alt="copy URL"> </li>
-  <li data-action="log">Record in notepad</li>
-</ul>
-<script>
-
-function DoContext(event) {
-    
-    // Avoid the real one
-    event.preventDefault();
-
-   var rb=$(event.target).closest(".rbox");
-   var id=$(rb).attr("id")
-   var doc=$(rb).attr("docname")
-    rb.addClass("selecting");
-    // Show contextmenu
-
-    $(document).one("mousedown", function(e) {
-	    if (!$(e.target).parents(".custom-menu").length > 0) {
-		e.preventDefault();
-		$("li.rbox").removeClass("selecting");
-		// Hide it
-		$(".custom-menu").hide(100);
-	    }
-    });
- 
-    $(".custom-menu").finish().toggle(100).
-    
-    // In the right position (the mouse)
-    css({
-        top: event.pageY + "px",
-        left: event.pageX + "px"
-    });
-};
-
-
-// If the menu element is clicked
-$(".custom-menu li").click(function(){
-    
-    // This is the triggered action name
-    switch($(this).attr("data-action")) {
-        
-        // A case for each action. Your actions here
-	case "log": 
-          var j=$("li.rbox.selecting").clone()
-          $("#fmsg").append(j);
-	break;
-	case "copy": 
-          var url=$("li.rbox.selecting a.doclink")[0].href;
-	   navigator.clipboard.writeText(url).then(
-		  function(){ console.log("copied html")}
-		  );
-		break;
-
-        
-    }
-  
-    // Hide it AFTER the action was triggered
-    $(".custom-menu").hide(100);
-    $("li.rbox").removeClass("selecting");
-  });
-
-</script>
-</body>
-</html>
+	<ul class="custom-menu">
+	  <li data-action="copy"><img width="20" height="20" src="icon/clippy.svg" alt="copy URL"> </li>
+	  <li data-action="log">Record in notepad</li>
+	</ul>
+	</body>
+	</html>

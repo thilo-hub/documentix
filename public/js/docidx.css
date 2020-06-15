@@ -101,13 +101,8 @@ div.menu {
     width: 100%
 }
 
-#taglist {
-    border: inset thin red;
-    _disabled_height: 120px
-}
-
 #fmsg {
-  height: 400px;
+  __height: 400px;
   overflow-y: scroll;
 }
 #msg {
@@ -132,10 +127,6 @@ a.doclink {
     z-index: 5
 }
 
-div.rcell {
-    border: none;
-    background-color: #f83
-}
 
 a.dtags {
     background-color: #333
@@ -158,41 +149,6 @@ a.dtags {
     font-style: italic;
     padding: 1px;
     z-index: 50;
-}
-
-img.thumbX {
-    width: 64px;
-    max-height: 64px;
-    padding-right: 5px;
-}
-
-
-img.thumb {
-    width: 100%;
-    max-height: 115px;
-    padding-right: 5px;
-}
-
-a.thumb {
-    border: none;
-    width: 100%;
-    float: left;
-}
-
-div.thumb {
-    background-color: #ccc;
-    border: none;
-    float: left;
-    width: 30%
-}
-
-div.descr {
-    border: none;
-    background: transparent;
-    width: 68%;
-    float: left;
-    padding-left: 4px;
-    font-size: 9pt;
 }
 
 input {
@@ -280,21 +236,6 @@ unsel {
 .X_results {
     width: 100%;
     list-style-type: none
-}
-
-.deleted {
-	display: none;
-}
-.rbox {
-    border: inset #CCC;
-    width: 240px;
-    height: 120px;
-    float: left;
-    list-style-type: none;
-    z-index: -2 
-}
-.rbox:hover {
-   background: #cccccc;
 }
 
 div.tagsinput {

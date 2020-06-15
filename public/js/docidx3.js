@@ -104,7 +104,7 @@ var nsrch = "";
 			    var msg = data.msg;
 			    //dbg_msg(msg);
 			    $("#status").html("Got: "+ idx + "<br>" + msg);
-			    if ( data.nresults < data.idx ){
+			    if ( data.items.length == 0 ||  data.nresults < data.idx ){
 				element.off("scroll");
 				itm= undefined;
 				dbg_msg("End");
@@ -136,36 +136,36 @@ $(function() {
     Showpdf = function(u,e) {
 	    var p=$('#pdfview');
 	    if ( $(e.currentTarget).hasClass("viewing") ) {
-	        $(".rbox").removeClass("viewing");
 		p.hide();
+		$("#resview").width($("#pdfview").width()) ; 
+		e.currentTarget.scrollIntoViewIfNeeded();
+		$(".navigator").show();
+	        $(".rbox").removeClass("viewing",2000);
 	    	return false;
 	    }
 	    //RED frame
-	    $(".rbox").removeClass("viewing");
-	    $(e.currentTarget).addClass("viewing");
+	    $(".rbox").removeClass("viewing",500);
 
 	    if ( p.length ) {
 		    var r=$("#result");
 		    var h=r.width() * 1.42;
+		    $("#resview").width($(".navigator").width()) ; 
+		    e.currentTarget.scrollIntoViewIfNeeded();
+		    $(".navigator").hide();
+		    $(e.currentTarget).addClass("viewing",500,function(){
+
 		    p.show();
 		    if ( u !== undefined )
 			    p.prop("src",u);
-
-		    // $('.left').click(function() {
-			// p.hide();
-			// r.show();
-			// });
-		    // $('.top').click(function() {
-			// p.hide();
-			// r.show();
-			// });
-			if(e) {
+		    });
+		    if(e) {
 				e.preventDefault();
 			}
 			return false;
 		}
 		else
 		{
+		    $(e.currentTarget).addClass("viewing",1000);
 		    	
 			if ( u !== undefined ){
 				if (!viewer_frame) {
