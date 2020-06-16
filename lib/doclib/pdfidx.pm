@@ -52,7 +52,7 @@ $DB::single = 1;
     my $user   = $config->{database_user};
     my $pass   = $config->{database_pass};
 
-    my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
+    my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass, {sqlite_unicode => 1} )
       || die "Err database connection $!";
     $dh->sqlite_busy_timeout(60000);
     print STDERR "New pdf conn: $dh\n" if $debug > 0;
@@ -109,8 +109,6 @@ q{create table if not exists metadata ( idx integer, tag text, value text, uniqu
       # q{CREATE VIRTUAL TABLE if not exists text USING fts4(tokenize=porter);},
 q{CREATE TABLE if not exists mtime ( idx integer primary key, mtime integer)},
         q{CREATE INDEX if not exists mtime_i on mtime(mtime)},
-q{CREATE TABLE if not exists class ( idx integer primary key, class text )},
-        q{CREATE INDEX if not exists class_i on class(class)},
 
         q{CREATE TRIGGER if not exists del2 before delete on hash begin
 					delete from file where file.md5 = old.md5;
@@ -118,7 +116,6 @@ q{CREATE TABLE if not exists class ( idx integer primary key, class text )},
 					delete from metadata where metadata.idx=old.idx;
 					delete from text where docid=old.idx;
 					delete from mtime where mtime.idx=old.idx;
-					delete from class where class.idx=old.idx;
 				 end;},
 q{commit}
     );

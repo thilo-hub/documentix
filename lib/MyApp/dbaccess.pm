@@ -30,7 +30,7 @@ sub new {
     my $user   = $Docconf::config->{database_user};
     my $pass   = $Docconf::config->{database_pass};
 
-    my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
+    my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass ,{sqlite_unicode => 1})
       || die "Err database connection $!";
     $dh->sqlite_busy_timeout(60000);
     print STDERR "New pdf conn: $dh\n" if $debug > 0;

@@ -201,5 +201,7 @@ div.descr {
     /* border-style:round; 
     background: #ff6a6a;
     */
-
+}
+.processing {
+	background: green;
 }

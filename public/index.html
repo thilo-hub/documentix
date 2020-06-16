@@ -47,13 +47,13 @@
 	{{for items tmpl="template_result_items"/}}
 	</script>
 	<script id="template_result_items" type="text/x-jsrender">
-	<li class="rbox {{if tg.match("deleted")}} deleted {{/if}}"
+		<li class="rbox {{if tg.match("deleted")}} deleted {{/if}} {{if tg.match("processing")}} processing {{/if}}"
 	    id="{{:md5}}" docname="{{:doc}}"
 	    oncontextmenu="DoContext(event)"
 	    onclick="DoViewer(event)">
 	      <div class="rcell" >
 		<div class="thumb">
-		  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" onmouseover="Tip('{{:tip}}')">
+		  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" ontouchcancel="UnTip()" onmouseover="Tip('{{:tip}}')">
 		    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}.ico" />
 		  </a>
 		</div>
@@ -73,7 +73,7 @@
 	  </li> 
 	</script>
 	</div>
-<iframe id="pdfview" class="main" name="pdfviewer" src="" class="pdfviewer"></iframe>
+<iframe id="pdfview" class="main hidden" name="pdfviewer" src="" class="pdfviewer"></iframe>
 </div>
 
 
