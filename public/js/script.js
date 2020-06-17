@@ -41,7 +41,7 @@ $.scrollbarWidth = function() {
    return width;
 };
 $(function(){ 
-
+  
   console.log("ScrollW:"+$.scrollbarWidth()); 
 });
 
@@ -87,7 +87,7 @@ function DoContext(event) {
     });
 };
 
-
+$(function(){ 
 // If the menu element is clicked
 $(".custom-menu li").click(function(){
     
@@ -113,4 +113,39 @@ $(".custom-menu li").click(function(){
     $(".custom-menu").hide(100);
     $("li.rbox").removeClass("selecting");
   });
+});
+
+var ed_open=0;
+function Dropit(md5,doc)
+{
+	var e=event.currentTarget;
+        var uril = event.dataTransfer.getData("text/uri-list");
+	if (!ed_open){
+		ed_open=1;
+		$("#sp").show(500);
+	}
+	if ( 0 && uril ) {
+	var url="application/pdf:"+doc+":" + uril;
+	
+        var html = "<a href='"+uril+"'>" +
+		event.dataTransfer.getData("text/html") +
+	        "</a>";
+	}
+	else
+	{
+		var url =e.href;
+		var html ="<a href='"+e.href+"'>"+e.firstElementChild.outerHTML+doc+"</a>";
+	}
+
+	event.dataTransfer.setData("text/html",html);
+	event.dataTransfer.setData("downloadurl",url);
+	 // data-downloadurl="application/pdf:{{:doc}}:docs/raw/{{:md5}}/{{:doc}}"
+}
+$(function(){ 
+	$("#editor").on("click",function(e){ 
+		$("#sp").toggle("fast")
+	     } 
+	);
+
+});
 

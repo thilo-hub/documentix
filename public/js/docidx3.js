@@ -137,7 +137,9 @@ $(function() {
 	    var p=$('#pdfview');
 	    if ( $(e.currentTarget).hasClass("viewing") ) {
 		p.hide();
-		$("#resview").width($("#pdfview").width()) ; 
+	        $("#resview").appendTo(".right");
+		// $("#resview").width($("#pdfview").width()) ; 
+		$("#resview").show();
 		e.currentTarget.scrollIntoViewIfNeeded();
 		$(".navigator").show();
 	        $(".rbox").removeClass("viewing",2000);
@@ -147,11 +149,14 @@ $(function() {
 	    $(".rbox").removeClass("viewing",500);
 
 	    if ( p.length ) {
-		    var r=$("#result");
-		    var h=r.width() * 1.42;
-		    $("#resview").width($(".navigator").width()) ; 
+		    $("#navi").hide();
+		    $("#resview").appendTo(".left");
+
+		    // var r=$("#result");
+		    // var h=r.width() * 1.42;
+		    // $("#resview").width($(".navigator").width()) ; 
 		    e.currentTarget.scrollIntoViewIfNeeded();
-		    $(".navigator").hide();
+		    // $(".navigator").hide();
 		    $(e.currentTarget).addClass("viewing",500,function(){
 
 		    p.show();
@@ -237,6 +242,14 @@ $(function() {
 	//console.log(event);
 	}
     });
+	$(".vb").draggable({
+		axis: "x", 
+		helper: "clone", 
+		appendTo: ".page", 
+		drag: function(e,u)
+			{ $("#left").width(u.offset.left);
+			}
+		});
 
 });
 

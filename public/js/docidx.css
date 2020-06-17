@@ -63,7 +63,7 @@ div#config {
 }
 
 
-div.left {
+div.Xleft {
     position: fixed;
     padding: 0px;
     width: 20%;
@@ -71,7 +71,7 @@ div.left {
     padding: 0px
 }
 
-div.right {
+div.Xright {
     word-wrap: break-word;
     padding: 0px;
     width: 78%;
@@ -218,7 +218,7 @@ input {
     border: blue
 }
 
-.hidden {
+#pdfview.hidden {
     display: none
 }
 

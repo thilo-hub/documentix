@@ -112,18 +112,3 @@ function downld(url,filename)
 		  })
 	}
 }
-function Dropit(md5,doc)
-{
-	var e=event.currentTarget;;
-        var uril = event.dataTransfer.getData("text/uri-list");
-	var url="application/pdf:"+doc+":" + uril;
-	
-        var html = "<a href='"+uril+"'>" +
-		event.dataTransfer.getData("text/html") +
-	        "</a>";
-
-	event.dataTransfer.setData("text/html",html);
-	event.dataTransfer.setData("DownloadURL",url);
-	 // data-downloadurl="application/pdf:{{:doc}}:docs/raw/{{:md5}}/{{:doc}}"
-}
-

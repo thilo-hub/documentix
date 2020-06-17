@@ -10,7 +10,7 @@
     border: inset #0f0;
     
   }
-  div.dbg { 
+  .dbg { 
 	  height: 20px;
 	  width: 100%;
   }
@@ -21,17 +21,49 @@
   }
   .page {
 	  display: flex;
+	  flex-flow: row;
+	align-items: flex-start;
+	align-content: flex-start;
+  }
+  .left {
+	  height: 97vh;
+	  width: 32vw;
+  }
+  .right {
+	  width: 100%;
+	  height: 97vh;
+  }
+  .box {
+	  width: 100%;
+	  height: 100%;
+	  background: tomato;
+	  border: solid black 3px;
+  }
+  .vb {
+	  width: 8px;
+	  height: 100vh;
+	  background: gold;
+	  cursor:col-resize;
+	  padding-left: 2px;
+	  padding-right: 2px;
+  }
+  .rcontent {
+	  _width: 100%;
+	  height: 100%;
+  }
+
+  .main {
+	  _width: 64%;
+	  height: 99vh;
+	  border: solid 1px black;
+	  display: flex;
 	  flex-flow: row wrap;
   }
-  .main {
-	  width: 64%;
-	  height: 95vh;
-	  border: solid 1px black;
-  }
   .navigator {
-	  width: 32%;
-	  height: 97vh;
 	  border: solid 1px red;
+	  _width: 100%;
+	  height: 100%;
+	  
 	  display: flex;
 	flex-flow: row wrap;
 	align-items: flex-start;
@@ -43,14 +75,15 @@
 	  height: 20px;
   }
  .pdfviewer {
-   top: 0px;
+   /* top: 0px;
    right: 0px;
-   width: 800px;
+   */
+   width: inherit;
    height: 100%;
    background: "#3c4";
-   float: right;
+   /* float: right; */
    display:none;
-   position: absolute;
+   /* position: absolute;*/
  }
 .viewing {
     border-style:round; 
@@ -67,7 +100,7 @@
 
 .filedrop {
   background: grey;
-  width: 100px;
+  _width: 100px;
   float: right;
   
 }
@@ -75,7 +108,7 @@
     border: inset thin blue;
     float: left;
     text-align: left;
-    width: 100%;
+    _width: 100%;
     height: 50px;
     word-wrap: break-word
 }
@@ -175,6 +208,8 @@ a.thumb {
     border: none;
     width: 100%;
     float: left;
+    width: 30%;
+    background-color: #ccc;
 }
 
 div.thumb {

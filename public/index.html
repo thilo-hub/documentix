@@ -4,77 +4,107 @@
 <html xmlns="lib/xhtml" lang="en-US" xml:lang="en-US">
     <head>
 	<title>Documentix Document Manager</title>
+<meta charset="utf-8">
 <link rel="stylesheet" href="js/docidx.css" type="text/css"/>
 <link rel="stylesheet" href="js/style.css" type="text/css"/>
+<link rel="stylesheet" href="lib/bootstrap.min.css">
 <script type="text/javascript" src="lib/jquery-latest.js"></script>
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script type="text/javascript" src="js/jquery.ui.touch-punch.min.js"></script>
 <script src="lib/jsrender.min.js" integrity="sha256-jCkC+X+pO2BXAAX0QCzoPNXDJKA7XY1luH2l/Tpzb1Y=" crossorigin="anonymous"></script>
 <script type="text/javascript" src="js/tagmgmt.js"></script>
 <script type="text/javascript" src="js/clipboard.min.js"></script>
 <script type="text/javascript" src="js/docidx3.js"></script>
+<script src="lib/bootstrap.min.js"></script>
 
 
-<meta charset="utf-8">
 <script src="lib/jquery.tagsinput.min.js" integrity="sha256-IkytFcY/Z/rLvRE9rYyZvybaitAWr1y2jS/+eyxXky8=" crossorigin="anonymous"></script>
 <script type="text/javascript" src="js/script.js"></script>
 <script type="text/javascript" src="js/3rd/filedrop.js"></script>
+
+	<style type="text/css" media="all">
+		@import "widgEditor/css/info.css";
+		@import "widgEditor/css/main.css";
+		@import "widgEditor/css/widgEditor.css";
+	</style>
+
+	<script type="text/javascript" src="widgEditor/scripts/widgEditor.js"></script>
 
 </head>
 <body>
 <script type="text/javascript" src="js/3rd/wz_tooltip.js"></script>
 
 <div class="page">
-	<div class="navigator">
-		<input class="search" id="search" type="text" placeholder="search string"/>
-		<div class="filedrop">
+	<div>
+	<div class=left id=left>
+	<ul id=navi class="navigator nav nav-tabs">
+		<li class="search">
+		<span class="glyphicon glyphicon-search"></span>
+		<input id="search" style="width: 95%" type="text" placeholder="search string"/>
+		</li>
+		<li class="filedrop">
 		<fieldset id="zone">
 		    <legend>Drop a file inside &hellip;</legend>
 		    <div id="droplist"></div>
 		</fieldset>
-		</div>
+		</li>
 		<script type="text/javascript" src="js/upload.js"></script>
 
-		<div id="taglist"></div>
-		<div class="dbg" id="fmsg">Debug Field</div>
-		<div class="dbg" id="status">Status Field</div>
-
-	</div>
-	<div class=main id="resview" >
-	  <ul id="result" class="lb">
-
-	  </ul>
-	<script id="template_result" type="text/x-jsrender">
-	{{for items tmpl="template_result_items"/}}
-	</script>
-	<script id="template_result_items" type="text/x-jsrender">
-		<li class="rbox {{if tg.match("deleted")}} deleted {{/if}} {{if tg.match("processing")}} processing {{/if}}"
-	    id="{{:md5}}" docname="{{:doc}}"
-	    oncontextmenu="DoContext(event)"
-	    onclick="DoViewer(event)">
-	      <div class="rcell" >
-		<div class="thumb">
-		  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" ontouchcancel="UnTip()" onmouseover="Tip('{{:tip}}')">
-		    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}.ico" />
-		  </a>
+		<li><div id="taglist"></div></li>
+		<li style="width:100%; max-height: 600px">
+	        <span id="editor" class="glyphicon glyphicon-edit"></span>
+		<div id="sp" >
+		<form id="scratch" class="hidden">
+			    <textarea id="scratchpad" class="widgEditor ">
+</textarea>
+		</form>
 		</div>
-		<div class="descr">
-		  <div class="doclink" onclick="event.stopPropagation()">
-		    <a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}</a> 
-		  </div>
-		  <a class="dtags">
-		    <p class="tagfield" >
-		      <input onclick="tageditor(event)" class="tagbox" xid="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
-		    </p>
-		  </a>
-		  {{:dt}}
-		  <span class="info"><p> Pages: {{:pg}} / {{:sz}}</p></span>
-		</div>
-	      </div>
-	  </li> 
-	</script>
+		</li>
+		<li class="dbg" id="fmsg">Debug Field</li>
+		<li class="dbg" id="status">Status Field</li>
+		</ul>
 	</div>
-<iframe id="pdfview" class="main hidden" name="pdfviewer" src="" class="pdfviewer"></iframe>
-</div>
+	</div>
+	<div class="vb"></div>
+	<div style="width: -webkit-fill-available;" >
+	<div class=right id="right" >
+		<div class=rcontent id="resview" >
+		  <ul id="result" class="lb">
+
+		  </ul>
+		<script id="template_result" type="text/x-jsrender">
+		{{for items tmpl="template_result_items"/}}
+		</script>
+		<script id="template_result_items" type="text/x-jsrender">
+			<li class="rbox {{if tg.match("deleted")}} deleted {{/if}} {{if tg.match("processing")}} processing {{/if}}"
+		    id="{{:md5}}" docname="{{:doc}}"
+		    oncontextmenu="DoContext(event)"
+		    onclick="DoViewer(event)"
+		     >
+
+		      <div class="rcell" >
+			  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" ontouchcancel="UnTip()" onmouseover="Tip('{{:tip}}')">
+			    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}.ico" />
+			  </a>
+			<div class="descr">
+			  <div class="doclink" onclick="event.stopPropagation()">
+			    <a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}</a> 
+			  </div>
+			  <a class="dtags">
+			    <p class="tagfield" >
+			      <input onclick="tageditor(event)" class="tagbox" xid="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
+			    </p>
+			  </a>
+			  {{:dt}}
+			  <span class="info"><p> Pages: {{:pg}} / {{:sz}}</p></span>
+			</div>
+		      </div>
+		  </li> 
+		</script>
+	</div>
+	<iframe id="pdfview" class="pdfviewer " name="pdfviewer" src="" ></iframe>
+	</div>
+	</div>
 
 
 
@@ -82,5 +112,6 @@
 	  <li data-action="copy"><img width="20" height="20" src="icon/clippy.svg" alt="copy URL"> </li>
 	  <li data-action="log">Record in notepad</li>
 	</ul>
-	</body>
-	</html>
+</body>
+</html>
+
