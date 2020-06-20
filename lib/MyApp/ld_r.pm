@@ -74,7 +74,7 @@ q{ insert or replace  into config (var,value) select "max_idx",max(idx) from has
     );
 
     foreach (@sql) {
-	# print STDERR "SQL: $_\n";
+	#print STDERR "SQL: $_\n";
         $dh->do($_) or die "Error $_";
     }
 
@@ -227,8 +227,8 @@ sub ldres {
 	#TODO: remove "deleted" tags
 	#Maybe: an entry w/o tag would not show w/o the left join
 	# TODO: check if order by date is better than order by rank
-	# $get_res=qq{ select fileinfo.*,snippet  from cache_q natural join fileinfo where qidx=? order by mtime desc limit ? offset ? };
-	$get_res=qq{ select *  from cache_q natural join hash natural join ftime natural join pdfinfo where qidx=?};
+	# $get_res=qq{ select fileinfo.*,snippet  from cache_q natural join fileinfo where qidx=? order by cast(mtime as int) desc limit ? offset ? };
+	$get_res=qq{ select *  from cache_q natural join hash natural join ftime natural join pdfinfo where qidx=? };
         push @sargs,$idx;
 
 	# TODO: only if idx=0 first page
@@ -248,7 +248,7 @@ sub ldres {
     }
     else {
 	# Return all
-	$get_res=qq{ select *,Content snippet  from hash natural join Content natural join ftime natural join pdfinfo order by idx desc};
+	$get_res=qq{ select *,Content snippet  from hash natural join Content natural join ftime natural join pdfinfo};
 
 
 	if ($idx0 eq 1){
@@ -261,6 +261,7 @@ sub ldres {
     $ndata   = $dh->prepare_cached($ndata);
     $ndata -> execute();
     }
+    $get_res .= " order by cast(mtime as int) desc";
     # class list
     if ( $class ) {
        $get_res =~ s/from/from (select idx  from tagname natural join tags where tagname = ? limit ? offset ?) natural join/;
@@ -272,7 +273,7 @@ sub ldres {
     # Assemble final query
     push @sargs,$ppage,int($idx0-1);
 
-    $get_res=qq{ select idx,md5,mtime dt,pdfinfo,file,tags,snippet  from ($get_res) natural left join taglist natural left join file group by idx };
+    $get_res=qq{ select idx,md5,mtime dt,pdfinfo,file,tags,snippet  from ($get_res) natural left join taglist natural left join file group by idx order by dt desc };
 
     # total count
     # get number of results
@@ -282,6 +283,7 @@ sub ldres {
 
     #  Add selection of slice wanted
 
+    print STDERR "$get_res\n";
     $get_res = $dh->prepare_cached($get_res);
     $get_res->execute(@sargs);
 
@@ -290,9 +292,10 @@ sub ldres {
 	if ( my $mpdf = $_->{"pdfinfo"} ){
 		$_->{sz}= conv_size($1) if $mpdf =~ /File size\s*<\/td><td>\s*(\d+)/;
 		$_->{pg}= $1 if $mpdf =~ /Pages\s*<\/td><td>\s*(\d+)\s*<\/td>/;
-		$_->{dt}= pr_time(str2time($1)) if $mpdf =~ /CreationDate\s*<\/td><td>\s*(.*?)\s*<\/td>/;
+		# $_->{dt}= str2time($1) if ( $mpdf =~ /CreationDate\s*<\/td><td>\s*(.*?)\s*<\/td>/) unless $_->{dt};
 		delete $_->{"pdfinfo"};
 	}
+	$_->{dt} = pr_time($_->{dt});
 	my $f=$_->{file}; delete $_->{file};
 	$f =~ s|^.*/||;
 	$f =~ s|\.([^\.]*)$||;
