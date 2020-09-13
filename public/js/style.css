@@ -72,7 +72,7 @@
   }
   .search {
 	  width: 100%;
-	  height: 20px;
+	  /* height: 20px; */
   }
  .pdfviewer {
    /* top: 0px;
@@ -102,6 +102,7 @@
   background: grey;
   _width: 100px;
   float: right;
+  margin-top: 1em;
   
 }
 #droplist {

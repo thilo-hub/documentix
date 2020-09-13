@@ -58,6 +58,7 @@ sub update_caches {
     my @sql = (
         q{ begin exclusive transaction },
         q{ create table if not exists config (var primary key unique,value)},
+	q{delete  from cache_lst where  ((length(query)-length(replace(query,"'","")))%2 == 1)},
         q{ delete from cache_lst where query like '%...%' },
         q{ create temporary table cache_q1 as
     select a.*,b.docid idx,snippet(text,1,"<b>","</b>","...",10) snippet  from cache_lst a,text b

@@ -46,7 +46,7 @@ sub new {
     my $chldno = shift;
     my $config = shift;
 
-$DB::single = 1;
+    #$DB::single = 1;
     my $dbn    = $config->{database_provider};
     my $d_name = $config->{database};
     my $user   = $config->{database_user};
@@ -300,6 +300,10 @@ sub ocrpdf_async {
 sub ocrpdf_sync {
 	my $self=shift;
 	my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
+$DB::single = 1;
+       my ($idx) =
+            $self->{dh}->selectrow_array( "select idx from hash where md5=?", undef, $md5 );
+	$self->{"idx"} = $idx;
 	print STDERR "ocrpdf_sync: ".Dumper(\@_);
 	# Otherwise the directory would be deleted
 	open (FH,">$outpdf.wip");
@@ -400,9 +404,9 @@ $DB::single = 1;
     print STDERR "Wait..\n";
     $errs += w_load(0) if $maxcpu>1;
     print STDERR "Done Errs:$errs\n";
-print STDERR Dumper(\$self,\$qr) if $debug > 1;
-    if ($qr && $self->{"idx"} ) {
-	$self->ins_e($self->{"idx"},"QR",$qr);
+print STDERR Dumper(\$self,\@qr) if $debug > 1;
+    if (@qr && $self->{"idx"} ) {
+	$self->ins_e($self->{"idx"},"QR",join("\n",@qr));
     }
 
     my $txt = undef;

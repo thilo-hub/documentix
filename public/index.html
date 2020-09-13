@@ -5,9 +5,14 @@
     <head>
 	<title>Documentix Document Manager</title>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
 <link rel="stylesheet" href="js/docidx.css" type="text/css"/>
 <link rel="stylesheet" href="js/style.css" type="text/css"/>
 <link rel="stylesheet" href="lib/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+
 <script type="text/javascript" src="lib/jquery-latest.js"></script>
 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 <script type="text/javascript" src="js/jquery.ui.touch-punch.min.js"></script>
@@ -15,6 +20,9 @@
 <script type="text/javascript" src="js/tagmgmt.js"></script>
 <script type="text/javascript" src="js/clipboard.min.js"></script>
 <script type="text/javascript" src="js/docidx3.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+
+
 <script src="lib/bootstrap.min.js"></script>
 
 
@@ -38,10 +46,17 @@
 	<div>
 	<div class=left id=left>
 	<ul id=navi class="navigator nav nav-tabs">
-		<li class="search">
-		<span class="glyphicon glyphicon-search"></span>
-		<input id="search" style="width: 95%" type="text" placeholder="search string"/>
+		<li class="search"><div>
+			<div class="input-group" style="width: 95%">
+				<div class="input-group-prepend">
+					<span class="input-group-text">
+						<span class="fa fa-search"></span>
+					</span>                    
+				</div>
+				<input id="search" class="form-control" type="text" placeholder="search string">
+			</div>
 		</li>
+
 		<li class="filedrop">
 		<fieldset id="zone">
 		    <legend>Drop a file inside &hellip;</legend>
