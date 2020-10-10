@@ -1,11 +1,17 @@
 #!/usr/bin/env perl
 
+print STDERR "> $ARGV[0]\n";
+if( $ARGV[0] eq "daemon" && fork() == 0){
+   @ARGV=qw{minion worker};
+}
+
 use strict;
 use warnings;
 
 use Mojo::File 'curfile';
 use lib curfile->dirname->sibling('lib')->to_string;
 use Mojolicious::Commands;
+
 
 
 # Start command line interface for application

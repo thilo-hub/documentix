@@ -740,9 +740,7 @@ sub index_pdf {
         && !( $fn =~ /$self->{config}->{local_storage}/ ) )
     {
         my $f_dir = dirname($fn);
-        my $new   = $self->get_store( $md5_f,0);
-        mkdir $new
-          unless -d $new;
+        my $new   = $self->get_store( $md5_f,1);
         $new .= "/" . basename($fn);
         symlink $fn, $new
           or die "Cannot link document... $!";
@@ -891,8 +889,9 @@ sub index_pdf {
 		print STDERR "Do: $1\n" if $debug > 1;
 		my $txt = $self->index_pdf( $1 );
 	}
+	return "";
         $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
-        $meta->{"_file"} = $meta->{"_fh"}->filename;
+        $meta->{"_file"} = $meta->{"_fh"}->filename if  $meta->{"_fh"};
         # do_ungzip( $i, $meta->{_file} );
 
         my $type = do_file( $meta->{_file} );
@@ -964,7 +963,7 @@ sub pdf_filename {
     my $f_path = dirname(abs_path($fn))."/";
     my $f_base = basename($fn,(".pdf",".ocr.pdf"));
 
-    my $lcl_store_dir = $self->get_store( $md5,0);
+    my $lcl_store_dir = $self->get_store( $md5,1);
     my $lcl_store = $lcl_store_dir . "/$f_base";
     die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
     my @locs=( $lcl_store.".ocr.pdf", $f_path .$f_base.".ocr.pdf", $fn );
@@ -984,11 +983,13 @@ sub pdf_totext {
     my $self = shift;
     my $fn   = shift;
     my $md5   = shift;
+    my $nminion   = shift;
+    $minion = $nminion if $nminion;
     print STDERR " pdf_totext $fn\n" if $debug > 1;
     my $f_path = dirname(abs_path($fn))."/";
     my $f_base = basename($fn,(".pdf",".ocr.pdf"));
 
-    my $lcl_store_dir = $self->get_store( $md5,0);
+    my $lcl_store_dir = $self->get_store( $md5,1);
     my $lcl_store = $lcl_store_dir . "/$f_base";
     die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
     my @locs=( $lcl_store.".ocr.pdf", $f_path .$f_base.".ocr.pdf", $fn );

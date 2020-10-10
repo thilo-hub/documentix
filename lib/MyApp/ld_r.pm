@@ -332,6 +332,15 @@ sub ldres {
     return $out;
 }
 
+sub reocr
+{
+	my ($self,$app,$md5)=@_;
+	$DB::single = 1;
+	my $doclib=$self->{pd};
+	my $fn=$doclib->pdf_filename($md5);
+	return $doclib->pdf_totext($fn,$md5,$app->minion);
+}
+
 sub conv_size
 {  
 

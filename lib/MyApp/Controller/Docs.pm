@@ -67,4 +67,9 @@ sub search {
     $c->render(json => $m);
 }
 
+sub reocr {
+ 	my $c = shift;
+
+	$c->render(json => $ld_r->reocr( $c,$c->param("md5") ));
+}
 1;
