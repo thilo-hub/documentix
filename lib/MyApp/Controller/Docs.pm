@@ -27,7 +27,10 @@ sub senddoc {
    my $doc = $c->stash('doc');
 
    my $res = $ld->getFilePath($hash,$type);
-   return $c->reply->asset($res);
+   return $c->reply->asset($res) if $res;
+   # Failures...
+   return $c->reply->static("Error.pdf") if $type eq "pdf";
+   return $c->reply->static("icon/Keys-icon.png");
 }
 
 # Multipart upload handler

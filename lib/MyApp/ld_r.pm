@@ -184,7 +184,7 @@ $DB::single = 1;
 
 	    # Do search
 	    #print STDERR "S:$cached_search\n";
-	    print STDERR "A:" . join( ":", @sargs ) . ":\n";
+	    #print STDERR "A:" . join( ":", @sargs ) . ":\n";
 	    my $nres = $srch->execute(@sargs);
 
 	    # record search results
@@ -284,7 +284,7 @@ sub ldres {
 
     #  Add selection of slice wanted
 
-    print STDERR "$get_res\n";
+    #print STDERR "$get_res\n";
     $get_res = $dh->prepare_cached($get_res);
     $get_res->execute(@sargs);
 

@@ -16,7 +16,7 @@ $self->hook(before_dispatch => sub {
 
   # Load configuration from hash returned by config file
   our $config;
-  $config = $self->plugin('Config');
+  $config = $self->plugin ( Config => {file => $ENV{"PWD"}.'/my_app.conf'});
 
   # Configure the application
   $self->secrets($config->{secrets});
@@ -37,7 +37,7 @@ $self->hook(before_dispatch => sub {
   $self->max_request_size(300*2**20);
 
   # Normal route to controller
-  $r->get('/')->to('example#welcome');
+  $r->get('/')->to(cb => sub {  my $c = shift;  $c->reply->static('index.html')   });
   $r->get('/docs/:type/:hash/#doc')->to('docs#senddoc');
   $r->post('/upload')->to('docs#upload');
   $r->get('/ldres')->to('docs#search');

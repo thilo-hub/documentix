@@ -20,8 +20,8 @@ my $debug = 2;
 my $ph;
 
 my $cache;
-my $error_file= Mojo::Asset::File->new(path => "public/icon/Keys-icon.png") ;
-my $error_pdf= Mojo::Asset::File->new(path => "public/Error.pdf") ;
+my $error_file= Mojo::Asset::File->new(path => "../public/icon/Keys-icon.png") ;
+my $error_pdf= Mojo::Asset::File->new(path => "../public/Error.pdf") ;
 sub new {
     my $class  = shift;
 
@@ -68,7 +68,7 @@ sub getFilePath {
 	$ra->{"hash"} = $hash;
 	return converter($type,$ra);
     }
-    return $error_pdf;
+    return undef;
 }
 sub converter
 {
@@ -80,8 +80,7 @@ sub converter
 
 	};
 	my $c=$cv->{$totype};
-	return   $error_file  unless $c;
-	return   { file=>"icon/Keys-icon.png" } unless $c;
+	return   undef  unless $c;
 	return &$c($ra);
 }
 sub get_bestpdf
@@ -95,10 +94,11 @@ sub get_bestpdf
 	foreach( $path.$name."ocr.pdf",$path.$name.$suffix ) {
 		return Mojo::Asset::File->new(path => $_)  if -r $_;
 	}
-	return $error_pdf;
+	return undef;
 }
  sub get_icon{ 
 	 my $ra=shift;
+$DB::single = 1;
 	 my ( $m, $res ) = $cache->get_cache( $ra->{"file"}, "$ra->{hash}-ico", \&Converter::mk_ico,$self );
 	 
 	 return Mojo::Asset::Memory->new()->add_chunk($res);

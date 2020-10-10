@@ -1122,8 +1122,6 @@ sub set_class_content {
 {
     my $pop_xml="http://localhost:".$MyApp::config->{xmlrpc_port}."/RPC2";
 
-$DB::single = 1;
-
     my $pop_cnt = 0;
 
     sub pop_call {
