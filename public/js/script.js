@@ -49,11 +49,20 @@ $(function(){
 
 // Xmonitor($(".lb:first>ul"),{n:100,getMore: getMore});
 function DoViewer(event) {
+  event.stopPropagation();
   var rb=$(event.target).closest(".rbox");
- // Showpdf('web/viewer.html?file=../docs/pdf/{{:md5}}/{{:doc}}.pdf',event)" > 
-   var id=$(rb).attr("id")
-   var doc=$(rb).attr("docname")
-   Showpdf('web/viewer.html?file=../docs/pdf/'+id+'/'+doc+'.pdf',event);
+   if ( rb.hasClass("viewing") ) {
+	   // Hide the lot
+	   rb.removeClass("viewing",2000);
+	   Hidepdf(event);
+   } else {
+	   var id=$(rb).attr("id")
+	   var doc=$(rb).attr("docname")
+	   Showpdf(id+'/'+doc+'.pdf',event);
+	   rb.off("click");
+	   rb.click(DoViewer);
+   }
+   return false;
 }
 
 

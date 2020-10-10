@@ -1,6 +1,9 @@
 var clname = "";
 var nsrch = "";
-  
+var viewer_url_base="web/viewer.html?file=../docs/pdf/%doc";
+var viewer_url=viewer_url_base;
+var viewer_url_srch=viewer_url_base+'#&search="%qu"';
+
      var monitor = function(win,loader) {
 
 		var scrollWindowHeight=win.height() * 2;
@@ -98,6 +101,9 @@ var nsrch = "";
 		    success: function(data) {
 			if ( idx == 1 ) {
 			    do_tags(data.classes);
+			    viewer_url=viewer_url_base;
+			    if ( data.query )
+				    viewer_url=viewer_url_srch.replace("%qu",data.query);
 			}
 			var itm = template.render(data);
 			idx = data.idx+data.nitems;
@@ -115,7 +121,7 @@ var nsrch = "";
 		});
 	    });
     };
-      
+
     dbg_msg = function(msg) {
 	  if (msg)
 		$("#fmsg").show().prepend(msg+"<br>");
@@ -133,35 +139,36 @@ var nsrch = "";
     }
 
 $(function() {
+    Hidepdf = function(e) {
+    	var p=$('#pdfview');
+	p.hide();
+	$("#resview").appendTo(".right");
+	$("#resview").show();
+	e.currentTarget.scrollIntoViewIfNeeded();
+	$(".navigator").show();
+    }
     Showpdf = function(u,e) {
 	    var p=$('#pdfview');
-	    if ( $(e.currentTarget).hasClass("viewing") ) {
-		p.hide();
-	        $("#resview").appendTo(".right");
-		// $("#resview").width($("#pdfview").width()) ; 
-		$("#resview").show();
-		e.currentTarget.scrollIntoViewIfNeeded();
-		$(".navigator").show();
-	        $(".rbox").removeClass("viewing",2000);
-	    	return false;
-	    }
-	    //RED frame
-	    $(".rbox").removeClass("viewing",500);
 
+	    // Remove active viewing red frames
+	    $(".rbox").removeClass("viewing",500);
 	    if ( p.length ) {
+		    // pdfview frame available, go load content
 		    $("#navi").hide();
 		    $("#resview").appendTo(".left");
 
 		    // var r=$("#result");
 		    // var h=r.width() * 1.42;
-		    // $("#resview").width($(".navigator").width()) ; 
+		    // $("#resview").width($(".navigator").width()) ;
 		    e.currentTarget.scrollIntoViewIfNeeded();
 		    // $(".navigator").hide();
 		    $(e.currentTarget).addClass("viewing",500,function(){
 
 		    p.show();
-		    if ( u !== undefined )
-			    p.prop("src",u);
+		    if ( u !== undefined ){
+			    var url=viewer_url.replace("%doc",u);
+			    p.prop("src",url);
+		    }
 		    });
 		    if(e) {
 				e.preventDefault();
@@ -243,9 +250,9 @@ $(function() {
 	}
     });
 	$(".vb").draggable({
-		axis: "x", 
-		helper: "clone", 
-		appendTo: ".page", 
+		axis: "x",
+		helper: "clone",
+		appendTo: ".page",
 		drag: function(e,u)
 			{ $("#left").width(u.offset.left);
 			}
