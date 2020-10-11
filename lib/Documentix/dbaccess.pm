@@ -42,7 +42,7 @@ sub new {
     # setup_db($self) unless $chldno;
     #$self->{"cache"}  
     $cache = cache->new();
-    my $q = "select file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
+    my $q = "select cast(file as blob) file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
     $ph=$dh->prepare_cached($q);
     return $self;
 }
@@ -57,7 +57,7 @@ sub getFilePath {
     my $dh = $self->{"dh"};
     die "Bad input"  unless $hash =~ m/^[0-9a-f]{32}$/;
 
-    # my $q = "select file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
+    # my $q = "select cast(file as blob) file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
     # my $ph=$dh->prepare_cached($q);
 
     $ph->execute($hash);
