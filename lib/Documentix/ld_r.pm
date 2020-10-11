@@ -75,7 +75,7 @@ q{ insert or replace  into config (var,value) select "max_idx",max(idx) from has
     );
 
     foreach (@sql) {
-	#print STDERR "SQL: $_\n";
+	# print STDERR "SQL: $_\n";
         $dh->do($_) or die "Error $_";
     }
 

@@ -33,6 +33,12 @@ sub new {
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass ,{sqlite_unicode => 1})
       || die "Err database connection $!";
     $dh->sqlite_busy_timeout(60000);
+    if ( 0 ) {
+        $dh->sqlite_enable_load_extension(1);
+        $dh->sqlite_load_extension( "fts5stemmer.so" ) or die "Load extension failed";
+    }
+    $dh->do(q{pragma journal_mode=wal});
+
     print STDERR "New pdf conn: $dh\n" if $debug > 0;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
     #$self->set_debug(undef);

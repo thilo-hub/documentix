@@ -46,7 +46,6 @@ sub new {
     my $chldno = shift;
     my $config = shift;
 
-    #$DB::single = 1;
     my $dbn    = $config->{database_provider};
     my $d_name = $config->{database};
     my $user   = $config->{database_user};
@@ -55,6 +54,13 @@ sub new {
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass, {sqlite_unicode => 1} )
       || die "Err database connection $!";
     $dh->sqlite_busy_timeout(60000);
+    if ( (my $ext=$config->{database_extensions}) ) {
+        $dh->sqlite_enable_load_extension(1);
+        foreach (@$ext) {
+		$dh->sqlite_load_extension( $_ ) or die "Load extension ($_)failed";
+	}
+    }
+    $dh->do(q{pragma journal_mode=wal});
     print STDERR "New pdf conn: $dh\n" if $debug > 0;
     my $self = bless { dh => $dh, dbname => $d_name, config => $config }, $class;
     $self->set_debug($config->{"debug"});
@@ -300,7 +306,6 @@ sub ocrpdf_async {
 sub ocrpdf_sync {
 	my $self=shift;
 	my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
-$DB::single = 1;
        my ($idx) =
             $self->{dh}->selectrow_array( "select idx from hash where md5=?", undef, $md5 );
 	$self->{"idx"} = $idx;
@@ -360,7 +365,6 @@ sub ocrpdf {
     my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
     my $maxcpu = $self->{config}->{number_ocr_threads};
     my @outpages;
-$DB::single = 1;
     print STDERR "ocrpdf $inpdf $outpdf\n" if $debug > 1;
     $inpdf  = abs_path($inpdf);
     $outpdf = abs_path($outpdf);
