@@ -1,4 +1,4 @@
-package MyApp::Task::Processor;
+package Documentix::Task::Processor;
 use Mojo::Base 'Mojolicious::Plugin';
 
 use Mojo::URL;
@@ -14,7 +14,7 @@ sub register {
 
 sub _ocr {
   my ($job, @args)=@_;
-  my $pdfidx  = pdfidx->new(0,$MyApp::config);
+  my $pdfidx  = pdfidx->new(0,$Documentix::config);
   $job->finish( $pdfidx->ocrpdf_sync(@args));
 }
 
@@ -22,7 +22,7 @@ sub _loader {
   my ($job, $dgst,$fn,$type,$wdir) = @_;
   my $class = undef;
 
-  my $pdfidx  = pdfidx->new(0,$MyApp::config);
+  my $pdfidx  = pdfidx->new(0,$Documentix::config);
   my @results=@_;
   say 'Process';
   # sleep 1;

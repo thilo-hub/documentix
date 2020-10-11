@@ -9,7 +9,7 @@ use JSON;
 use Sys::Hostname;
 use Date::Parse;
 
-use MyApp::Docconf;
+use Documentix::Docconf;
 use doclib::pdfidx;
 
 print STDERR ">>> ld_r.pm\n" if $Docconf::config->{debug} > 2;
@@ -41,7 +41,7 @@ sub new {
     my $chldno = shift;
 
     my $self = {};
-    $self->{pd} = pdfidx->new($chldno,$MyApp::config);
+    $self->{pd} = pdfidx->new($chldno,$Documentix::config);
     $self->{dh} = $self->{pd}->{dh};
     setup_db( $self->{dh} );
     print STDERR "Child number:$chldno\n" if $Docconf::config->{debug} > 2;
@@ -274,7 +274,7 @@ sub ldres {
     # Assemble final query
     push @sargs,$ppage,int($idx0-1);
 
-    $get_res=qq{ select idx,md5,mtime dt,pdfinfo,file,tags,snippet  from ($get_res) natural left join taglist natural left join file group by idx order by dt desc };
+    $get_res=qq{ select idx,md5,mtime dt,pdfinfo,cast(file as blob) file,tags,snippet  from ($get_res) natural left join taglist natural left join file group by idx order by dt desc };
 
     # total count
     # get number of results

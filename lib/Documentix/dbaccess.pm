@@ -3,13 +3,13 @@ use Carp;
 use XMLRPC::Lite;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 use File::Basename;
-use MyApp::Docconf;
+use Documentix::Docconf;
 use doclib::cache;
-use MyApp::Converter;
+use Documentix::Converter;
 use Mojo::Asset;
 #use File::MimeInfo;
 use File::MimeInfo::Magic;
-use MyApp::ld_r;
+use Documentix::ld_r;
 use Date::Parse;
 
 

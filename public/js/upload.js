@@ -36,7 +36,7 @@ fd.jQuery();
 			$('#msg').append(xhr.responseText);
 		    //$('#droplist').append(this.name+" done<br>");
 		    if ( rv && drop_count === 1) {
-			    var u= $(rv).find("a.thumb").prop("href");
+			    var u= rv.attr("id")+"/"+rv.attr("docname")+'.pdf';
 			    Showpdf(u,{currentTarget: rv[0]});
 			}
 		    

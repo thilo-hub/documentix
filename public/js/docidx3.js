@@ -170,7 +170,7 @@ $(function() {
 			    p.prop("src",url);
 		    }
 		    });
-		    if(e) {
+		    if(e && e.preventDefault) {
 				e.preventDefault();
 			}
 			return false;
@@ -184,7 +184,7 @@ $(function() {
 					viewer_frame="pdfviewer";
 				}
 				window.open(u,viewer_frame);
-				if(e) {
+				if(e && e.preventDefault) {
 					e.preventDefault();
 				}
 				return false;

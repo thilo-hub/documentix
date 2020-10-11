@@ -1,8 +1,8 @@
-package MyApp::Controller::Docs;
+package Documentix::Controller::Docs;
 use Mojo::Base 'Mojolicious::Controller';
-use MyApp::Docconf;
-use MyApp::dbaccess;;
-use MyApp::ld_r;
+use Documentix::Docconf;
+use Documentix::dbaccess;;
+use Documentix::ld_r;
 use Mojo::Asset;
 use Mojo::Upload;
 use Mojo::Util;

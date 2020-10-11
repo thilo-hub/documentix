@@ -46,7 +46,6 @@ $config = {
 sub getset {
     my $args         = shift;
     my $conf_changed = 0;
-
     #die "Upsi here" .Dumper(\@_);
     my $json_text = $args->{"set"};
 

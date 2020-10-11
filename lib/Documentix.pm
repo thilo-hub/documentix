@@ -1,8 +1,8 @@
-package MyApp;
+package Documentix;
 use Mojo::Base 'Mojolicious';
 use Minion::Command::minion::worker;
 
-$MyApp::config=undef;
+$Documentix::config=undef;
 
 # This method will run once at server start
 sub startup {
@@ -16,7 +16,7 @@ $self->hook(before_dispatch => sub {
 
   # Load configuration from hash returned by config file
   our $config;
-  $config = $self->plugin ( Config => {file => $ENV{"PWD"}.'/my_app.conf'});
+  $config = $self->plugin ( Config => {file => $ENV{"PWD"}.'/documentix.conf'});
 
   # Configure the application
   $self->secrets($config->{secrets});
@@ -27,7 +27,7 @@ $self->hook(before_dispatch => sub {
   #
   $self->plugin(Minion => {SQLite => $config->{cache_db}});
   $self->plugin('Minion::Admin'); #  => {route => $self->routes->any('/testing')});
-  $self->plugin('MyApp::Task::Processor');
+  $self->plugin('Documentix::Task::Processor');
 
   #my $worker = Minion::Command::minion::worker->new;
   #$worker->run;
@@ -37,7 +37,7 @@ $self->hook(before_dispatch => sub {
   $self->max_request_size(300*2**20);
 
   # Normal route to controller
-  $r->get('/')->to(cb => sub {  my $c = shift;  $c->reply->static('index.html')   });
+  $r->get('/')->to(cb => sub {  my $c = shift;  $c->redirect_to($config->{index_html} )   });
   $r->get('/docs/:type/:hash/#doc')->to('docs#senddoc');
   $r->post('/upload')->to('docs#upload');
   $r->get('/ldres')->to('docs#search');

@@ -1,4 +1,4 @@
-package MyApp::Controller::Example;
+package Documentix::Controller::Example;
 use Mojo::Base 'Mojolicious::Controller';
 
 # This action will render a template
