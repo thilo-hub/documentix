@@ -150,6 +150,9 @@ $(function() {
     Showpdf = function(u,e) {
 	    var p=$('#pdfview');
 
+	    if ( u !== undefined ){
+		    u=viewer_url.replace("%doc",u);
+	    }
 	    // Remove active viewing red frames
 	    $(".rbox").removeClass("viewing",500);
 	    if ( p.length ) {
@@ -164,11 +167,8 @@ $(function() {
 		    // $(".navigator").hide();
 		    $(e.currentTarget).addClass("viewing",500,function(){
 
+		    p.prop("src",u);
 		    p.show();
-		    if ( u !== undefined ){
-			    var url=viewer_url.replace("%doc",u);
-			    p.prop("src",url);
-		    }
 		    });
 		    if(e && e.preventDefault) {
 				e.preventDefault();

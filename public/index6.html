@@ -1,0 +1,326 @@
+<!DOCTYPE html
+        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+         "lib/xhtml1-transitional.dtd">
+<html xmlns="lib/xhtml" lang="en-US" xml:lang="en-US">
+    <head>
+	<title>Documentix Document Manager</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+	<link rel="manifest" href="site.webmanifest">
+	<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">
+	<meta name="msapplication-TileColor" content="#da532c">
+	<meta name="theme-color" content="#ffffff">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+
+<link rel="stylesheet" href="js/docidx.css" type="text/css"/>
+<link rel="stylesheet" href="js/style.css" type="text/css"/>
+<link rel="stylesheet" href="lib/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+
+<script type="text/javascript" src="lib/jquery-latest.js"></script>
+<script type="text/javascript" src="lib/jquery-ui.js"></script>
+<script type="text/javascript" src="js/jquery.ui.touch-punch.min.js"></script>
+<script src="lib/jsrender.min.js" integrity="sha256-jCkC+X+pO2BXAAX0QCzoPNXDJKA7XY1luH2l/Tpzb1Y=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="js/tagmgmt.js"></script>
+<script type="text/javascript" src="js/clipboard.min.js"></script>
+<script type="text/javascript" src="js/docidx3.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+
+
+<script src="lib/bootstrap.min.js"></script>
+
+
+	<script type="text/javascript" src="js/jquery.layout-1.4.3.js"></script>
+<script src="lib/jquery.tagsinput.min.js" integrity="sha256-IkytFcY/Z/rLvRE9rYyZvybaitAWr1y2jS/+eyxXky8=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="js/script.js"></script>
+<script type="text/javascript" src="js/3rd/filedrop.js"></script>
+
+
+	<link href="js/jqtree.css" rel="stylesheet" type="text/css" media="screen" />
+	<style type="text/css" media="all">
+		@import "widgEditor/css/info.css";
+		@import "widgEditor/css/main.css";
+		@import "widgEditor/css/widgEditor.css";
+	</style>
+
+<script type="text/javascript">
+var pagin;
+var viewer_frame="docpage";
+var viewer_default;
+	$(document).ready(function(){
+ pagin=$("body").layout({
+ applyDefaultStyles:true ,
+ stateManagement__enabled:	true, // automatic cookie load & save enabled by default
+ east__initClosed: false,
+ east__size:840,
+ east__onclose: function(){
+	console.log(viewer_frame);
+	viewer_frame = viewer_default;
+	},
+ east__onopen: function(){
+	console.log(viewer_frame);
+	viewer_default = viewer_frame;
+	viewer_frame = "docpage";
+	}
+ });
+$('#fire').on(
+    'dragover',
+    function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+)
+$('#fire').on(
+    'dragenter',
+    function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+)
+
+function drop_handler(ev) {
+ console.log("Drop");
+ var data = ev.dataTransfer.items;
+ for (var i = 0; i < data.length; i += 1) {
+     if ((data[i].kind == 'string') ) {
+	 console.log(data[i].type + "  "+ ev.dataTransfer.getData(data[i].type) );
+   } else if ((data[i].kind == 'file') && 
+              (data[i].type.match('^image/'))) {
+     // Drag data item is an image file
+     var f = data[i].getAsFile();
+     console.log("... Drop: File ");
+   }
+ }
+}
+
+$('#fire').on(
+    'drop',
+    function(e){
+	    e.preventDefault();
+	    e.stopPropagation();
+                console.log(e.originalEvent.dataTransfer);
+	drop_handler(e.originalEvent);
+
+
+        if(e.originalEvent.dataTransfer){
+            if(e.originalEvent.dataTransfer.files.length) {
+                /*UPLOAD FILES HERE*/
+                console.log(e.originalEvent.dataTransfer.files);
+            }
+        }
+    }
+);
+
+	});
+	</script>
+
+</head>
+<body>
+
+<div class="right ui-layout-center">
+                <iframe width="100%" id="pdfview_disabled" name="pdfviewer_disabled" src="" style="display:none"></iframe>
+                <div id="tagv" style="display:none"></div>
+		<div class=rcontent id="resview">
+			<ul id="result" class="lb">
+			    Results
+			</ul>
+		</div>
+		<script id="template_result" type="text/x-jsrender">
+                        
+		 <div class="hidden" id="pgs">
+			<input type="button" id="pp" value="&lt;&lt;" />
+			<input type="button" id="p"  value="&lt;" />
+			<input type="button" id="1"  value="1"  />
+			<input type="button" id="2"  value="2"  />
+			<input type="button" id="3"  value="3"  />
+			<input type="button" id="4"  value="4"  />
+			<input type="button" id="5"  value="5"  />
+			<input type="button" id="6"  value="6"  />
+			<input type="button" id="7"  value="7"  />
+			<input type="button" id="8"  value="8"  />
+			<input type="button" id="9"  value="9"  />
+			<input type="button" id="10" value="10" />
+			<input type="button" id="11" value="11" />
+			<input type="button" id="n"  value="&gt;" />
+			<input type="button" id="nn" value="&gt;&gt;" />
+		</div>
+		 {{for items tmpl="template_result_items"/}}
+
+                    </script>
+
+		<script id="template_result_items" type="text/x-jsrender">
+			<li class="rbox {{if tg.match("deleted")}} deleted {{/if}} {{if tg.match("processing")}} processing {{/if}}"
+		    id="{{:md5}}" docname="{{:doc}}"
+		    oncontextmenu="DoContext(event)"
+		    onclick="DoViewer(event)"
+		     >
+
+		      <div class="rcell" >
+			  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" ontouchcancel="UnTip()" onmouseover="Tip('{{:tip}}')">
+			    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}.ico" />
+			  </a>
+			<div class="descr">
+			  <div class="doclink" onclick="event.stopPropagation()">
+			    <a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}</a> 
+			  </div>
+			  <a class="dtags">
+			    <p class="tagfield" >
+			      <input onclick="tageditor(event)" class="tagbox" xid="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
+			    </p>
+			  </a>
+			  {{:dt}}
+			  <span class="info"><p> Pages: {{:pg}} / {{:sz}}</p></span>
+			</div>
+		      </div>
+		  </li> 
+		</script>
+
+
+</div>
+<script type="text/javascript" src="js/3rd/wz_tooltip.js"></script>
+<div class="top ui-layout-north">
+            <noscript style="color: maroon">
+                <h2>JavaScript is disabled in your browser. How do you expect Documentix to work?</h2>
+            </noscript>
+            <div class="header">Documentix </div>
+
+</div>
+<div id="XXX" class="ui-layout-east" >
+<iframe class="Xui-layout-east" id="mainFrame" name="docpage"  
+        width="100%" height="100%" frameborder="0" scrolling="auto"
+        src=""></iframe>
+ </div>
+
+            <div class="left ui-layout-west">
+                <ul class="nav nav-tabs">
+                    <li class="active">
+                        <a data-toggle="tab" href="#home">
+                            <span class="glyphicon glyphicon-home"></span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-toggle="tab" href="#menu1">
+                            <span id='folders' class="glyphicon glyphicon-folder-open"></span>
+                            <span id='loading' class="glyphicon glyphicon-refresh glyphicon-refresh-animate" style="display:none"></span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-toggle="tab" href="#menu3">
+                            <span class="glyphicon glyphicon-cog"></span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-toggle="tab" href="#menu4" id="tagl">
+                            <span class="glyphicon glyphicon-tag"></span>
+                        </a>
+                    </li>
+                    <li>
+                        <a data-toggle="tab" href="#menu5" id="classfile">
+                            <span class="glyphicon glyphicon-fire"></span>
+                        </a>
+                    </li>
+		    <li>
+			<a data-toggle="tab" href="#menu6" id="classfile">
+			    <span class="glyphicon glyphicon-edit"></span>
+			</a>
+		    </li>
+                </ul>
+                <div class="tab-content">
+                    <div id="home" class="tab-pane fade in active">
+                        <hr>
+                        <div id="pageno" class="pageno"></div>
+                        <div class="input-group">
+                            <span class="input-group-addon">
+                                <i>
+                                    <span class="glyphicon glyphicon-search"></span>
+                                </i>
+                            </span>
+                            <input id="search" type="text" class="form-control" name="{{:k}}" placeholder="empty"/>
+                        </div>
+                        <div id="set_page" class="pageno"></div>
+                        <div id="taglist"></div>
+                        <div id="tagedit" size="15%">
+                            <input id="tags"/>
+                        </div>
+                        <hr>
+                        <div id="pref">
+                            <input id="ppage" value="10" size="10%"/>
+                        </div>
+                        <fieldset id="zone">
+                            <legend>Drop a file inside &hellip;</legend>
+                            <div id="msg"></div>
+                            <div id="droplist"></div>
+                        </fieldset>
+                        <script type="text/javascript" src="js/upload.js"></script>
+                    </div>
+                    <div id="menu1" class="tab-pane fade">
+                        <hr>
+                        <div id="tree1" data-url="dlist1.cgi"></div>
+                        <div id="fmsg"></div>
+                    </div>
+                    <div id="menu4" class="tab-pane fade">
+                        <h3>Drop files on the tagfield to classify</h3>
+                    </div>
+                    <div id="menu5" class="tab-pane fade">
+                        <div class="tagfield">
+			    <div id="fire">
+                            <i>this should be replaced....</i>
+			    </div>
+                        </div>
+                    </div>
+                    <div id="menu3" class="tab-pane fade">
+                        <hr>
+                        <div class="config">
+                            <form id=configdata>
+                                <script id="template_stuff" type="text/x-jsrender">
+                                    
+			    <div class="input-group input-group-xs">
+			      <span class="input-group-addon">{{:k}}</span>
+			      <input id="{{:k}}" type="text" class="form-control" name="{{:k}}" placeholder="empty" value="{{:v}}"> 
+			    </div>
+			
+                                </script>
+                            </form>
+                        </div>
+                    </div>
+		    <div id="menu6" class="tab-pane fade">
+			<hr>
+			<fieldset>
+			    <form action="submit.php" onsubmit="alert('Your submitted HTML was:\n\n' + document.getElementById('noise').value); return false;">
+		    <textarea id="noise" name="noise" class="widgEditor nothing">
+Temporary store notes here
+<ol>
+<li>
+<li>
+<li>
+<li>
+<li>
+<li>
+<li>
+<li>
+<li>
+<li>
+</ol>
+
+</textarea>
+
+			</fieldset>
+			<fieldset class="submit">
+				<input type="submit" value="Check the submitted code" />
+			</fieldset>
+		</div>
+		    <!-- END OF DIVS -->
+                </div>
+                <div id="left" class="menu">
+                    <div id="xitem" style="float: right"></div>
+                    <hr>
+                </div>
+</div>
+
+
+</body>
+</html>
