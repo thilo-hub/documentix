@@ -389,6 +389,16 @@ See https://github.com/adobe-type-tools/cmap-resources
 
     </div> <!-- outerContainer -->
     <div id="printContainer"></div>
+<script>
+var lb=document.getElementById("viewBookmark");
+lb.addEventListener("dragstart", function(e) {
+	console.log("Starting...");
+	var o= e.dataTransfer.getData("text/html");
+	var dname = o.match('href=.*/([^#"]*)#page=([0-9]*)');
+	o=o.replace("Current View",dname[1] + " ("+dname[2]+")");
+	e.dataTransfer.setData("text/html",o)
+}, false);
+</script>
   </body>
 </html>
 
