@@ -2,7 +2,7 @@ var Xmonitor = function(win,st) {
 
 	var scrollWindow=win;
 	var scrollWindowHeight=scrollWindow.height();
-	var lastElement=win.children("li:last"); 
+	var lastElement=win.children("li:last");
 	var state = st;
 
 
@@ -10,13 +10,13 @@ var Xmonitor = function(win,st) {
 
 	  var o = lastElement.offset().top - scrollWindow.offset().top;
 	  while ( o < scrollWindowHeight){
-	  
-	      lastElement = 
+
+	      lastElement =
 		  state.getMore(state).appendTo(scrollWindow);
-		  
+
 	      o = lastElement.offset().top - scrollWindow.offset().top;
 	  }
-	  
+
 	  $( "span" ).css( "display", "none" ).fadeIn( "slow" );
 	  m = scrollWindow.scrollTop() + " " + scrollWindow.offset().top + " ";
 	  $("#R").html( state.n)
@@ -40,9 +40,9 @@ $.scrollbarWidth = function() {
 
    return width;
 };
-$(function(){ 
-  
-  console.log("ScrollW:"+$.scrollbarWidth()); 
+$(function(){
+
+  console.log("ScrollW:"+$.scrollbarWidth());
 });
 
 
@@ -68,7 +68,7 @@ function DoViewer(event) {
 
 
 function DoContext(event) {
-    
+
     // Avoid the real one
     event.preventDefault();
 
@@ -86,9 +86,9 @@ function DoContext(event) {
 		$(".custom-menu").hide(100);
 	    }
     });
- 
+
     $(".custom-menu").finish().toggle(100).
-    
+
     // In the right position (the mouse)
     css({
         top: event.pageY + "px",
@@ -96,28 +96,28 @@ function DoContext(event) {
     });
 };
 
-$(function(){ 
+$(function(){
 // If the menu element is clicked
 $(".custom-menu li").click(function(){
-    
+
     // This is the triggered action name
     switch($(this).attr("data-action")) {
-        
+
         // A case for each action. Your actions here
-	case "log": 
+	case "log":
           var j=$("li.rbox.selecting").clone()
           $("#fmsg").append(j);
 	break;
-	case "copy": 
+	case "copy":
           var url=$("li.rbox.selecting a.doclink")[0].href;
 	   navigator.clipboard.writeText(url).then(
 		  function(){ console.log("copied html")}
 		  );
 		break;
 
-        
+
     }
-  
+
     // Hide it AFTER the action was triggered
     $(".custom-menu").hide(100);
     $("li.rbox").removeClass("selecting");
@@ -135,7 +135,7 @@ function Dropit(md5,doc)
 	}
 	if ( 0 && uril ) {
 	var url="application/pdf:"+doc+":" + uril;
-	
+
         var html = "<a href='"+uril+"'>" +
 		event.dataTransfer.getData("text/html") +
 	        "</a>";
@@ -150,58 +150,33 @@ function Dropit(md5,doc)
 	event.dataTransfer.setData("downloadurl",url);
 	 // data-downloadurl="application/pdf:{{:doc}}:docs/raw/{{:md5}}/{{:doc}}"
 }
-$(function(){ 
-	// hook up
-	var oldf=widgEditor.prototype.detectDrop;
-	//widgEditor.prototype.detectDrop = function(e) {
-	XXX = function(e) {
-		console.log("Here");
-		oldf(e);
-	}
-	//$.event.props.push('dataTransfer');
-	$("#editor").on("click",function(e){ 
+$(function(){
+	$("#editor").on("click",function(e){
 		$("#sp").toggle("fast")
-	     } 
+	     }
 	);
+
+	var activated=0;
 	drag_showEdit = function(event) {
-		console.log("Show editor");
-		$(event.currentTarget).off(event.type);
-		$("#navi").show();
-		$("#sp").show();
-		$("#Oviewer").on("mouseenter",drag_hideEdit);
-		document.getElementById("editfr").addEventListener("drop",
-			function(e) { 
-				console.log(e.originalEvent.dataTransfer.getData("url"))
-			}
-			,true);
+		var n=document.getElementById("navi");
+		if ( n.style.display.match("none")){
+			activated=1;
+			console.log("Show editor");
+			$(n).show();
+			$("#sp").show();
+		}
 	}
 	drag_hideEdit = function(event) {
-		console.log("Hide editor");
-		$(event.currentTarget).off(event.type);
-		$("#navi").hide();
-		$("#left").on("dragenter",drag_showEdit);
+		if ( activated != 0 ) {
+			var n=document.getElementById("navi");
+			console.log("Hide editor");
+			$(n).hide();
+			activated=0;
+		}
 	}
-	var otgt=undefined;
-	$("#left").on("dragover",function(e){
-		if ( otgt != e.target.id ){
-			otgt = e.target.id;
-			console.log(otgt);
-			console.log(e.originalEvent.dataTransfer.getData("url"));
-		}
-		e.preventDefault();
-	});
-$("#taglist").on("drop",function(e) { console.log(e.originalEvent.dataTransfer.getData("url"))});
-// $("#taglist").on("drop",
-	$("#Oviewer").on("dragstart",function(e) {
-		console.log("Starting");
-		}
-	);
-	// $("#left").on("dragover",function(e){ e.preventDefault() });
+	$("#Oviewer").on("mouseenter",drag_hideEdit);
+	// $("#Oviewer").on("dragstart",function(e) { console.log("Starting"); } );
 	$("#left").on("dragenter",drag_showEdit);
-	$("#left").on("drop",function(e){
-		console.log("Drop");
-	    }
-	);
 
 });
 

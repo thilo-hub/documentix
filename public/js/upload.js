@@ -88,7 +88,7 @@ var attach_upl=function(zoneid) {
       });
 }
 
-attach_upl('zone');
+//attach_upl('zone');
 
 function downld(url,filename)
 {

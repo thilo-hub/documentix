@@ -596,6 +596,20 @@ widgEditor.prototype.detectDrop = function(e)
   var data = theEvent.dataTransfer.getData("text/html");
   var n=document.createElement("DIV")
   n.innerHTML="<hr>"+data+"<hr>";
+
+  // check if it is a viewer-url, with bad test - massage it then
+  var viewer_url_base="web/viewer.html?file=../docs/pdf/%doc";
+  var r= data.match(viewer_url_base.replace("?","\\?").replace("%doc","([^/]+)/([^/]+)#page=([0-9]+)"));
+  if(r && 0) {
+	  console.log(r);
+
+	  el = document.getElementById(r[1]);
+	  im =$(el).find("img.thumb")[0].outerHTML;;
+	  n = "<hr>"+im +"<hr>";
+	  // data = data.getElementsByTagName("a")[0];
+  }
+
+
   theEvent.target.appendChild(n)
   n.scrollIntoViewIfNeeded();
   localStorage.ScratchPad=this.theIframe.contentWindow.document.getElementsByTagName("body")[0].innerHTML;

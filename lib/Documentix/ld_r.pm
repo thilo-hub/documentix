@@ -183,9 +183,10 @@ $DB::single = 1;
 	    }
 
 	    # Do search
-	    #print STDERR "S:$cached_search\n";
-	    #print STDERR "A:" . join( ":", @sargs ) . ":\n";
+	    print STDERR "S:$cached_search\n";
+	    print STDERR "A:" . join( ":", @sargs ) . ":\n";
 	    my $nres = $srch->execute(@sargs);
+	    print STDERR "R: $nres\n";
 
 	    # record search results
 	    $dh->prepare_cached( 'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?')
