@@ -592,9 +592,19 @@ widgEditor.prototype.detectDrop = function(e)
 	}
 	
 
-  theEvent.preventDefault();
+  // theEvent.preventDefault();
   var data = theEvent.dataTransfer.getData("text/html");
   var n=document.createElement("DIV")
+  if ( !data ) {
+	var o="<a href='"+ theEvent.dataTransfer.getData("url") + "'>Current view</a>";
+		
+	var dname = o.match('href=.*/([^#"]*)#page=([0-9]*)');
+	dname = dname[1] + " ("+dname[2]+")";
+	dname = dname.replace(/%20/g," ");
+	e.target.outerHTML=e.target.outerHTML.replace(/Current view/gi,dname);
+	o=o.replace(/Current View/ig,dname);
+	data = o;
+  }
   n.innerHTML="<hr>"+data+"<hr>";
 
   // check if it is a viewer-url, with bad test - massage it then
@@ -610,6 +620,7 @@ widgEditor.prototype.detectDrop = function(e)
   }
 
 
+  this.pasteCache = n;
   theEvent.target.appendChild(n)
   n.scrollIntoViewIfNeeded();
   localStorage.ScratchPad=this.theIframe.contentWindow.document.getElementsByTagName("body")[0].innerHTML;
@@ -680,6 +691,7 @@ widgEditor.prototype.initEdit = function()
 		this.theIframe.contentWindow.document.addEventListener("keyup", function(){widgToolbarCheckState(self); return true;}, false);
 		this.theIframe.contentWindow.document.addEventListener("keydown", function(e){self.detectPaste(e); return true;}, false);
 		this.theIframe.contentWindow.document.addEventListener("drop", function(e){self.detectDrop(e); return true;}, false);
+		this.theIframe.contentWindow.document.addEventListener("dragover", function(e){e.preventDefault() }, false);
 	}
 	/* IE event capturing */
 	else

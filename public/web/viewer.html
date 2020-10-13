@@ -394,12 +394,17 @@ var lb=document.getElementById("viewBookmark");
 lb.addEventListener("dragstart", function(e) {
 	console.log("Starting...");
 	var o= e.dataTransfer.getData("text/html");
+	if ( ! o ) {
+		o="<a href='"+ e.dataTransfer.getData("url") + "'>Current view</a>";
+	;}
+		
 	var dname = o.match('href=.*/([^#"]*)#page=([0-9]*)');
 	dname = dname[1] + " ("+dname[2]+")";
 	dname = dname.replace(/%20/g," ");
 	e.target.outerHTML=e.target.outerHTML.replace(/Current view/gi,dname);
 	o=o.replace(/Current View/ig,dname);
 	e.dataTransfer.setData("text/html",o)
+	e.dataTransfer.setData("text",o)
 }, false);
 </script>
   </body>
