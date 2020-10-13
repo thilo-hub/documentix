@@ -151,9 +151,56 @@ function Dropit(md5,doc)
 	 // data-downloadurl="application/pdf:{{:doc}}:docs/raw/{{:md5}}/{{:doc}}"
 }
 $(function(){ 
+	// hook up
+	var oldf=widgEditor.prototype.detectDrop;
+	//widgEditor.prototype.detectDrop = function(e) {
+	XXX = function(e) {
+		console.log("Here");
+		oldf(e);
+	}
+	//$.event.props.push('dataTransfer');
 	$("#editor").on("click",function(e){ 
 		$("#sp").toggle("fast")
 	     } 
+	);
+	drag_showEdit = function(event) {
+		console.log("Show editor");
+		$(event.currentTarget).off(event.type);
+		$("#navi").show();
+		$("#sp").show();
+		$("#Oviewer").on("mouseenter",drag_hideEdit);
+		document.getElementById("editfr").addEventListener("drop",
+			function(e) { 
+				console.log(e.originalEvent.dataTransfer.getData("url"))
+			}
+			,true);
+	}
+	drag_hideEdit = function(event) {
+		console.log("Hide editor");
+		$(event.currentTarget).off(event.type);
+		$("#navi").hide();
+		$("#left").on("dragenter",drag_showEdit);
+	}
+	var otgt=undefined;
+	$("#left").on("dragover",function(e){
+		if ( otgt != e.target.id ){
+			otgt = e.target.id;
+			console.log(otgt);
+			console.log(e.originalEvent.dataTransfer.getData("url"));
+		}
+		e.preventDefault();
+	});
+$("#taglist").on("drop",function(e) { console.log(e.originalEvent.dataTransfer.getData("url"))});
+// $("#taglist").on("drop",
+	$("#Oviewer").on("dragstart",function(e) {
+		console.log("Starting");
+		}
+	);
+	// $("#left").on("dragover",function(e){ e.preventDefault() });
+	$("#left").on("dragenter",drag_showEdit);
+	$("#left").on("drop",function(e){
+		console.log("Drop");
+	    }
 	);
 
 });
