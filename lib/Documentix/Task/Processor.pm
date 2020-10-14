@@ -30,7 +30,7 @@ sub _loader {
   my $txt = $pdfidx->index_pdf_raw( $fn, $wdir,$class,$dgst ,$type,$minion);
   # $ld_r->update_caches();
   say 'done';
-  $results[5] = $txt;
+  $results[5] = {summary=>$txt,url=>"/docs/pdf/$dgst/result.pdf"};
   $job->finish(\@results);
 }
 
