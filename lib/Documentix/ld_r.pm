@@ -142,7 +142,7 @@ q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text,
     );
 }
 
-my $cache_lookup = q{select qidx from cache_lst where query = ?};
+my $cache_lookup = q{select qidx from cache_lst where query like ?};
 my $cache_setup  = q{insert or ignore into cache_lst (query) values(?)};
 
 sub search {
@@ -159,7 +159,6 @@ sub search {
     return undef if $search =~ m/:/; 
     my $n = $dh->do( $cache_setup, undef, $search );
     my $idx = $dh->selectrow_array( $cache_lookup, undef, $search );
-$DB::single = 1;
     if ( $n != 0  ) {
 	    # we have a new search
 
@@ -182,11 +181,15 @@ $DB::single = 1;
 		}
 	    }
 
+$DB::single = 1;
 	    # Do search
 	    print STDERR "S:$cached_search\n";
 	    print STDERR "A:" . join( ":", @sargs ) . ":\n";
 	    my $nres = $srch->execute(@sargs);
 	    print STDERR "R: $nres\n";
+	    $dh->do(q{delete from cache_lst where qidx=?},undef,$idx)
+		    if ( $srch->err );
+
 
 	    # record search results
 	    $dh->prepare_cached( 'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?')
