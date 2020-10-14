@@ -93,7 +93,7 @@ sub get_bestpdf
 {
 	my ($ra)=shift;
 	
-	croak "Wrong file-type: $ra->{Mime}" unless $ra->{Mime} =~ m|application/pdf|;
+	#croak "Wrong file-type: $ra->{Mime}" unless $ra->{Mime} =~ m|application/pdf|;
 
 	my ($name,$path,$suffix) = fileparse($ra->{file},qw{ocr.pdf pdf});
 	# search path
