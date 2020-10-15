@@ -59,7 +59,7 @@ sub update_caches {
     my @sql = (
         q{ begin exclusive transaction },
         q{ create table if not exists config (var primary key unique,value)},
-	q{ attach ":memory" as ndb},
+	q{ attach ":memory:" as ndb},
 	q{ create table ndb.vtext as select * from vtext where docid >(select value from config where var="max_idx")},
 	q{ CREATE VIRTUAL TABLE ndb.text using fts5(docid UNINDEXED,content,  content='vtext', content_rowid='rowid', tokenize = 'snowball german english')},
 	q{ insert into ndb.text(rowid,docid,content)  select * from ndb.vtext},
