@@ -51,6 +51,7 @@ sub new {
 
 #
 # Update search results for new documents
+#TODO: moveinto worker to improve startup
 sub update_caches {
     my $self = shift;
     my $dh   = $self->{"dh"};
@@ -58,10 +59,12 @@ sub update_caches {
     my @sql = (
         q{ begin exclusive transaction },
         q{ create table if not exists config (var primary key unique,value)},
-	q{delete  from cache_lst where  ((length(query)-length(replace(query,"'","")))%2 == 1)},
-        q{ delete from cache_lst where query like '%...%' },
+	q{ attach ":memory" as ndb},
+	q{ create table ndb.vtext as select * from vtext where docid >(select value from config where var="max_idx")},
+	q{ CREATE VIRTUAL TABLE ndb.text using fts5(docid UNINDEXED,content,  content='vtext', content_rowid='rowid', tokenize = 'snowball german english')},
+	q{ insert into ndb.text(rowid,docid,content)  select * from ndb.vtext},
         q{ create temporary table cache_q1 as
-    select a.*,b.docid idx,snippet(text,1,"<b>","</b>","...",10) snippet  from cache_lst a,text b
+    select a.*,b.docid idx,snippet(text,1,"<b>","</b>","...",10) snippet  from cache_lst a,ndb.text b
            where text match a.query and idx >
                      (select value from config where var="max_idx") ;},
 q{ create temporary table cache_q2 as select qidx,count(*) n from cache_q1 group by qidx;},
@@ -71,7 +74,9 @@ q{ insert or replace into cache_lst (qidx,query,nresults,last_used) select qidx,
 q{ insert or replace  into config (var,value) select "max_idx",max(idx) from hash;},
         q{drop table cache_q1},
         q{drop table cache_q2},
+        q{drop table ndb.text},
         q{commit},
+	q{ detach ndb},
     );
 
     foreach (@sql) {
