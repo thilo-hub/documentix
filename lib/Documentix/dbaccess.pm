@@ -33,9 +33,12 @@ sub new {
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass ,{sqlite_unicode => 1})
       || die "Err database connection $!";
     $dh->sqlite_busy_timeout(60000);
-    if ( 0 ) {
+    if ( (my $ext=$Docconf::config->{database_extensions}) ) {
         $dh->sqlite_enable_load_extension(1);
-        $dh->sqlite_load_extension( "fts5stemmer.so" ) or die "Load extension failed";
+        foreach (@$ext) {
+		warn "Extension: $_";
+		$dh->sqlite_load_extension( $_ ) or die "Load extension ($_)failed";
+	}
     }
     $dh->do(q{pragma journal_mode=wal});
 
