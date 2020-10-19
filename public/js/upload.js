@@ -35,7 +35,9 @@ fd.jQuery();
 		    else
 			$('#msg').append(xhr.responseText);
 		    //$('#droplist').append(this.name+" done<br>");
-		    if ( rv && drop_count === 1) {
+			// Disabled becasue it is not clear how to,
+			// at this point in time a new cannot be accessed...
+		    if (0 && rv && drop_count === 1) {
 			    var u= rv.attr("id")+"/"+rv.attr("docname")+'.pdf';
 			    Showpdf(u,{currentTarget: rv[0]});
 			}
