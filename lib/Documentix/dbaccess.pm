@@ -97,7 +97,7 @@ sub get_bestpdf
 
 	my ($name,$path,$suffix) = fileparse($ra->{file},qw{ocr.pdf pdf});
 	# search path
-	foreach( $path.$name."ocr.pdf",$path.$name.$suffix ) {
+	foreach( $path.$name.".ocr.pdf",$path.$name.$suffix ) {
 		return Mojo::Asset::File->new(path => $_)  if -r $_;
 	}
 	return undef;
