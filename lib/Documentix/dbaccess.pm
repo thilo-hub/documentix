@@ -66,9 +66,6 @@ sub getFilePath {
     my $dh = $self->{"dh"};
     die "Bad input"  unless $hash =~ m/^[0-9a-f]{32}$/;
 
-    # my $q = "select cast(file as blob) file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
-    # my $ph=$dh->prepare_cached($q);
-
     $ph->execute($hash);
     while( my $ra = $ph->fetchrow_hashref ) {
 	next unless -r $ra->{"file"};
@@ -147,6 +144,12 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
          my $type = mimetype($ob);
 	 $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
 	 $add_file->execute($dgst,$ob);
+	 my $add_mime = $dh->prepare_cached(q{insert into metadata(idx,tag,value) values((select idx from hash where md5=?),"Mime",?)});
+	 $add_mime->execute($dgst,$type);
+
+	 #$add_file_1 = $dh->prepare_cached(q{insert into tags(idx,tagid) select idx,tagid from hash,taglist where md5=? and tagname='unclassified'});
+	 
+
 	 my $id = $app->minion->enqueue(loader => [$dgst,$ob,$type,$wdir] => {priority => 5});
 
 

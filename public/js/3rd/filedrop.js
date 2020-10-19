@@ -916,6 +916,7 @@
       // Firefox and Chrome-based browsers are the only ones supporting this
       // event which we use to read dropped file data in the FileDrop class.
       global.isIE9 || self.delegate(zoneNode, 'drop', 'upload')
+      global.isIE9 || self.delegate(zoneNode, 'paste', 'upload')
     }
 
     // Listens for DOM events and initiates corresponding DropHandle's events.
@@ -1509,7 +1510,7 @@
         // IE 10 provides dataTransfer on drag & drop but when selecting with
         // Open File dialog of <input type="file"> it only has e.srcElement.files.
         // Thanks to @rafaelmaiolla for this correction.
-        var list = (e.target && e.target.files) || (e.srcElement && e.srcElement.files)
+        var list = (e.target && e.target.files) || (e.srcElement && e.srcElement.files) 
       }
 
       if (list) {

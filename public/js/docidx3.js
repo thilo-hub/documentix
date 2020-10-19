@@ -78,7 +78,19 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
     //  callback when new data arrive
     // Update page idx with json data
     insert_item = function(data) {
-        if ( data.items.length > 0 ) {
+	if ( !data.items && data.md5 ) {
+		data = { items : [ data ] };
+	}
+        if ( data.items && data.items.length > 0 ) {
+		for(var i in data.items ){
+			if ( data.items[i].tip.match("processing") ){
+				console.log("Retry "+data.items[i].md5);
+				window.setTimeout(function() {
+				$.get("status",{"md5":data.items[i].md5}, insert_item)
+				}, 5000);
+				
+			}
+		}
         var dup= $("#"+data.items[0].md5);
 	if (dup)
 		dup.parents("li").remove();
@@ -163,13 +175,15 @@ $(function() {
 		    // var r=$("#result");
 		    // var h=r.width() * 1.42;
 		    // $("#resview").width($(".navigator").width()) ;
-		    e.currentTarget.scrollIntoViewIfNeeded();
-		    // $(".navigator").hide();
-		    $(e.currentTarget).addClass("viewing",500,function(){
+		    if (typeof e.currentTarget != "undefined"){
+			    e.currentTarget.scrollIntoViewIfNeeded();
+			    // $(".navigator").hide();
+			    $(e.currentTarget).addClass("viewing",500,function(){
 
-		    p.prop("src",u);
-		    p.show();
+			    p.prop("src",u);
+			    p.show();
 		    });
+		    }
 		    if(e && e.preventDefault) {
 				e.preventDefault();
 			}

@@ -355,8 +355,9 @@ sub count_text {
 # Create summary of text -- can be imporved
 sub summary {
     my $t = shift;
-    $$t =~ m/^\s*(([^\n]*\n){24}).*/s;
-    return  $1 || "";
+    $t =$$t;
+    $$t =~ s/^\s*(([^\n]*\n){24}).*/$1/s;
+    return  $t;
 }
 # ARGS:  $inpdf, $outpdf, $ascii, $md5
 # RET:   $text
@@ -558,6 +559,7 @@ sub index_pdf_raw {
 
     my %meta;
     $meta{"Docname"} = basename($fn);
+    $meta{"Content"} = "Proccesing";
     $meta{"_file"} = $fn;
     $meta{"_file_o"} = $fn;
     $self->{"idx"} = $idx;
@@ -634,7 +636,7 @@ sub index_pdf_raw {
         my $i = $meta{"_file"};
 
         # Output will generally be created in the local_storage (and kept)
-        my $of = $self->get_store( $meta->{"hash"},0);
+        my $of = $self->get_store( $meta->{"hash"},1);
         $meta{"_file"} = $of . "/" . basename($i) . ".pdf";
         do_convert_pdf( $i, $meta{_file} );
         my $type = do_file( $meta{_file} );
@@ -848,7 +850,7 @@ sub index_pdf {
         my $i = $meta->{"_file"};
 
         # Output will generally be created in the local_storage (and kept)
-        my $of = $self->get_store( $meta->{"hash"},0);
+        my $of = $self->get_store( $meta->{"hash"},1);
         $meta->{"_file"} = $of . "/" . basename($i) . ".pdf";
         do_convert_pdf( $i, $meta->{_file} );
         my $type = do_file( $meta->{_file} );
@@ -1015,6 +1017,7 @@ sub pdf_totext {
 print STDERR "XXXXXX> $lcl_store_dir \n" if $debug > 1;
     # do the ocr conversion
     mkdir($lcl_store_dir) unless -d $lcl_store_dir;
+
     return $minion->enqueue(ocr=> [$fn, $lcl_store .".ocr.pdf",undef,$md5]=>{priority=>0} ) if $minion;
     return $self->ocrpdf_sync( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
     return $self->ocrpdf_async( $fn, $lcl_store .".ocr.pdf",undef,$md5 );

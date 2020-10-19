@@ -1,6 +1,8 @@
 
 fd.jQuery();
 
+	//handlers
+	// document.getElementById("zone").addEventListener('paste', function (e) { paste_auto(e); }, false);
 
       // Do something when a user chooses or drops a file:
       var upl_f=function (files) { 
@@ -68,14 +70,17 @@ fd.jQuery();
         });
       };
 
+var zone;
 var attach_upl=function(zoneid) {
       // Tell FileDrop we can deal with iframe uploads using this URL:
       var options = {iframe: {url: 'upload'}};
       // Attach FileDrop to an area ('zone' is an ID but you can also give a DOM node):
-      var zone = new FileDrop(zoneid, options);
+      zone = new FileDrop(zoneid, options);
       // Attach to zone
       zone.event('upload', upl_f);
       zone.event('send', upl_s);
+      //zone.event('paste', paste_auto);
+      // zone.preview('paste',function(a,b){ console.log("paste"); return undef; });
 
 
       // React on successful iframe fallback upload (this is separate mechanism
