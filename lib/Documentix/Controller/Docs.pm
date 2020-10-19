@@ -29,9 +29,9 @@ sub senddoc {
    my $res = $ld->getFilePath($hash,$type);
    return $c->reply->asset($res) if $res;
    # Failures...
-   #$c->res->headers->cache_control("no-cache");
-   return $c->redirect_to("Error.pdf") if $type eq "pdf";
-   return $c->redirect_to("icon/Keys-icon.png");
+   $c->res->headers->cache_control("no-cache");
+   return $c->redirect_to("/Error.pdf") if $type eq "pdf";
+   return $c->redirect_to("/icon/Keys-icon.png");
 }
 
 # Multipart upload handler
