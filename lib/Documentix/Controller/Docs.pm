@@ -71,6 +71,13 @@ sub search {
     $c->render(json => $m);
 }
 
+sub status {
+ 	my $c = shift;
+	my $r=$ld->item( $c->param("md5") );
+        $c->res->headers->cache_control("no-cache")
+		if  $r->{tip} eq "processing";
+	$c->render(json => $ld->item( $c->param("md5") ));
+}
 sub reocr {
  	my $c = shift;
 

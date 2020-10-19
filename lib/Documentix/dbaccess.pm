@@ -171,13 +171,33 @@ sub item
 {
 	my ($self,$md5)=@_;
 	my $dh = $self->{"dh"};
-	my $get=$dh->prepare_cached(qq{ select md5,tags tg,content.value tip,file doc,pdfinfo from fileinfo natural join metadata content where md5=? and content.tag = 'Content' limit 1});
+	warn "MD5: $md5";
+	my $get=$dh->prepare_cached(qq{
+	select  md5,
+		group_concat(tagname) tg,
+		coalesce(content,'processing') tip,
+		pdfinfo,
+		file doc,
+		idx
+	from hash natural join file
+		  natural outer left join tags natural outer left join tagname
+		  natural outer left join m_content
+		  natural outer left join m_pdfinfo
+	where 
+		md5=?
+	limit 1
+	});
+	
+	# my $get=$dh->prepare_cached(qq{ select md5,group_concat(tagname,",")  tg,content.value tip,file doc,pdfinfo,idx from fileinfo natural join metadata content natural join tags natural join tagname  where md5=? and content.tag = 'Content' limit 1});
 	$get->execute($md5);
 	my $hash_ref = $get->fetchall_hashref( "md5" );
+	 use Data::Dumper; warn Dumper($hash_ref);
 	$hash_ref=$hash_ref->{$md5};
 	 $hash_ref->{doc} =~ s|^.*/([^/]*)(\.[^\.]+)$|$1|;
+	 $hash_ref->{tg} = "";
 	 $hash_ref->{doct} = $2;
 	 $hash_ref->{doc} =~ s|%20| |g;
+
 	 $hash_ref->{dt} = ld_r::pr_time(str2time($1)) if  $hash_ref->{pdfinfo} =~ m|<td>ModDate</td><td>\s+(.*?)</td>|;
 	 $hash_ref->{pg} =$1 if  $hash_ref->{pdfinfo} =~ m|<td>Pages</td><td>\s+(.*?)</td>|;
 	 $hash_ref->{sz} =conv_size($1) if  $hash_ref->{pdfinfo} =~ m|<td>File size</td><td>\s+(\d+) bytes</td>|;
