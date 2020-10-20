@@ -1506,6 +1506,8 @@
       // and not standardized. Has no file objects.
       if (e.dataTransfer && (e.dataTransfer.length || e.dataTransfer.files)) {
         var list = e.dataTransfer
+      } else if (e.clipboardData && (e.clipboardData.length || e.clipboardData.files)) {
+        var list = e.clipboardData
       } else {
         // IE 10 provides dataTransfer on drag & drop but when selecting with
         // Open File dialog of <input type="file"> it only has e.srcElement.files.
