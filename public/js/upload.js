@@ -8,7 +8,7 @@ fd.jQuery();
       var upl_f=function (files) { 
 	      // Check if it is a url
 	      // then retrieve it and send upstream
-	      var itm=files.dataTransfer.getData("text/uri-list")
+	      var itm=files.dataTransfer && files.dataTransfer.getData("text/uri-list")
 	      var url="/web/viewer.html?url='"+itm+"'";
 	      if ( itm ) {
 		      // var win = window.open(url, "_blank");

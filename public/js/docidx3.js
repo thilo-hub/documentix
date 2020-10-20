@@ -92,11 +92,13 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 			}
 		}
         var dup= $("#"+data.items[0].md5);
-	if (dup)
-		dup.parents("li").remove();
 	data.URL=document.location.origin;
         var itm = template.render(data);
-        var rv=$('#result').prepend(itm);
+	if ( dup.length > 0 ) {
+		var rv=dup.html(itm);
+	} else {
+		var rv=$('#result').prepend(itm);
+	}
         var msg = data.msg;
 	$('#msg').html("Item:" + data.doc + "</br>");
         if (msg)
