@@ -12,7 +12,6 @@ use Data::Dumper;
 use doclib::datelib;
 # $File::Temp::KEEP_ALL = 1;
 my $debug=5;
-my $minion=undef;
 
 my $tools = "/usr/pkg/bin";
 $tools = "/home/thilo/documentix/tools" unless -d $tools;
@@ -302,6 +301,43 @@ sub ocrpdf_async {
 	close(FH);
 	return Ocr::push_job($self->{"idx"},@_);
 }
+sub dbmaintenance
+{
+	my $self=shift;
+	warn "dbmaintenance";
+	my $dh=$self->{dh};
+	$dh->do("begin exclusive transaction");
+	$dh->do(qq{insert into text_tmp(rowid,docid,content) 
+			 select rowid,docid,content from vtext 
+			 where docid>(select value from config where var='max_idx') });
+	$dh->do(q{
+		create temporary table cache_q1 as
+			select qidx,text_tmp.docid idx,snippet(text_tmp,1,"<b>","</b>","...",4) snippet 
+			       from cache_lst a,text_tmp(a.query);
+		});
+	$dh->do(q{
+		insert or replace into cache_q(qidx,idx,snippet) select qidx,idx,snippet from cache_q1;
+		});
+	$dh->do(q{
+		update cache_lst set 
+			last_used=datetime('now'), 
+			nresults=count(*) from cache_q 
+		       where cache_lst.qidx in (select distinct(qidx) from cache_q1) and 
+		             cache_q.qidx=cache_lst.qidx;
+		});
+	$dh->do(q{
+		delete from text_tmp;
+		});
+	$dh->do(q{
+		drop table cache_q1;
+		});
+	$dh->do(q{
+		update config set value=max(idx) from hash where var="max_idx";
+		});
+	$dh->do(q{commit });
+	return "Done";
+}
+
 
 sub ocrpdf_sync {
 	my $self=shift;
@@ -314,7 +350,9 @@ sub ocrpdf_sync {
 	open (FH,">$outpdf.wip");
 	print FH "WIP\n";
 	close(FH);
-	return $self->ocrpdf_offline($self->{"idx"},@_);
+	my $res = $self->ocrpdf_offline($self->{"idx"},@_);
+	Documentix::Task::Processor::schedule_maintenance();
+	return $res;
 }
 
 # do OCR of pdf and fix metadata
@@ -336,7 +374,6 @@ sub ocrpdf_offline
 	    my $c = summary(\$t);
 	    $self->del_meta($idx,"Content");
             $self->ins_e( $idx, "Content", $c );
-	    $self->{"fixup_cache"}($self,$idx) if $self->{"fixup_cache"};
         }
 	return count_text($t);
 }
@@ -551,7 +588,6 @@ sub index_pdf_raw {
     my $class= shift;
     my $md5_f= shift;
     my $type = shift;
-    $minion  = shift;
     print STDERR "index_pdf $fn\n" if $debug > 1;
 
     my ($idx) =
@@ -989,8 +1025,6 @@ sub pdf_totext {
     my $self = shift;
     my $fn   = shift;
     my $md5   = shift;
-    my $nminion   = shift;
-    $minion = $nminion if $nminion;
     print STDERR " pdf_totext $fn\n" if $debug > 1;
     my $f_path = dirname(abs_path($fn))."/";
     my $f_base = basename($fn,(".pdf",".ocr.pdf"));
@@ -1018,9 +1052,9 @@ print STDERR "XXXXXX> $lcl_store_dir \n" if $debug > 1;
     # do the ocr conversion
     mkdir($lcl_store_dir) unless -d $lcl_store_dir;
 
-    return $minion->enqueue(ocr=> [$fn, $lcl_store .".ocr.pdf",undef,$md5]=>{priority=>0} ) if $minion;
-    return $self->ocrpdf_sync( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
-    return $self->ocrpdf_async( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
+    Documentix::Task::Processor::schedule_ocr($fn, $lcl_store .".ocr.pdf",undef,$md5);
+    # return $self->ocrpdf_sync( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
+    # return $self->ocrpdf_async( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
 }
 
 sub pdf_text {
@@ -1328,6 +1362,7 @@ sub do_convert_ocr {
     return $fail;
 }
 
+#Convert anything(images)  to pdf
 sub do_convert_pdf {
     my ( $in, $out ) = @_;
     $in  = abs_path($in);

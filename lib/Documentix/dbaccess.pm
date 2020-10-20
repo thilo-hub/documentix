@@ -209,10 +209,9 @@ sub item
 	 $hash_ref->{sz} =conv_size($1) if  $hash_ref->{pdfinfo} =~ m|<td>File size</td><td>\s+(\d+) bytes</td>|;
 	 delete $hash_ref->{pdfinfo};
 
-	 $hash_ref->{tg} = "processing" unless  $hash_ref->{tip} && $hash_ref->{tip} ne  "processing";
+	 $hash_ref->{tip} = $hash_ref->{tg} = "processing" unless  $hash_ref->{tip} && $hash_ref->{tip} ne  "processing";
 	 return $hash_ref;
  }
-
 
 
 
