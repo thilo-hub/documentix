@@ -83,7 +83,7 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 	}
         if ( data.items && data.items.length > 0 ) {
 		for(var i in data.items ){
-			if ( data.items[i].tip.match("processing") ){
+			if ( data.items[i].tg == "processing" ){
 				console.log("Retry "+data.items[i].md5);
 				window.setTimeout(function() {
 				$.get("status",{"md5":data.items[i].md5}, insert_item)
@@ -91,11 +91,12 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 				
 			}
 		}
+	data.items[0].tip = data.items[0].tip.replace(/["']/g," ");
         var dup= $("#"+data.items[0].md5);
 	data.URL=document.location.origin;
         var itm = template.render(data);
 	if ( dup.length > 0 ) {
-		var rv=dup.html(itm);
+		var rv=dup.replaceWith(itm);
 	} else {
 		var rv=$('#result').prepend(itm);
 	}
