@@ -34,6 +34,7 @@ sub senddoc {
    return $c->redirect_to("/icon/Keys-icon.png");
 }
 
+#  API's below return json results and should not be cached if items are still in processing
 # Multipart upload handler
 sub upload {
    my $c = shift;
@@ -45,38 +46,37 @@ sub upload {
    my $f=Mojo::Asset::File->new()->add_chunk($c->req->body);
    $f->mtime(str2time($c->req->headers->header('X-File-Date'))) if $c->res->headers->header('X-File-Date');
    my ($status,$rv)=$ld->load_file($c,$f,$c->req->headers->header('X-File-Name'));
+   
+   
+   $c->render(json => {
+		   	nitems => 1,
+			items  => [ $rv ],
+			nresults => 9999,
+			msg => $status 
+		});
 
-    my $hash = $c->req->headers->to_hash();
-    # my $name = Dumper(  $hash ); $log->debug($name);
-
-my $resp = {
-	'nitems' => 9999,
-	'items' => [ $rv ],
-	'nresults' => 12433,
-	'msg' => $status,
 };
-
-   my $size = length $c->req->body;
-   $c->render(json => $resp );
-};
-
-  ## Render template "example/welcome.html.ep" with message
-  #$self->render(msg => 'Welcome to the Mojolicious real-time web framework!');
 
 sub search {
         my $c = shift;
 
-        my $m = $ld_r->ldres( $c->param("class"), $c->param("idx"), $c->param("ppages"),
-            $c->param("search") );
-    $c->render(json => $m);
+        my $m = $ld_r->ldres( $c->param("class"), $c->param("idx"), $c->param("ppages"), $c->param("search") );
+        $c->res->headers->cache_control("no-cache");
+        $c->render(json => $m);
 }
 
 sub status {
  	my $c = shift;
-	my $r=$ld->item( $c->param("md5") );
+	my $rv=$ld->item( $c->param("md5") );
         $c->res->headers->cache_control("no-cache")
-		if  $r->{tip} eq "processing";
-	$c->render(json => $ld->item( $c->param("md5") ));
+		if  $rv->{tip} eq "processing";
+	$c->render(json => {
+		   	nitems => 1,
+			items  => [ $rv ],
+			nresults => 1,
+			msg => "Info"
+		});
+
 }
 sub reocr {
  	my $c = shift;

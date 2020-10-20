@@ -1,7 +1,6 @@
 package Converter;
 
-my $debug=0;
-use File::Temp qw/tempfile tmpnam tempdir/;
+my $debug=3;
 
 # External tools used
 my $pdftocairo = "pdftocairo";
@@ -11,15 +10,16 @@ my $convert    = "convert";
 #
 # Will be called by cacher
 sub mk_ico {
-	my ( $self,$item, $ignore, $mtime ) = @_;
-	my $ntime = ( stat($item) )[9];
+	my ( $self,$item, $ignore, $mtime,$fromtype ) = @_;
+	my $ntime = ( stat($item) )[9]; # Time of file
 	$mtime = 0 unless $mtime;
 	my $pg  = undef;
 	my $rot = undef;
 
 	print STDERR "mk_ico...\n" if ( $debug > 2 );
 	return undef if ( $mtime && -r $item && $ntime < $mtime );
-	my ( $typ, $out ) = pdf_icon( $item, $pg, $rot );
+	my ( $typ, $out ) = pdf_icon( $item, $pg, $rot ) if $fromtype eq "application/pdf";
+	( $typ, $out ) = img_icon( $item, $pg, $rot ) if $fromtype ne "application/pdf";
 	return undef unless $out;
 	print STDERR "     ...new cache\n" if ( $debug > 1 );
 	return ( $typ, $out );
@@ -73,11 +73,26 @@ sub pdf_thumb {
     return ( "image/png", $png );
 }
 
+sub img_icon {
+    my $fn   = shift;
+    my $pn   = ( shift || 1 ) - 1;
+    my $rot  = shift;
+
+    my @cmd = ( $convert, $fn, qw{-trim -normalize -define png:exclude-chunk=iCCP,zCCP -thumbnail}, $Docconf::config->{icon_size}, "png:-" );
+    print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug>2;
+    my $png = qexec(@cmd);
+    return ( "image/png", $png ) if length($png);
+
+    # Error case - return lock
+    $png=slurp("public/icon/Keys-icon.png"); 
+    # Return failure icon
+    return undef unless length($png);
+    return ( "image/png", $png );
+}
 sub pdf_icon {
     my $fn   = shift;
     my $pn   = ( shift || 1 ) - 1;
     my $rot  = shift;
-    my $tmp  = tmpnam();
 
     $fn .= ".pdf" if ( -f $fn . ".pdf" );
     my $png = do_convert_icon( $fn, $pn );

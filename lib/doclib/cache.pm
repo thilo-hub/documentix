@@ -40,24 +40,21 @@ q{create table if not exists cache (ref primary key unique,date,type text,data b
     $self->{"fetch"} =
       $self->{dh}->prepare("select date,type,data from cache where ref=?")
       or die "Fail";
-    $self->{"put"} =
-      $self->{dh}->prepare(
-        "insert or replace into cache (ref,date,type,data) values(?,?,?,?)")
-      or die "Fail";
 }
 
 sub get_cache {
-    my ( $self, $item, $idx, $callback,$p1 ) = @_;
-    my $ref = "$idx-$item";
+    my ( $self, $item, $idx, $callback,$p1,$fromtype ) = @_;
+    my $ref = "$idx";
     $self->{"fetch"}->execute($ref);
     my $q = $self->{"fetch"}->fetch;
 
-    my ( $type, $data ) = $callback->( $p1,$item, $idx, @$q[0] );
+    my ( $type, $data ) = $callback->( $p1,$item, $idx, @$q[0],$fromtype );
     return ( @$q[1], @$q[2] ) if @$q[2] && !$data;
     return ( "text/text", "ERROR" ) unless $data;
 
-    my $ins_d = $self->{"put"};
-
+    my $ins_d = $self->{dh}->prepare_cached(
+        "insert or replace into cache (ref,date,type,data) values(?,?,?,?)");
+      
     my $date = time();
     $ins_d->bind_param( 1, $ref );
     $ins_d->bind_param( 2, $date, SQL_INTEGER );

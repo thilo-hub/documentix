@@ -105,7 +105,7 @@ sub get_bestpdf
  sub get_icon{ 
 	 my $ra=shift;
 $DB::single = 1;
-	 my ( $m, $res ) = $cache->get_cache( $ra->{"file"}, "$ra->{hash}-ico", \&Converter::mk_ico,$self );
+	 my ( $m, $res ) = $cache->get_cache( $ra->{"file"}, "$ra->{hash}-ico", \&Converter::mk_ico,$self,$ra->{Mime} );
 	 
 	 return Mojo::Asset::Memory->new()->add_chunk($res);
  }
@@ -116,6 +116,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	my ($self,$app,$asset,$name) = @_;
 	my $dh = $self->{"dh"};
    $DB::single = 1;
+   	 $name = "SomeFile" unless $name;
 	 my $md5 = Digest::MD5->new;
 	 $dgst = $md5->add($asset->slurp)->hexdigest;
 
@@ -194,10 +195,9 @@ sub item
 	limit 1
 	});
 	
-	# my $get=$dh->prepare_cached(qq{ select md5,group_concat(tagname,",")  tg,content.value tip,file doc,pdfinfo,idx from fileinfo natural join metadata content natural join tags natural join tagname  where md5=? and content.tag = 'Content' limit 1});
 	$get->execute($md5);
 	my $hash_ref = $get->fetchall_hashref( "md5" );
-	 use Data::Dumper; warn Dumper($hash_ref);
+	# use Data::Dumper; warn Dumper($hash_ref);
 	$hash_ref=$hash_ref->{$md5};
 	 $hash_ref->{doc} =~ s|^.*/([^/]*)(\.[^\.]+)$|$1|;
 	 $hash_ref->{tg} = "";
@@ -208,6 +208,8 @@ sub item
 	 $hash_ref->{pg} =$1 if  $hash_ref->{pdfinfo} =~ m|<td>Pages</td><td>\s+(.*?)</td>|;
 	 $hash_ref->{sz} =conv_size($1) if  $hash_ref->{pdfinfo} =~ m|<td>File size</td><td>\s+(\d+) bytes</td>|;
 	 delete $hash_ref->{pdfinfo};
+
+	 $hash_ref->{tg} = "processing" unless  $hash_ref->{tip} && $hash_ref->{tip} ne  "processing";
 	 return $hash_ref;
  }
 
