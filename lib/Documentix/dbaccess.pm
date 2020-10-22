@@ -144,7 +144,8 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	 my $rv = $add_hash->execute($dgst);
 	 if ( $rv == 0E0 ) {
 		 # return know info
-		 return "Known",item($self,$dgst);
+		 my $rv=item($self,$dgst);
+		 return "Known", @$rv ;
 	 }
 	 $name =~ s/%20/ /g; # 
 	 $name =~ m|([^/]*)(\.[^\.]*)$|;
