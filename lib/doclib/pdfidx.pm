@@ -341,7 +341,7 @@ sub dbmaintenance
 
 sub ocrpdf_sync {
 	my $self=shift;
-	my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
+	my ( $inpdf, $outpdf, $ascii, $md5) = @_;
        my ($idx) =
             $self->{dh}->selectrow_array( "select idx from hash where md5=?", undef, $md5 );
 	$self->{"idx"} = $idx;
@@ -580,398 +580,226 @@ sub join_pdf
 
 # Read input pdf and join the given html file
 
-sub index_pdf_raw {
-    my $self = shift;
-    my $dh   = $self->{"dh"};
-    my $fn   = shift;
-    my $wdir = shift;
-    my $class= shift;
-    my $md5_f= shift;
-    my $type = shift;
-    print STDERR "index_pdf $fn\n" if $debug > 1;
+# Converter
+# "recursive"
+# Input: to-type , curren_file_info
+#
+use File::MimeInfo::Magic;
+{
 
-    my ($idx) =
-      $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
+sub load_file
+{
+	my ($self)=shift;
+	my ($totype,$meta)=@_;
+	my $dh=$self->{dh};
 
-    my %meta;
-    $meta{"Docname"} = basename($fn);
-    $meta{"Content"} = "Proccesing";
-    $meta{"_file"} = $fn;
-    $meta{"_file_o"} = $fn;
-    $self->{"idx"} = $idx;
-    chomp( $type =
-          qexec(qw{file --dereference --brief  --mime-type}, $fn ))
-  	unless $type;
-    print STDERR "Type: $type\n";
-    $meta{"Mime"} = $type;
-    my %mime_handler = (
-        "application/zip" => \&tp_unzip,
-        "application/x-gzip" => \&tp_gzip,
-        "application/pdf"    => \&tp_pdf,
-        "application/msword" => \&tp_any,
-        "image/png"         => \&tp_jpg,
-        "image/jpeg"         => \&tp_jpg,
-        "image/jpg"         => \&tp_jpg,
-	"text/plain"	     => \&tp_ascii,
-"application/vnd.openxmlformats-officedocument.presentationml.presentation"
-          => \&tp_any,
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" =>
-          \&tp_any,
-"application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          => \&tp_any,
-        "application/epub+zip"          => \&tp_ebook,
-        "application/vnd.ms-powerpoint" => \&tp_any
-    );
+	my $fn = $meta->{file} or die "Bad call";
+	delete $meta->{file};
+	$meta->{_file}=$fn;
+	$meta->{hash} = file_md5_hex($fn) unless $meta->{hash};
+	# If we dont know the file already, we can just return
+	my ($idx) =
+	  $dh->selectrow_array( "select idx from hash where md5=?", undef, $meta->{hash} );
+	return ($idx,undef) unless  $idx; #Error
 
-    $meta{"size"} = ( stat($fn) )[7];
-    $meta{"mtime"} = ( stat($fn) )[9];
-    $meta{"hash"}  = $md5_f;
-    $type =~ s/;.*//;
-    $type = $mime_handler{$type}( $self, \%meta ) while $mime_handler{$type};
+	$meta->{"Docname"} = basename($fn);
+	$meta->{"Content"} = "Proccesing";
+	my @fstat=stat($fn);
+	$meta->{"size"} = $fstat[7];
+	$meta->{"mtime"} = $fstat[9];
+	my $type =
+	$meta->{"Mime"} = mimetype($fn);
+	print STDERR "Type: $type\n";
 
-    print STDERR " -> $type\n";
+	$meta->{_lcl_store} = $self->get_store( $meta->{"hash"},1);
 
-    $meta{"Image"} = '<img src="?type=thumb&send=#hash#">';
-    ( $meta{"PopFile"}, $meta{"Class"} ) =
-      ( $self->pdf_class_file( $fn, \$meta{"Text"}, $meta{"hash"}, $class ) );
+	my %mime_handler = (
+	    "application/zip" => \&xtp_unzip,
+	    "application/x-gzip" => \&xtp_gzip,
+	    "application/pdf"    => \&xtp_pdf,
+	    "application/msword" => \&xtp_any,
+	    "image/png"         => \&xtp_jpg,
+	    "image/jpeg"         => \&xtp_jpg,
+	    "image/jpg"         => \&xtp_jpg,
+	    "text/plain"	     => \&xtp_ascii,
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+	      => \&xtp_any,
+	    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" =>
+	      \&xtp_any,
+	      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+	      => \&xtp_any,
+	    "application/epub+zip"          => \&xtp_ebook,
+	    "application/vnd.ms-powerpoint" => \&xtp_any
+	);
 
-    $meta{"keys"} = join( ' ', keys(%meta) );
+	# $type =~ s/;.*//;
 
-    foreach ( keys %meta ) {
-        $self->ins_e( $idx, $_, $meta{$_} );
+	# The handler return their output type if not correct 
+	# or a message if processing should end
+	$type = $mime_handler{$type}( $self, $totype, $meta ) while $mime_handler{$type};
+
+	( $meta->{"PopFile"}, $meta->{"Class"} ) =
+	  ( $self->pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"}, $class ) );
+
+	$meta->{"keys"} = join( ' ', keys(%$meta) );
+
+	# All metadata not prefixed by '_' is put into db
+	#
+	# $self->del_e($idx,"Content");
+	foreach ( keys %$meta ) {
+	    next if /^_/;
+	    $self->ins_e( $idx, $_, $meta->{$_} );
+	}
+	# make summary for caller
+	$meta->{"Text"} = count_text($meta->{"Text"}) if $meta->{"Text"};
+	
+	if ($type eq "FAILED")
+	{
+	    # roll back new data
+	    $dh->prepare_cached(q{delete from file where file=?})->execute($fn);
+	    $idx=$type;
+	}
+	datelib::fixup_dates($dh);
+    return $idx, $meta;
+}
+
+## Converter
+
+# "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+# "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+# "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+# "application/msword" 
+# "application/vnd.ms-powerpoint" 
+
+sub xtp_any {
+	my ($self,$totype,$pmeta) = @_;
+        return "FAILED" unless $self->{config}->{unoconv_enabled};
+        my $i = $pmeta->{"_file"};
+	$pmeta->{_file_o}=$i;
+
+        # Output will generally be created in the local_storage (and kept)
+        my $of = $pmeta->{_lcl_store};
+        $pmeta->{"_file"} = $of . "/" . basename($i) . ".pdf";
+        do_unopdf( $i, $pmeta->{_file} )
+		unless -r $pmeta->{_file};
+
+        my $type = mimetype( $pmeta->{_file} );
+        return $type;
     }
-    $meta->{"Text"} = count_text($meta->{"Text"}) if $meta->{"Text"};
+
+# "image/png"         => \&xtp_jpg,
+# "image/jpeg"         => \&xtp_jpg,
+# "image/jpg"         => \&xtp_jpg,
+    sub xtp_jpg {
+	my ($self,$totype,$pmeta) = @_;
+	die "Cannot do: $totype"
+		unless $totype eq "application/pdf";
+        my $i = $pmeta->{"_file"};
+	$pmeta->{__file}=$i;
+
+        # Output will generally be created in the local_storage (and kept)
+        my $of = $pmeta->{_lcl_store};
+        $pmeta->{"_file"} = $of . "/" . basename($i).".ocr.pdf";;
+	do_convert_pdf($i,$pmeta->{_file});
+	$self->del_meta($self->{"idx"},"pdfinfo");
+        my $type = mimetype( $pmeta->{_file} );
+        return $type;
+    }
+
+# "text/plain"
+
+    sub xtp_ascii {
+	my ($self,$totype,$pmeta) = @_;
+	die "Cannot do: $totype"
+		unless $totype eq "application/pdf";
+        my $i = $pmeta->{"_file"};
+	$pmeta->{__file}=$i;
+
+        # Output will generally be created in the local_storage (and kept)
+        my $of = $pmeta->{_lcl_store};
+        $pmeta->{"_file"} = $of . "/" . basename($i) . ".pdf";
+        do_ascii2pdf( $i, $pmeta->{_file} );
+        my $type = mimetype( $pmeta->{_file} );
+        return $type;
+    }
     
-    if ($type eq "FAILED")
-    {
-	# roll back new data
-	$dh->prepare(q{delete from file where file=?})->execute($fn);
-	$idx=$type;
-    }
-    datelib::fixup_dates($dh);
+# "application/zip" 
+    sub xtp_unzip {
+	my ($self,$totype,$pmeta) = @_;
+        my $i = $pmeta->{"_file"};
+	$pmeta->{__file}=$i;
 
-    return $idx, \%meta;
+        my $of = $pmeta->{_lcl_store};
 
-    sub tp_any {
-        my $self = shift;
-        my $meta = shift;
-        return "FAILED" unless $self->{config}->{unoconv_enabled};
-        my $i = $meta{"_file"};
-
-        # Output will generally be created in the local_storage (and kept)
-        my $of = $self->get_store( $meta->{"hash"},0);
-        $meta{"_file"} = $of . "/" . basename($i) . ".pdf";
-        do_unopdf( $i, $meta{_file} )
-		unless -r $meta{_file};
-        my $type = do_file( $meta{_file} );
-        return $type;
-    }
-    sub tp_jpg {
-        my $self = shift;
-        my $meta = shift;
-        my $i = $meta{"_file"};
-
-        # Output will generally be created in the local_storage (and kept)
-        my $of = $self->get_store( $meta->{"hash"},1);
-        $meta{"_file"} = $of . "/" . basename($i) . ".pdf";
-        do_convert_pdf( $i, $meta{_file} );
-        my $type = do_file( $meta{_file} );
-        return $type;
-    }
-
-    sub tp_ascii {
-        my $self = shift;
-        my $meta = shift;
-        my $i = $meta{"_file"};
-
-        # Output will generally be created in the local_storage (and kept)
-        my $of = $self->get_store( $meta->{"hash"},0);
-        $meta{"_file"} = $of . "/" . basename($i) . ".pdf";
-        do_ascii2pdf( $i, $meta{_file} );
-        my $type = do_file( $meta{_file} );
-        return $type;
-    }
-
-    sub tp_ebook {
-        my $self = shift;
-        my $meta = shift;
-        return "FAILED" unless $self->{config}->{ebook_convert_enabled};
-        my $i = $meta{"_file"};
-
-        # Output will generally be created in the local_storage (and kept)
-        my $of = $self->get_store( $meta->{"hash"},0);
-        $meta{"_file"} = $of . "/" . basename($i) . ".pdf";
-        do_calibrepdf( $i, $meta{_file} );
-        my $type = do_file( $meta{_file} );
-        return $type;
-    }
-
-    sub tp_unzip {
-        my $self = shift;
-        my $meta = shift;
-        my $i    = $meta{"_file"};
-	my $d    =  $self->get_store($meta->{"hash"});
-	foreach( qx{echo A | unzip -d "$d" "$i"} ) {
+	my @archive=();
+	foreach( qx{echo A | unzip -d "$of" "$i"} ) {
 		next unless /extracting:\s+(.*)\s*$/;
 		die "unzip problem? >$1<" unless -r $1;
 		print STDERR "Do: $1\n" if $debug > 1;
-		my $txt = $self->index_pdf( $1 );
+		push @archive,$1;
 	}
-        $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
-        $meta{"_file"} = $meta{"_fh"}->filename;
-        # do_ungzip( $i, $self->{file} );
+	my @md5_archive=();
+	$DB::single=1;
+	foreach ( @archive ) {
+		my $hash = file_md5_hex($_);
+		dbaccess::insert_file($self,$hash,$_);
+		push @md5_archive,$hash;
+	}
+	$pmeta->{"archive"}=join(",",@md5_archive);
+	$type = "Unizped (".scalar(@md5_archive).") files";
 
-        my $type = do_file( $meta{_file} );
         return $type;
     }
 
-    sub tp_gzip {
-        my $self = shift;
-        my $i    = $meta{"_file"};
-        $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
-        $meta{"_file"} = $meta{"_fh"}->filename;
-        do_ungzip( $i, $meta{_file} );
 
-        my $type = do_file( $meta{_file} );
+# "application/epub+zip"
+    sub xtp_ebook {
+	my ($self,$totype,$pmeta) = @_;
+        return "FAILED" unless $self->{config}->{ebook_convert_enabled};
+        my $i = $pmeta->{"_file"};
+
+        # Output will generally be created in the local_storage (and kept)
+        my $of = $self->get_store( $pmeta->{"hash"},0);
+        $pmeta->{"_file"} = $of . "/" . basename($i) . ".pdf";
+        do_calibrepdf( $i, $pmeta->{_file} );
+        my $type = do_file( $pmeta->{_file} );
         return $type;
     }
 
-    sub tp_pdf {
-        my $self = shift;
-        my $meta = shift;
-        my $t    = $self->pdf_text( $meta->{"_file"}, $meta->{"hash"} );
+# "application/x-gzip" 
+    sub xtp_gzip {
+	my ($self,$totype,$pmeta) = @_;
+        my $i    = $pmeta->{"_file"};
+        $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
+        $pmeta->{"_file"} = $pmeta->{"_fh"}->filename;
+        do_ungzip( $i, $pmeta->{_file} );
+
+        my $type = do_file( $pmeta->{_file} );
+        return $type;
+    }
+
+# "application/pdf"
+    sub xtp_pdf {
+	my ($self,$totype,$pmeta) = @_;
+        my $t    = $self->pdf_text( $pmeta->{"_file"}, $pmeta->{"hash"} );
         if ($t) {
             $t =~ s/[ \t]+/ /g;
 
             # short version
             $t =~ m/^\s*(([^\n]*\n){1,24}).*/s;
             my $c = $1 || "";
-            $meta->{"Text"}    = $t;
-            $meta->{"Content"} = $c;
-            my $fn=$meta->{"_file"};
-            $meta->{"pdfinfo"} = $self->pdf_info($meta->{"_file_o"});
+            $pmeta->{"Text"}    = $t;
+            $pmeta->{"Content"} = $c;
         }
+	my $fn=$pmeta->{"_file"};
+	$pmeta->{"pdfinfo"} = $self->pdf_info($fn)
+		unless $pmeta->{pdfinfo};
+
         my $l = length($t) || "-FAILURE-";
         return "FINISH ($l)";
     }
-
 }
 
-sub index_pdf {
-    my $self = shift;
-    my $dh   = $self->{"dh"};
-    my $fn   = shift;
-    my $wdir = shift;
-    my $class= shift;
-    my $md5_f= shift;
-    print STDERR "index_pdf $fn\n" if $debug > 1;
-
-    # make sure we skip already ocred docs
-    my $fn_orig=$fn;
-    $fn =~ s/\.ocr\.pdf$/\.pdf/;
-
-    $md5_f = file_md5_hex($fn) unless $md5_f;
-
-    # Hack?
-    # if a source document is not in a writable directory,
-    # we should create a folder in "incoming/{md5}" and have a symbolic link
-    # pointing to the source document.
-    # the incoming, can then hold the OCR and whatever other stuff we need
-    # HACK: I don't see a better way right now
-    if ( $self->{config}->{link_local}
-        && !( $fn =~ /$self->{config}->{local_storage}/ ) )
-    {
-        my $f_dir = dirname($fn);
-        my $new   = $self->get_store( $md5_f,1);
-        $new .= "/" . basename($fn);
-        symlink $fn, $new
-          or die "Cannot link document... $!";
-        $fn = $new;
-        print STDERR "Doc linked -> $fn\n";
-    }
-
-    my ($idx) =
-      $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
-
-    return $self->get_metas($md5_f) if $idx;   # already indexed -- TODO:potentially check timestamp
-
-    $dh->do("begin exclusive transaction");
-    $dh->prepare("insert or ignore into file (md5,file,host) values(?,?,?)")
-      ->execute( $md5_f, $fn, hostname() );
-
-    # $idx = $dh->last_insert_id( "", "", "", "" );
-    ($idx) =
-      $dh->selectrow_array( "select idx from hash where md5=?", undef, $md5_f );
-    print STDERR "Loading: ($idx) $fn\n";
-    $dh->do("commit");
-
-    my %meta;
-    $meta{"Docname"} = $fn;
-    $meta{"Docname"} =~ s/^.*\///s;
-    $meta{"_file"} = $fn;
-    $meta{"_file_o"} = $fn_orig;
-    $meta{"_idx"} = $idx;
-    chomp( my $type =
-          qexec(qw{file --dereference --brief  --mime-type}, $fn ));
-    print STDERR "Type: $type\n";
-    $meta{"Mime"} = $type;
-    my %mime_handler = (
-        "application/zip" => \&tp_unzip,
-        "application/x-gzip" => \&tp_gzip,
-        "application/pdf"    => \&tp_pdf,
-        "application/msword" => \&tp_any,
-        "image/png"         => \&tp_jpg,
-        "image/jpeg"         => \&tp_jpg,
-        "image/jpg"         => \&tp_jpg,
-	"text/plain"	     => \&tp_ascii,
-"application/vnd.openxmlformats-officedocument.presentationml.presentation"
-          => \&tp_any,
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" =>
-          \&tp_any,
-"application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-          => \&tp_any,
-        "application/epub+zip"          => \&tp_ebook,
-        "application/vnd.ms-powerpoint" => \&tp_any
-    );
-
-    $meta{"size"} = ( stat($fn) )[7];
-    $meta{"mtime"} = ( stat($fn) )[9];
-    $meta{"hash"}  = $md5_f;
-    $type =~ s/;.*//;
-    $type = $mime_handler{$type}( $self, \%meta ) while $mime_handler{$type};
-
-    print STDERR " -> $type\n";
-
-    $meta{"Image"} = '<img src="?type=thumb&send=#hash#">';
-    ( $meta{"PopFile"}, $meta{"Class"} ) =
-      ( $self->pdf_class_file( $fn, \$meta{"Text"}, $meta{"hash"}, $class ) );
-
-    foreach ( keys %meta ) {
-	delete $meta{$_}  if /^_/;
-    }
-
-    $meta{"keys"} = join( ' ', keys(%meta) );
-
-    foreach ( keys %meta ) {
-        $self->ins_e( $idx, $_, $meta{$_} );
-    }
-
-    if ($type eq "FAILED")
-    {
-	# roll back new data
-	$dh->prepare(q{delete from file where file=?})->execute($fn);
-	$idx=$type;
-    }
-    datelib::fixup_dates($dh);
-
-    return $idx, \%meta;
-
-    sub tp_any {
-        my $self = shift;
-        my $meta = shift;
-        return "FAILED" unless $self->{config}->{unoconv_enabled};
-        my $i = $meta->{"_file"};
-
-        # Output will generally be created in the local_storage (and kept)
-        my $of = $self->get_store( $meta->{"hash"},0);
-        $meta->{"_file"} = $of . "/" . basename($i) . ".pdf";
-        do_unopdf( $i, $meta->{_file} )
-		unless -r $meta->{_file};
-        my $type = do_file( $meta->{_file} );
-        return $type;
-    }
-    sub tp_jpg {
-        my $self = shift;
-        my $meta = shift;
-        my $i = $meta->{"_file"};
-
-        # Output will generally be created in the local_storage (and kept)
-        my $of = $self->get_store( $meta->{"hash"},1);
-        $meta->{"_file"} = $of . "/" . basename($i) . ".pdf";
-        do_convert_pdf( $i, $meta->{_file} );
-        my $type = do_file( $meta->{_file} );
-        return $type;
-    }
-
-    sub tp_ascii {
-        my $self = shift;
-        my $meta = shift;
-        my $i = $meta->{"_file"};
-
-        # Output will generally be created in the local_storage (and kept)
-        my $of = $self->get_store( $meta->{"hash"},0);
-        $meta->{"_file"} = $of . "/" . basename($i) . ".pdf";
-        do_ascii2pdf( $i, $meta->{_file} );
-        my $type = do_file( $meta->{_file} );
-        return $type;
-    }
-
-    sub tp_ebook {
-        my $self = shift;
-        my $meta = shift;
-        return "FAILED" unless $self->{config}->{ebook_convert_enabled};
-        my $i = $meta->{"_file"};
-
-        # Output will generally be created in the local_storage (and kept)
-        my $of = $self->get_store( $meta->{"hash"},0);
-        $meta->{"_file"} = $of . "/" . basename($i) . ".pdf";
-        do_calibrepdf( $i, $meta->{_file} );
-        my $type = do_file( $meta->{_file} );
-        return $type;
-    }
-
-    sub tp_unzip {
-        my $self = shift;
-        my $meta = shift;
-        my $i    = $meta->{"_file"};
-	my $d    =  $self->get_store($meta->{"hash"});
-	foreach( qx{echo A | unzip -d "$d" "$i"} ) {
-		next unless /extracting:\s+(.*)\s*$/;
-		die "unzip problem? >$1<" unless -r $1;
-		print STDERR "Do: $1\n" if $debug > 1;
-		my $txt = $self->index_pdf( $1 );
-	}
-	return "";
-        $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
-        $meta->{"_file"} = $meta->{"_fh"}->filename if  $meta->{"_fh"};
-        # do_ungzip( $i, $meta->{_file} );
-
-        my $type = do_file( $meta->{_file} );
-        return $type;
-    }
-
-    sub tp_gzip {
-        my $self = shift;
-	my $meta = shift;
-        my $i    = $meta->{"_file"};
-        $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
-        $meta->{"_file"} = $meta->{"_fh"}->filename;
-        do_ungzip( $i, $meta->{_file} );
-
-        my $type = do_file( $meta->{_file} );
-        return $type;
-    }
-
-    sub tp_pdf {
-        my $self = shift;
-        my $meta = shift;
-        my $t    = $self->pdf_text( $meta->{"_file"}, $meta->{"hash"} );
-        if ($t) {
-            $t =~ s/[ \t]+/ /g;
-
-            # short version
-            $t =~ m/^\s*(([^\n]*\n){1,24}).*/s;
-            my $c = $1 || "";
-            $meta->{"Text"}    = $t;
-            $meta->{"Content"} = $c;
-            my $fn=$meta->{"_file"};
-            $meta->{"pdfinfo"} = $self->pdf_info($meta->{"_file_o"});
-        }
-        my $l = length($t) || "-FAILURE-";
-        return "FINISH ($l)";
-    }
-
-}
 
 sub del_meta {
     my ( $self, $idx, $t, ) = @_;
@@ -1370,7 +1198,11 @@ sub do_convert_pdf {
     print STDERR "convert: $in $out\n" if $debug > 1;
     $in  =~ s/"/\\"/g;
     $out =~ s/"/\\"/g;
-    qexec("convert", $in, $out);
+    $out =~ s/\.pdf$//;
+    my @cmd = ( $tesseract, $in, $out, qw{ -l deu+eng --psm 1 --oem 1 pdf} );
+    qexec(@cmd);
+    $out .= ".pdf";
+	#qexec("convert", $in, $out);
     die "failed: convert: $in $out" unless -f $out;
     return;
 }
@@ -1478,7 +1310,7 @@ sub do_pdftotext {
     # pdftotext has issues with spaces in the name
     my $tmp=tmpnam().".pdf";
     symlink(abs_path($pdfin),$tmp);
-    @cmd = ( $pdftotext, $tmp, "-" );
+    @cmd = ( $pdftotext,"-layout", $tmp, "-" );
 
     my $txt = qexec( @cmd );
     unlink $tmp;
