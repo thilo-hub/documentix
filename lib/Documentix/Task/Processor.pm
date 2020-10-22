@@ -14,14 +14,28 @@ sub register {
   $minion->add_task(refreshIndexes => \&_indexes);
 }
 
+sub schedule_loader
+{
+	$minion->enqueue(loader=>[@_]=>{priority=>2});
+}
+sub  schedule_ocr
+{
+        $minion->enqueue(ocr=> [@_]=>{priority=>1} );
+}
+
+sub schedule_maintenance
+{
+        $minion->enqueue(refreshIndexes=> [@_]=>{priority=>0} );
+}
 sub _ocr {
   my ($job, @args)=@_;
   my $pdfidx  = pdfidx->new(0,$Documentix::config);
+  $DB::single = 1;
   $job->finish( $pdfidx->ocrpdf_sync(@args));
 }
 
 sub _loader {
-  my ($job, $dgst,$fn,$type,$wdir) = @_;
+  my ($job, $dgst,$fn) = @_;
   my $class = undef;
 
   my $pdfidx  = pdfidx->new(0,$Documentix::config);
@@ -29,13 +43,11 @@ sub _loader {
   say 'Process';
   # sleep 1;
   $DB::single = 1;
-  my $txt = $pdfidx->index_pdf_raw( $fn, $wdir,$class,$dgst ,$type);
-  # $ld_r->update_caches();
+  my $txt = $pdfidx->load_file(  "application/pdf",{file=>$fn});
   say 'done';
   $results[5] = {summary=>$txt,url=>"/docs/pdf/$dgst/result.pdf"};
   $job->finish(\@results);
 }
-
 sub _indexes {
 	my ($job, @args)=@_;
   $DB::single = 1;
@@ -44,14 +56,4 @@ sub _indexes {
 	$job->finish(\$res);
 }
 
-sub  schedule_ocr
-{
-        $minion->enqueue(ocr=> [@_]=>{priority=>1} );
-
-}
-
-sub schedule_maintenance
-{
-        $minion->enqueue(refreshIndexes=> [@_]=>{priority=>0} );
-}
 1;

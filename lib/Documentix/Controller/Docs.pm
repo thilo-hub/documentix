@@ -22,6 +22,7 @@ my $ld_r=ld_r->new();
 # This action will render a template
 sub senddoc {
    my $c   = shift;
+$DB::single=1;
    my $type = $c->stash('type');
    my $hash = $c->stash('hash');
    my $doc = $c->stash('doc');
@@ -67,13 +68,15 @@ sub search {
 
 sub status {
  	my $c = shift;
+	$DB::single=1;
 	my $rv=$ld->item( $c->param("md5") );
+use Data::Dumper; print STDERR Dumper($rv);
         $c->res->headers->cache_control("no-cache")
-		if  $rv->{tip} eq "processing";
+		if  $rv->[0]->{tip} eq "processing";
 	$c->render(json => {
-		   	nitems => 1,
-			items  => [ $rv ],
-			nresults => 1,
+		   	nitems => scalar(@$rv),
+			items  => [ @$rv ],
+			nresults => scalar(@$rv),
 			msg => "Info"
 		});
 

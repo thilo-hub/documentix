@@ -11,6 +11,7 @@ use Mojo::Asset;
 use File::MimeInfo::Magic;
 use Documentix::ld_r;
 use Date::Parse;
+use Cwd 'abs_path';
 
 
 use parent DBI;
@@ -22,9 +23,10 @@ my $ph;
 my $cache;
 my $error_file= Mojo::Asset::File->new(path => "../public/icon/Keys-icon.png") ;
 my $error_pdf= Mojo::Asset::File->new(path => "../public/Error.pdf") ;
+my $lcl;
 sub new {
     my $class  = shift;
-
+    $DB::single=1;
     my $dbn    = $Docconf::config->{database_provider};
     my $d_name = $Docconf::config->{database};
     my $user   = $Docconf::config->{database_user};
@@ -53,6 +55,8 @@ sub new {
     $cache = cache->new();
     my $q = "select cast(file as blob) file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
     $ph=$dh->prepare_cached($q);
+    $lcl=$Docconf::config->{local_storage};
+
     return $self;
 }
 
@@ -96,8 +100,9 @@ sub get_bestpdf
 	#croak "Wrong file-type: $ra->{Mime}" unless $ra->{Mime} =~ m|application/pdf|;
 
 	my ($name,$path,$suffix) = fileparse($ra->{file},qw{ocr.pdf pdf});
+	my $lcl=get_store($ra->{hash},0);
 	# search path
-	foreach( $path.$name.".ocr.pdf",$path.$name.$suffix ) {
+	foreach( $lcl.$name.".ocr.pdf",$path.$name.".ocr.pdf",$lcl.$name.$suffix,$path.$name.$suffix ) {
 		return Mojo::Asset::File->new(path => $_)  if -r $_;
 	}
 	return undef;
@@ -110,7 +115,21 @@ $DB::single = 1;
 	 return Mojo::Asset::Memory->new()->add_chunk($res);
  }
 
- #return 
+ # Install file basis in DB and schedule indexing of it
+ sub insert_file {
+	 my ($self,$dgst,$ob)=@_;
+	 my $type = mimetype($ob);
+	 my $dh=$self->{dh};
+	 my $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
+	 my $add_mime = $dh->prepare_cached(q{insert into metadata(idx,tag,value) values((select idx from hash where md5=?),"Mime",?)});
+
+	 $add_file->execute($dgst,$ob);
+	 $add_mime->execute($dgst,$type);
+	 return Documentix::Task::Processor::schedule_loader($dgst,$ob);
+}
+
+
+ 
 use Digest::MD5 qw(md5 md5_hex md5_base64);
  sub load_file {
 	my ($self,$app,$asset,$name) = @_;
@@ -141,19 +160,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	 my $wdir = $ob;
 	 $ob .= "/$name";
 	 $asset->move_to($ob);
-	 $fh= $asset->handle();
-         my $type = mimetype($ob);
-	 $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
-	 $add_file->execute($dgst,$ob);
-	 my $add_mime = $dh->prepare_cached(q{insert into metadata(idx,tag,value) values((select idx from hash where md5=?),"Mime",?)});
-	 $add_mime->execute($dgst,$type);
-
-	 #$add_file_1 = $dh->prepare_cached(q{insert into tags(idx,tagid) select idx,tagid from hash,taglist where md5=? and tagname='unclassified'});
-	 
-
-	 my $id = $app->minion->enqueue(loader => [$dgst,$ob,$type,$wdir] => {priority => 5});
-
-
+	 my $id = $self->insert_file($dgst,$ob);
 	 return "Loading",{ md5 => $dgst,
 		  doc => $file,
 		  doct=> $ext,
@@ -185,34 +192,69 @@ sub item
 		coalesce(content,'processing') tip,
 		pdfinfo,
 		file doc,
+		archive,
 		idx
 	from hash natural join file
 		  natural outer left join tags natural outer left join tagname
 		  natural outer left join m_content
 		  natural outer left join m_pdfinfo
+		  natural outer left join m_archive
 	where 
 		md5=?
 	limit 1
 	});
 	
-	$get->execute($md5);
-	my $hash_ref = $get->fetchall_hashref( "md5" );
-	# use Data::Dumper; warn Dumper($hash_ref);
-	$hash_ref=$hash_ref->{$md5};
-	 $hash_ref->{doc} =~ s|^.*/([^/]*)(\.[^\.]+)$|$1|;
-	 $hash_ref->{tg} = "";
-	 $hash_ref->{doct} = $2;
-	 $hash_ref->{doc} =~ s|%20| |g;
+	my @md5_l=($md5);
+	my @res=();
+	my %added;
+	while( @md5_l ) {
+		my $md5=shift @md5_l;
+		next if $added{$md5}++;
+		$get->execute($md5);
 
-	 $hash_ref->{dt} = ld_r::pr_time(str2time($1)) if  $hash_ref->{pdfinfo} =~ m|<td>ModDate</td><td>\s+(.*?)</td>|;
-	 $hash_ref->{pg} =$1 if  $hash_ref->{pdfinfo} =~ m|<td>Pages</td><td>\s+(.*?)</td>|;
-	 $hash_ref->{sz} =conv_size($1) if  $hash_ref->{pdfinfo} =~ m|<td>File size</td><td>\s+(\d+) bytes</td>|;
-	 delete $hash_ref->{pdfinfo};
+		my $hash_ref = $get->fetchall_hashref( "md5" );
+		# use Data::Dumper; warn Dumper($hash_ref);
+		$hash_ref=$hash_ref->{$md5};
+		 if ($hash_ref->{archive})
+		 {
+			 push @md5_l,split(/,/,$hash_ref->{archive});
+			 next;
+		 }
+		 delete $hash_ref->{archive};
+		 $hash_ref->{doc} =~ s|^.*/([^/]*)(\.[^\.]+)$|$1|;
+		 $hash_ref->{tg} = "";
+		 $hash_ref->{doct} = $2;
+		 $hash_ref->{doc} =~ s|%20| |g;
 
-	 $hash_ref->{tip} = $hash_ref->{tg} = "processing" unless  $hash_ref->{tip} && $hash_ref->{tip} ne  "processing";
-	 return $hash_ref;
+		 $hash_ref->{dt} = ld_r::pr_time(str2time($1)) if  $hash_ref->{pdfinfo} =~ m|<td>ModDate</td><td>\s+(.*?)</td>|;
+		 $hash_ref->{pg} =$1 if  $hash_ref->{pdfinfo} =~ m|<td>Pages</td><td>\s+(.*?)</td>|;
+		 $hash_ref->{sz} =conv_size($1) if  $hash_ref->{pdfinfo} =~ m|<td>File size</td><td>\s+(\d+) bytes</td>|;
+		 delete $hash_ref->{pdfinfo};
+
+		 $hash_ref->{tip} = $hash_ref->{tg} = "processing" unless  $hash_ref->{tip} && $hash_ref->{tip} ne  "processing";
+		 push @res,$hash_ref;
+	 }
+	 return \@res;
  }
 
+sub get_store {
+    my $digest=shift;
+    my $md = shift || 0;
+    my $wdir = $lcl;
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+    $wdir  = abs_path($wdir);
+    $digest =~ m/^(..)/;
+    $wdir .= "/$1";
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+
+    $wdir .= "/$digest";
+    mkdir $wdir or die "No dir: $wdir" if $md && ! -d $wdir;
+    return $wdir."/";
+}
+
+
+
+1;
 
 
 1;

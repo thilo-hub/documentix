@@ -81,24 +81,25 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 	if ( !data.items && data.md5 ) {
 		data = { items : [ data ] };
 	}
-        if ( data.items && data.items.length > 0 ) {
-		for(var i in data.items ){
-			if ( data.items[i].tg == "processing" ){
-				console.log("Retry "+data.items[i].md5);
-				window.setTimeout(function() {
-				$.get("status",{"md5":data.items[i].md5}, insert_item)
-				}, 5000);
-				
-			}
-		}
+	if ( data.items && data.items.length > 0 ) {
 	data.items[0].tip = data.items[0].tip.replace(/["']/g," ");
         var dup= $("#"+data.items[0].md5);
 	data.URL=document.location.origin;
         var itm = template.render(data);
 	if ( dup.length > 0 ) {
-		var rv=dup.replaceWith(itm);
+		dup.replaceWith(itm);
 	} else {
 		var rv=$('#result').prepend(itm);
+	}
+        if ( $('.processing').length ) {
+		console.log("Retry ");
+		window.setTimeout(function() {
+			$('.processing').each( function(i,e) {
+			    $(e).removeClass("processing");
+			    $.get("status",{"md5":e.id}, insert_item)
+			})
+		}, 5000);
+		    
 	}
         var msg = data.msg;
 	$('#msg').html("Item:" + data.doc + "</br>");
