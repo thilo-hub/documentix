@@ -82,7 +82,6 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 		data = { items : [ data ] };
 	}
 	if ( data.items && data.items.length > 0 ) {
-	data.items[0].tip = data.items[0].tip.replace(/["']/g," ");
         var dup= $("#"+data.items[0].md5);
 	data.URL=document.location.origin;
         var itm = template.render(data);
@@ -277,4 +276,10 @@ $(function() {
 		});
 
 });
+
+var itemTip=function(e){
+console.log(e);
+Tip( e.currentTarget.nextElementSibling.innerText)
+};
+
 

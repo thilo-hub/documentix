@@ -311,4 +311,8 @@ div.tagsinput span.tag {
     font-size: 13px;
     font-style: italic
 }
+.itemtip {
+	display: none;
+}
+
 

@@ -94,16 +94,18 @@
 		{{for items tmpl="template_result_items"/}}
 		</script>
 		<script id="template_result_items" type="text/x-jsrender">
-			<li class="rbox {{if tg.match("deleted")}} deleted {{/if}} {{if tg.match("processing")}} processing {{/if}}"
+			<li class="rbox {{if tg && tg.match("deleted")}} deleted {{/if}} {{if tg && tg.match("processing")}} processing {{/if}}"
 		    id="{{:md5}}" docname="{{:doc}}"
 		    oncontextmenu="DoContext(event)"
 		    onclick="DoViewer(event)"
 		     >
 
 		      <div class="rcell" >
-			  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" ontouchcancel="UnTip()" onmouseover="Tip('{{:tip}}')">
+			  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" ontouchcancel="UnTip()" onmouseover="itemTip(event)">
+
 			    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}.ico" />
 			  </a>
+			<div class="itemtip">{{html:tip}}</div>
 			<div class="descr">
 			  <div class="doclink" onclick="event.stopPropagation()">
 			    <a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}</a> 
@@ -123,7 +125,6 @@
 	<iframe id="pdfview" class="pdfviewer " name="pdfviewer" src="" ></iframe>
 	</div>
 	</div>
-
 
 
 	<ul class="custom-menu">

@@ -18,8 +18,15 @@ sub mk_ico {
 
 	print STDERR "mk_ico...\n" if ( $debug > 2 );
 	return undef if ( $mtime && -r $item && $ntime < $mtime );
-	my ( $typ, $out ) = pdf_icon( $item, $pg, $rot ) if $fromtype eq "application/pdf";
-	( $typ, $out ) = img_icon( $item, $pg, $rot ) if $fromtype ne "application/pdf";
+	
+	my ( $typ, $out );
+	if ( $fromtype eq "application/pdf" ) {
+		( $typ, $out ) = pdf_icon( $item, $pg, $rot );
+	} elsif ( $fromtype eq "application/zip" ) {
+		( $typ, $out ) = ("image/png", slurp("../public/icon/zip.png"));
+	} else {
+		( $typ, $out ) = img_icon( $item, $pg, $rot );
+	}
 	return undef unless $out;
 	print STDERR "     ...new cache\n" if ( $debug > 1 );
 	return ( $typ, $out );
@@ -67,7 +74,7 @@ sub pdf_thumb {
     return ( "image/png", $png ) if length($png);
 
     # Error case - return lock
-    $png=slurp("public/icon/Keys-icon.png"); 
+    $png=slurp("../public/icon/Keys-icon.png"); 
     # Return failure icon
     return undef unless length($png);
     return ( "image/png", $png );
@@ -84,7 +91,7 @@ sub img_icon {
     return ( "image/png", $png ) if length($png);
 
     # Error case - return lock
-    $png=slurp("public/icon/Keys-icon.png"); 
+    $png=slurp("../public/icon/Keys-icon.png"); 
     # Return failure icon
     return undef unless length($png);
     return ( "image/png", $png );
@@ -99,7 +106,7 @@ sub pdf_icon {
     return ( "image/png", $png ) if length($png);
 
     # Error case - return lock
-    $png=slurp("public/icon/Keys-icon.png"); 
+    $png=slurp("../public/icon/Keys-icon.png"); 
     # Return failure icon
     return undef unless length($png);
     return ( "image/png", $png );
