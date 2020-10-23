@@ -13,7 +13,7 @@ sub register {
   $minion->add_task(ocr => \&_ocr);
   $minion->add_task(refreshIndexes => \&_indexes);
 }
-
+my $maintenance_queued =0;
 sub schedule_loader
 {
 	$minion->enqueue(loader=>[@_]=>{priority=>2});
@@ -25,6 +25,7 @@ sub  schedule_ocr
 
 sub schedule_maintenance
 {
+	return if $maintenance_queued++;
         $minion->enqueue(refreshIndexes=> [@_]=>{priority=>0} );
 }
 sub _ocr {
@@ -32,6 +33,7 @@ sub _ocr {
   my $pdfidx  = pdfidx->new(0,$Documentix::config);
   $DB::single = 1;
   $job->finish( $pdfidx->ocrpdf_sync(@args));
+  schedule_maintenance();
 }
 
 sub _loader {
@@ -47,10 +49,12 @@ sub _loader {
   say 'done';
   $results[5] = {summary=>$txt,url=>"/docs/pdf/$dgst/result.pdf"};
   $job->finish(\@results);
+  schedule_maintenance();
 }
 sub _indexes {
 	my ($job, @args)=@_;
   $DB::single = 1;
+	$maintenance_queued=0;
 	my $pdfidx  = pdfidx->new(0,$Documentix::config);
 	my $res=$pdfidx->dbmaintenance(@args);
 	$job->finish(\$res);
