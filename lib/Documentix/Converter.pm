@@ -1,4 +1,6 @@
 package Converter;
+use File::Temp qw/tempfile tmpnam tempdir/;
+my $temp_dir = "/var/tmp";
 
 my $debug=3;
 
@@ -46,12 +48,22 @@ sub qexec
 
 sub do_convert_thumb {
     my ( $fn, $pn ) = @_;
-    $fn .= "[$pn]";
-    my @cmd = ( $convert, $fn, qw{-trim -normalize -define png:exclude-chunk=iCCP,zCCP -thumbnail 400 png:-} );
+    my ( $fh, $tmp_doc ) = tempfile(
+            'onepageXXXXXXX',
+            SUFFIX => ".pdf",
+            UNLINK => 1,
+            DIR    => $temp_dir
+        );
+    $pn = 1 unless defined $pn;
+    my @cmd1 = ( "pdfseparate","-f",$pn,"-l",$pn,$fn,$tmp_doc );
+    print STDERR "X:" . join( " ", @cmd1 ) . "\n" if $debug>2;
+    qexec(@cmd1);
+    my @cmd = ( $convert, $tmp_doc, qw{-trim -normalize -define png:exclude-chunk=iCCP,zCCP -thumbnail 400 png:-} );
     print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug>2;
     my $png = qexec(@cmd);
     return $png;
 }
+
 sub do_convert_icon {
     my ( $fn, $pn ) = @_;
 
