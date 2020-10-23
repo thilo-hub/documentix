@@ -99,8 +99,6 @@ sub img_icon {
     my $pn   = ( shift || 1 ) - 1;
     my $rot  = shift;
 
-    die "Ups $fn" if $fn =~ /\.pdf$/;
-    
     my ( $fh, $tmp_doc );
     if ( $fn =~ /\.pdf$/ ) {
 	    ( $fh, $tmp_doc ) = tempfile(
