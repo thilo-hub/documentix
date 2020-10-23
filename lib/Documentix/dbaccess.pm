@@ -100,9 +100,10 @@ sub get_bestpdf
 	#croak "Wrong file-type: $ra->{Mime}" unless $ra->{Mime} =~ m|application/pdf|;
 
 	my ($name,$path,$suffix) = fileparse($ra->{file},qw{ocr.pdf pdf});
+	$name =~ s/\.$//;
 	my $lcl=get_store($ra->{hash},0);
 	# search path
-	foreach( $lcl.$name."ocr.pdf",$path.$name."ocr.pdf",$lcl.$name.$suffix,$path.$name.$suffix ) {
+	foreach( $lcl.$name.".ocr.pdf",$path.$name.".ocr.pdf",$lcl.$name.$suffix,$path.$name.$suffix ) {
 		return Mojo::Asset::File->new(path => $_)  if -r $_;
 	}
 	return undef;
