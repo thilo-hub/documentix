@@ -54,7 +54,8 @@ sub do_convert_thumb {
             UNLINK => 1,
             DIR    => $temp_dir
         );
-    $pn = 1 unless defined $pn;
+    $pn = 0 unless defined $pn;
+    $pn++;
     my @cmd1 = ( "pdfseparate","-f",$pn,"-l",$pn,$fn,$tmp_doc );
     print STDERR "X:" . join( " ", @cmd1 ) . "\n" if $debug>2;
     qexec(@cmd1);
@@ -97,7 +98,18 @@ sub img_icon {
     my $pn   = ( shift || 1 ) - 1;
     my $rot  = shift;
 
-    my @cmd = ( $convert, $fn, qw{-trim -normalize -define png:exclude-chunk=iCCP,zCCP -thumbnail}, $Docconf::config->{icon_size}, "png:-" );
+    my ( $fh, $tmp_doc ) = tempfile(
+            'onepageXXXXXXX',
+            SUFFIX => ".pdf",
+            UNLINK => 1,
+            DIR    => $temp_dir
+        );
+    $pn = 0 unless defined $pn;
+    $pn++;
+    my @cmd1 = ( "pdfseparate","-f",$pn,"-l",$pn,$fn,$tmp_doc );
+    print STDERR "X:" . join( " ", @cmd1 ) . "\n" if $debug>2;
+    qexec(@cmd1);
+    my @cmd = ( $convert, $tmp_doc, qw{-trim -normalize -define png:exclude-chunk=iCCP,zCCP -thumbnail}, $Docconf::config->{icon_size}, "png:-" );
     print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug>2;
     my $png = qexec(@cmd);
     return ( "image/png", $png ) if length($png);

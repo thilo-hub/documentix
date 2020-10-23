@@ -52,7 +52,7 @@ sub new {
 
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass, {sqlite_unicode => 1} )
       || die "Err database connection $!";
-    $dh->sqlite_busy_timeout(60000);
+    $dh->sqlite_busy_timeout(10000);
     if ( (my $ext=$config->{database_extensions}) ) {
         $dh->sqlite_enable_load_extension(1);
         foreach (@$ext) {
@@ -103,7 +103,7 @@ sub setup_db {
     my $self = shift;
     my $dh   = $self->{"dh"};
 
-    $dh->sqlite_busy_timeout(60000);
+    $dh->sqlite_busy_timeout(10000);
     my @slist = (
 q{begin exclusive transaction},
 q{create table if not exists hash ( idx integer primary key autoincrement, md5 text unique )},

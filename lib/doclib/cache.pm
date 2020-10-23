@@ -27,7 +27,7 @@ sub setup_db {
     my $self = shift;
     my $dh   = $self->{"dh"};
 
-    $dh->sqlite_busy_timeout(60000);
+    $dh->sqlite_busy_timeout(10000);
     my @slist = (
 q{create table if not exists cache (ref primary key unique,date,type text,data blob)},
         q{pragma journal_mode=wal},

@@ -34,7 +34,7 @@ sub new {
 
     my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass ,{sqlite_unicode => 1})
       || die "Err database connection $!";
-    $dh->sqlite_busy_timeout(60000);
+    $dh->sqlite_busy_timeout(10000);
     if ( (my $ext=$Docconf::config->{database_extensions}) ) {
         $dh->sqlite_enable_load_extension(1);
         foreach (@$ext) {
