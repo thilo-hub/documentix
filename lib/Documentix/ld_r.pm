@@ -373,6 +373,14 @@ sub pr_time {
 	return strftime( $str[0], localtime($t) );
 }
 
+sub pdf_class_md5
+{
+	my ($self,$id,$tag) = @_;
+	return $self->{pd}->pdf_class_md5($id,$tag);
+}
+
+
+
 #TJ
 #TJ    my $short_name = $meta->{"Docname"}->{"value"} || "-";
 #TJ    $short_name =~ s/^.*\///;

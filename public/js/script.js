@@ -60,7 +60,7 @@ function DoViewer(event) {
 	   var doc=$(rb).attr("docname")
 	   Showpdf(id+'/'+doc+'.pdf',event);
 	   rb.off("click");
-	   rb.click(DoViewer);
+	   rb.on("click",(DoViewer));
    }
    return false;
 }

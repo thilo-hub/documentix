@@ -34,6 +34,20 @@ $DB::single=1;
    return $c->redirect_to("/Error.pdf") if $type eq "pdf";
    return $c->redirect_to("/icon/Keys-icon.png");
 }
+use Mojo::JSON qw(decode_json encode_json);
+use Mojo::Util qw{url_unescape};
+sub tags {
+	my $c = shift;
+$DB::single=1;
+	my $p=decode_json( url_unescape($c->param('json_string')) );
+
+	my $op=$p->{op};
+	my $id=$p->{md5};
+	my $tag=$p->{tag};
+	my $r=$ld_r->pdf_class_md5($id, ($op eq "rem" )? "-$tag" : "$tag");
+	$c->render(json => $r);
+
+}
 
 #  API's below return json results and should not be cached if items are still in processing
 # Multipart upload handler

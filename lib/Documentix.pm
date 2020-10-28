@@ -43,6 +43,7 @@ $self->hook(before_dispatch => sub {
   $r->get('/ldres')->to('docs#search');
   $r->get('/status')->to('docs#status');
   $r->get('/reocr')->to('docs#reocr');
+  $r->post('/tags')->to('docs#tags');
  
 
 }

@@ -126,10 +126,15 @@ a.doclink {
     word-wrap: break-word;
     z-index: 5
 }
-
+div.tageditor {
+	display: none;
+	position: absolute;
+	z-index: 50;
+}
 
 a.dtags {
-    background-color: #333
+    background-color: #333;
+    z-index: 50;
 }
 
 .tagfield:hover {
@@ -143,12 +148,15 @@ a.dtags {
 .tagbox.filtered {
 	color: grey;
 }
+.rbox {
+	z-index:10;
+}
 .tagbox {
     background-color: transparent;
     border: none;
     font-style: italic;
     padding: 1px;
-    z-index: 50;
+    z-index: 5000;
 }
 
 input {
@@ -288,11 +296,6 @@ div.tagsinput div {
 .not_valid {
     background: #FBD8DB !important;
     color: #90111A !important;
-}
-
-#tagedit {
-    display: none;
-    postion: absolute
 }
 
 div.tagsinput span.tag {

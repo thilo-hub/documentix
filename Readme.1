@@ -1,0 +1,31 @@
+Tagging:
+
+Proposed interface:
+
+Click on any tag opens pop-up tag-editor
+
+cross in editor deletes tag
+typing creates tag
+,  stores tag and starts new entry
+return stores tag and closes editor
+
+while typing, auto-complete shows available tags
+tab selects highlighted tag
+arrow up/down selects different suggestion
+
+esc aborts editing
+
+
+
+tags MUST start with a lowercase character and may only be followed by numbers or lower case characters or space
+Tags are stored in db using Camel-case ( capitalized chars are replaced by space in viewer )
+automatically generated tags start with a 4 digit number (liklyhood)  followed by a colon and the tagname (camelcase)
+tag "unclassified" is reserved and will not be transmitted
+
+API's:
+query on first page w/o serach strings returns all known tags
+query on /status?md5=.... return  json { ... tg: "tag{ tag}*"}
+query on /status?md5=....  return json { ... tg: "tag{ tag}*"}
+query on /status?md5=.... &{set|add|rm}tag="..."  manipulates tags and return json { ... tg: "tag{ tag}*"}
+
+
