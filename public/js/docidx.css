@@ -287,6 +287,37 @@ div.tagsinput div {
     float: left;
 }
 
+.fldopen::before {
+	font-family: 'Font Awesome 5 Free';
+	font-size: 40px;
+	font-weight: 900;
+	content: "\f07b";
+	position: absolute;
+}
+.tagfld .fldopen::before {
+	font-family: 'Font Awesome 5 Free';
+	font-size: 40px;
+	content: "\f07b";
+}
+.tagfld {
+	border: 3px;
+	__width: 100px;
+	__height: 100px;
+	font-family: 'Font Awesome 5 Free';
+	font-size: 20px;
+	font-weight: 900;
+	content: "\f07c";
+}
+.Disabledtags:hover::after {
+	font-family: 'Font Awesome 5 Free';
+	font-size: 20px;
+	content: "\f07c";
+}
+
+#taglist {
+	z-index: 9000;
+}
+
 .tags_clear {
     clear: both;
     width: 100%;

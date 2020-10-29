@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="js/upload.css" type="text/css"/>
 <link rel="stylesheet" href="js/style.css" type="text/css"/>
 <link rel="stylesheet" href="lib/bootstrap.min.css">
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+<link media="all" rel="stylesheet" href="lib/all.css">
 <link rel="stylesheet" href="lib/jquery.tagsinput.min.css"/>
 
 
@@ -69,7 +69,7 @@
 		<li><a class="glyphicon glyphicon-check" href="minion">minion</a></li>
 		<script type="text/javascript" src="js/upload.js"></script>
 
-		<li><div id="taglist"></div></li>
+		<li><div id="taglist" ondrop="dropTag(event)" ondragleave="dragoverend(event)" ondragover="dragovertag(event)"></div></li>
 		<li style="width:100%; max-height: 600px">
 			<span id="editor" class="glyphicon glyphicon-edit"></span>Editor
 			<div id="sp" style="display: none">
@@ -110,11 +110,11 @@
 			<div class="itemtip">{{html:tip}}</div>
 			<div class="descr">
 			  <div class="doclink" onclick="event.stopPropagation()">
-			    <a class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}</a> 
+			    <a tabindex=-1 class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}</a> 
 			  </div>
-			  <a class="dtags">
+			  <a tabindex=-1 class="dtags">
 			    <p class="tagfield" >
-			      <input onclick="tageditor(event)" class="tagbox" xid="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
+			      <input tabindex=0 onclick="tageditor(event)" onfocus="tageditor(event)" class="tagbox" xid="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
 			    </p>
 			  </a>
 			  {{:dt}}

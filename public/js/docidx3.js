@@ -23,6 +23,10 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 					  if ( ! data )
 						return;
 			      		  lastElement = scrollWindow.append(data).children().last();
+				  	  if ( clname == "deleted" ) {
+						  $(".rbox").hide();
+						  $(".deleted").show();
+					  }
 					  waiting = 0;
 					  watcher();
 			});
@@ -149,7 +153,7 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 		var v = "cl_"+e.tagname + " tags";
 	      if ( e.tagname == clname )
 		v += " tagfilter ";
-	      tg.append('<a class="'+v+'" >'+e.tagname+'</a>');
+	      tg.append('<div class="tgbbox"><a class="'+v+'" >'+e.tagname+'</a></div>');
 	})
     }
 

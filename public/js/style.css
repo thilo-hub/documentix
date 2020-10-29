@@ -124,7 +124,6 @@
 .tags {
 
   word-wrap: break-word;
-  margin: 2px;
   border: black;
   border-width: 1px;
   border-radius: 20px;
@@ -132,6 +131,11 @@
   padding: 2px;
   border: 1px solid #afb2ac;
 }
+.tgbbox {
+  min-width: 1vw;
+  min-height: 1vw;
+  }
+
 #taglist {
   color: blue;
   border: inset thin red;
