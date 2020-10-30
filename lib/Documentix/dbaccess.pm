@@ -155,7 +155,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	 $dgst =~ /^(..)/;
 
 	 # Locate storage place
-	 my $ob="uploads/$1";
+	 my $ob=$Docconf::config->{local_storage}."/$1";
 	 mkdir $ob unless -d $ob;
 	 $ob .= "/$dgst";
 	 mkdir $ob unless -d $ob;
