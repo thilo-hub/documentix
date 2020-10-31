@@ -1,16 +1,55 @@
 #!/usr/bin/env perl
 
 print STDERR "> $ARGV[0]\n";
-if( $ARGV[0] eq "daemon" && fork() == 0){
-   @ARGV=qw{minion worker};
-}
-
 use strict;
 use warnings;
 
-use Mojo::File 'curfile';
+use Mojo::File qw{curfile path};
 use lib curfile->dirname->sibling('lib')->to_string;
 use Mojolicious::Commands;
+
+use Mojolicious::Plugin::Config;
+use File::Path qw(make_path );
+
+die "Please copy documentix.conf.tmpl to ./documentix.conf and check settings"  unless -f  ( $ENV{"PWD"}.'/documentix.conf');
+
+my $lib=curfile->dirname->sibling('lib')->to_string;
+my $config = Mojolicious::Plugin::Config->load ( $ENV{"PWD"}.'/documentix.conf');
+
+# Setup basic install if not available
+for  my $c (qw{cache_db database} ){
+  my $f = path($config->{$c})->dirname;;
+  next if -d $f;
+  make_path($f);
+}
+for  my $c (qw{pop_userdir local_storage} ){
+  my $f = path($config->{$c});
+  next unless $f;
+  next if -d $f;
+  make_path($f);
+}
+unless (-f (my $c=$config->{pop_userdir}."/popfile.cfg") ){
+	  my $f = path($c)->dirname;;
+	  make_path($f) unless -d $f;
+	my $from=curfile->dirname->sibling('popfile_default.cfg');
+  	$from->copy_to($config->{pop_userdir}."/popfile.cfg");
+}
+unless (-f $config->{database} ){
+	my $from=curfile->dirname->sibling('db_schema-porter.sql');
+	system("sqlite3 $config->{database} '.read $from'");
+}
+
+if( $ARGV[0] eq "daemon" && fork() == 0){
+   if ( fork() == 0 ) {
+	   die "No Popfile directory setup - popfile not started" unless -r "$config->{pop_userdir}/popfile.cfg";
+	   my $lib=curfile->dirname->sibling('lib')->to_string;
+	   $ENV{POPFILE_USER}=$config->{pop_userdir};
+	   $ENV{POPFILE_ROOT}="$lib/popfile";
+	   system("perl $ENV{POPFILE_ROOT}/popfile.pl");
+	   exit 0;
+   }
+   @ARGV=qw{minion worker};
+}
 
 
 
