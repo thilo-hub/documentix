@@ -1065,6 +1065,7 @@ sub get_popfile_r {
     # print $fh "$p\n";
     my $tx = substr( $$rtxt, 0, 100000 );
     $tx =~ s/[^a-zA-Z_0-9]+/ /g;
+    $tx =~ s/(([a-zA-Z_0-9]+\s){20})/$1\n/g;
     print $fh $tx;
 
     print "T:$md5, $tx" if ( $debug > 2 );
