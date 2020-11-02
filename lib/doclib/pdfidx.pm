@@ -881,7 +881,7 @@ sub pdf_totext {
 print STDERR "XXXXXX> $lcl_store_dir \n" if $debug > 1;
     # do the ocr conversion
     mkdir($lcl_store_dir) unless -d $lcl_store_dir;
-
+	
     Documentix::Task::Processor::schedule_ocr($fn, $lcl_store .".ocr.pdf",undef,$md5);
     # return $self->ocrpdf_sync( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
     # return $self->ocrpdf_async( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
@@ -1072,6 +1072,7 @@ sub get_popfile_r {
 
     print "T:$md5, $tx" if ( $debug > 2 );
     close($fh);
+    system("cp $tmp_doc /tmp/new.txt");
     return $tmp_doc;
 }
 
@@ -1126,7 +1127,8 @@ sub pdf_class_file {
           "delete from tags where idx=(select idx from hash where md5=?) and
 				 tagid = (select tagid from tagname where tagname = ?)";
         $db_op = $self->db_prep( "rm_tag", $dbop );
-	$rv = $self->pop_call( "remove_message_from_bucket", $class, $tmp_doc );
+	$rv = $self->pop_call( "remove_message_from_bucket", $class, $tmp_doc )
+		unless $class eq "unclassified";
     }
     elsif ($class) {
         # Set&create  specific class and add tag
@@ -1319,10 +1321,10 @@ sub do_pdfunite {
 
 sub do_pdftotext {
     my ($pdfin) = @_;
-    # pdftotext has issues with spaces in the name
-    my $tmp=tmpnam().".pdf";
-    symlink(abs_path($pdfin),$tmp);
-    @cmd = ( $pdftotext,"-layout", $tmp, "-" );
+    #Obsolete??# pdftotext has issues with spaces in the name
+    #my $tmp=tmpnam().".pdf";
+    #symlink(abs_path($pdfin),$tmp);
+    @cmd = ( $pdftotext,"-layout", $pdfin, "-" );
 
     my $txt = qexec( @cmd );
     unlink $tmp;

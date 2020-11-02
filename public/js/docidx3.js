@@ -286,4 +286,3 @@ console.log(e);
 Tip( e.currentTarget.nextElementSibling.innerText)
 };
 
-

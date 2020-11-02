@@ -46,9 +46,9 @@ $(function() {
     $('#tags').tagsInput({
         width: "180px",
         onAddTag: function(elem, elem_tags) {
-	    if ( foc_el.value == "unclassified" ) {
-		    foc_el.value == "unclassified";
+	    if ( foc_el.value.match( "unclassified") ) {
 		    rem_tag(foc_el,foc_id,"unclassified");
+		    foc_el.value=foc_el.value.replace("unclassified","");
 	    }
 	    add_tag(foc_el,foc_id,elem);
         },
@@ -59,13 +59,18 @@ $(function() {
     $('input#tags_tag').keypress(function(event) {
         if (event.keyCode == 13) {
             event.preventDefault();
-            //$(event.target).blur();
-            // $( document.activeElement ).blur();
             $(foc_el).val($('#tags').val());
             $('#tagedit').blur();
             $('#tagedit').hide('slow')
         }
     });
+    $('input#tags_tag').on('keyup', function(event) { 
+        if (event.key == "Escape") { 
+            $('#tagedit').blur();
+            $('#tagedit').hide('slow')
+        } 
+    }); 
+
     function tag_edit(e) {
         if (foc_el && foc_el != e)
             $(foc_el).css("background-color", "");
