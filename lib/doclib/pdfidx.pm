@@ -929,7 +929,7 @@ sub get_class {
     my $all_t =
 q{select idx,count(*) cnt, group_concat(tagname) lst,value    from tags natural join tagname natural join metadata where tag="Text"  group by idx  order by idx };
 
-    my $all_s = $self->{"dh"}->prepare($all_t);
+    my $all_s = $self->{"dh"}->prepare_cached($all_t);
     $all_s->execute;
     while ( my $r = $all_s->fetchrow_hashref() ) {
         my ( $fh, $tmp_doc ) = tempfile(
