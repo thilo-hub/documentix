@@ -33,6 +33,9 @@ unless (-f (my $c=$config->{pop_userdir}."/popfile.cfg") ){
 	  make_path($f) unless -d $f;
 	my $from=curfile->dirname->sibling('popfile_default.cfg');
   	$from->copy_to($config->{pop_userdir}."/popfile.cfg");
+	open(FH,">>",$config->{pop_userdir}."/popfile.cfg");
+	print FH "xmlrpc_port $config->{xmlrpc_port}\n";
+	close(FH);
 }
 unless (-f $config->{database} ){
 	my $from=curfile->dirname->sibling('db_schema-porter.sql');
