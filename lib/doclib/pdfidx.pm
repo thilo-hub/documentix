@@ -361,6 +361,7 @@ sub ocrpdf_sync {
 # RET:   $text
 sub ocrpdf_offline
 {
+	my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
 	my $self=shift;
 	my $idx=shift;
 	$self->{"idx"}=$idx;
@@ -374,6 +375,7 @@ sub ocrpdf_offline
 	    my $c = summary(\$t);
 	    $self->del_meta($idx,"Content");
             $self->ins_e( $idx, "Content", $c );
+	    my ($popfile,$class) = ( $self->pdf_class_file( $fn, \$t, $md5,  undef ) );
         }
 	return count_text($t);
 }

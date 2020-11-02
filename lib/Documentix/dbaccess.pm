@@ -224,7 +224,7 @@ sub item
 		 }
 		 delete $hash_ref->{archive};
 		 $hash_ref->{doc} =~ s|^.*/([^/]*)(\.[^\.]+)$|$1|;
-		 $hash_ref->{tg} = "";
+		 $hash_ref->{tg} = "" unless defined $hash_ref->{tg};
 		 $hash_ref->{doct} = $2;
 		 $hash_ref->{doc} =~ s|%20| |g;
 
