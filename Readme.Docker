@@ -1,0 +1,24 @@
+Docker is a container solution to encapsulate and deliver complex software packages
+
+Running documentix (after installing docker) is as simple as:
+
+>>>>>>>>
+docker run  --publish 8080:80 --publish 8081:8080 -v $PWD/Docs:/volumes/Docs --rm --name dx thiloj/documentix 
+<<<<<<<<
+
+This will expose
+http://localhost:8080   to the documentix-home page
+http://localhost:8081   to the classifier engine (popfile)
+
+and the content of 
+$PWD/Docs 
+
+If you upload files they will be stored under Docs/uploads/....
+
+(feature planned)
+
+A maintenance command will import/update all files found under $PWD/Docs into the documentix database and make it available
+The folder structure: Docs/folder_1/folder_2/.../folder_n/file  will automatically provide the tags "folder_1"..."folder_n" to each imported file.
+
+
+
