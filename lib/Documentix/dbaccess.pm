@@ -167,7 +167,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	 my $wdir = $ob;
 	 $ob .= "/$name";
 	 $asset->move_to($ob);
-	 my $id = $self->insert_file($dgst,$ob);
+	 my $id = $self->insert_file($dgst,$ob,\@taglist);
 	 return "Loading",{ md5 => $dgst,
 		  doc => $file,
 		  doct=> $ext,
