@@ -118,7 +118,7 @@ $DB::single = 1;
 
  # Install file basis in DB and schedule indexing of it
  sub insert_file {
-	 my ($self,$dgst,$ob)=@_;
+	 my ($self,$dgst,$ob,$tags)=@_;
 	 my $type = mimetype($ob);
 	 my $dh=$self->{dh};
 	 my $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
@@ -126,7 +126,7 @@ $DB::single = 1;
 
 	 $add_file->execute($dgst,$ob);
 	 $add_mime->execute($dgst,$type);
-	 return Documentix::Task::Processor::schedule_loader($dgst,$ob);
+	 return Documentix::Task::Processor::schedule_loader($dgst,$ob,$tags);
 }
 
 
@@ -143,9 +143,14 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	 # Check db if content exist
 	 my $add_hash = $dh->prepare_cached(q{insert or ignore into hash (md5) values(?)});
 	 my $rv = $add_hash->execute($dgst);
+	 my @taglist=split("/",$name);
+	 $name=pop @taglist;  # remove basename
 	 if ( $rv == 0E0 ) {
 		 # return know info
 		 my $rv=item($self,$dgst);
+		 $rv->[0]->{newtags} = \@taglist 
+		 	if @taglist;
+
 		 return "Known", @$rv ;
 	 }
 	 $name =~ s/%20/ /g; # 

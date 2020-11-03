@@ -62,6 +62,14 @@ sub upload {
    $f->mtime(str2time($c->req->headers->header('X-File-Date'))) if $c->res->headers->header('X-File-Date');
    my ($status,$rv)=$ld->load_file($c,$f,$c->req->headers->header('X-File-Name'));
    
+   if ( $rv->{newtags} ) {
+	   my $md5=$rv->{md5};
+	   foreach( @{$rv->{newtags}} ) {
+		   $ld_r->pdf_class_md5($md5, $_);
+	   }
+   }
+
+   	
    
    $c->render(json => {
 		   	nitems => 1,
