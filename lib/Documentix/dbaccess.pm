@@ -137,6 +137,11 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	my $dh = $self->{"dh"};
    $DB::single = 1;
    	 $name = "SomeFile" unless $name;
+         #chec if local file 
+         if ( $asset->size == 0 && -r $name ) {
+		$asset = Mojo::Asset::File->new(path => $name);
+		print STDERR "Local file: $name\n";
+	 }
 	 my $md5 = Digest::MD5->new;
 	 $dgst = $md5->add($asset->slurp)->hexdigest;
 
@@ -166,8 +171,10 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	 mkdir $ob unless -d $ob;
 	 my $wdir = $ob;
 	 $ob .= "/$name";
-	 $asset->move_to($ob);
-	 my $id = $self->insert_file($dgst,$ob,\@taglist);
+	
+	 $asset->move_to($ob)
+		 unless ($asset->path =~ /^$Docconf::config->{root_dir}/);
+	 my $id = $self->insert_file($dgst,$asset->path,\@taglist);
 	 return "Loading",{ md5 => $dgst,
 		  doc => $file,
 		  doct=> $ext,
