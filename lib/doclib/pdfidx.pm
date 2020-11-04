@@ -641,7 +641,7 @@ sub load_file
 	$type = $mime_handler{$type}( $self, $totype, $meta ) while $mime_handler{$type};
 
 	( $meta->{"PopFile"}, $meta->{"Class"} ) =
-	  ( $self->pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"}, join(",",@{$meta->{"taglist"}}) ) );
+	  ( $self->pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"}, join("/",@{$meta->{"taglist"}}) ) );
 
 	$meta->{"keys"} = join( ' ', keys(%$meta) );
 

@@ -9,9 +9,12 @@ RUN apt-get install -y calibre-bin
 RUN apt-get install -y a2ps libjson-perl
 RUN apt-get install -y zbar-tools libgd-barcode-perl  exiftool qpdf
 RUN apt-get install -y unzip
-RUN apt-get install -y  libmojo-sqlite-perl libmojolicious-perl libminion-perl libminion-backend-sqlite-perl
+RUN apt-get install -y  libjs-popper.js libmojolicious-perl libminion-perl libmojo-sqlite-perl libminion-backend-sqlite-perl
 RUN apt-get install -y  tesseract-ocr tesseract-ocr-deu  tesseract-ocr-eng
 
+#fix minion??
+RUN rm -f  /usr/share/javascript/popper.js
+RUN cp /usr/share/nodejs/popper.js/dist/umd/popper.js /usr/share/javascript/popper.js
 WORKDIR /build
 COPY build_local.sh .
 RUN apt-get install -y git make gcc wget
@@ -39,7 +42,6 @@ LABEL description="documentix provides a document management system\
 
 WORKDIR /volumes
 RUN cp /documentix/documentix.conf.tmpl documentix.conf
-RUN tar xfvz /documentix/docker-lib.tar.gz -C /
 VOLUME Database:/volumes/db
 VOLUME Documents:/volumes/Docs
 #EXPOSE 18080
