@@ -19,21 +19,21 @@ WORKDIR /build
 COPY build_local.sh .
 RUN apt-get install -y git make gcc wget
 RUN  sh build_local.sh /
-RUN apt-get remove  -y git make gcc wget
-RUN rm -r /build
 
 ##TJ 
 ##TJ # Either use git
 ##TJ RUN apt-get -y install git
-##TJ ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/master version.json
-##TJ RUN git clone --depth 1 https://github.com/thilo-hub/documentix
+ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/master version.json
+RUN git clone --depth 1 https://github.com/thilo-hub/documentix mojofw
 ##TJ 
 ##TJ # OR git-zip file
 ##TJ # ADD https://github.com/thilo-hub/documentix/archive/master.zip
 ##TJ 
 ##TJ # OR local directory
 WORKDIR /documentix
-ADD . /documentix
+RUN apt-get remove  -y git make gcc wget
+RUN rm -r /build
+#ADD . /documentix
 LABEL version="0.93"
 LABEL description="documentix provides a document management system\
  connect the port 80 of this docker to any port you want \

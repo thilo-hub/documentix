@@ -138,8 +138,9 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
    $DB::single = 1;
    	 $name = "SomeFile" unless $name;
          #chec if local file 
-         if ( $asset->size == 0 && -r $name ) {
+         if ( $asset->size == 0 && ($name =~ /^$Docconf::config->{root_dir}/) && -r $name ) {
 		$asset = Mojo::Asset::File->new(path => $name);
+		$name =~ s/^$Docconf::config->{root_dir}//;
 		print STDERR "Local file: $name\n";
 	 }
 	 my $md5 = Digest::MD5->new;
@@ -148,7 +149,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	 # Check db if content exist
 	 my $add_hash = $dh->prepare_cached(q{insert or ignore into hash (md5) values(?)});
 	 my $rv = $add_hash->execute($dgst);
-	 my @taglist=split("/",$name);
+	 my @taglist=split("/",lc($name));
 	 $name=pop @taglist;  # remove basename
 	 if ( $rv == 0E0 ) {
 		 # return know info
