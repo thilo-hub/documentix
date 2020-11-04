@@ -24,7 +24,7 @@ RUN  sh build_local.sh /
 ##TJ # Either use git
 ##TJ RUN apt-get -y install git
 ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/master version.json
-RUN git clone --depth 1 -b mojofw https://github.com/thilo-hub/documentix /
+RUN git clone --depth 1 -b mojofw https://github.com/thilo-hub/documentix /documentix
 ##TJ 
 ##TJ # OR git-zip file
 ##TJ # ADD https://github.com/thilo-hub/documentix/archive/master.zip
