@@ -26,7 +26,6 @@ my $error_pdf= Mojo::Asset::File->new(path => "../public/Error.pdf") ;
 my $lcl;
 sub new {
     my $class  = shift;
-    $DB::single=1;
     my $dbn    = $Docconf::config->{database_provider};
     my $d_name = $Docconf::config->{database};
     my $user   = $Docconf::config->{database_user};
@@ -135,7 +134,6 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
  sub load_file {
 	my ($self,$app,$asset,$name) = @_;
 	my $dh = $self->{"dh"};
-   $DB::single = 1;
    	 $name = "SomeFile" unless $name;
          #chec if local file 
          if ( $asset->size == 0 && ($name =~ /^$Docconf::config->{root_dir}/) && -r $name ) {
@@ -151,6 +149,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	 my $rv = $add_hash->execute($dgst);
 	 my @taglist=split("/",lc($name));
 	 $name=pop @taglist;  # remove basename
+   $DB::single = 1;
 	 if ( $rv == 0E0 ) {
 		 # return know info
 		 my $rv=item($self,$dgst);
