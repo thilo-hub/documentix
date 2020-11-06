@@ -103,9 +103,19 @@ use Data::Dumper; print STDERR Dumper($rv);
 		});
 
 }
+
 sub reocr {
  	my $c = shift;
 
 	$c->render(json => $ld_r->reocr( $c,$c->param("md5") ));
 }
+
+sub refresh {
+	my $c = shift;
+$DB::single=1;
+	my $top = shift || Mojo::File->new($Documentix::config->{root_dir})->to_abs;
+	Documentix::Task::Processor::schedule_refresh($top);
+       return $c->render(text => 'Refresh filesystem started', status => 200);
+}
+
 1;
