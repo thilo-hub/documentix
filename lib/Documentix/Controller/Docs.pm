@@ -113,7 +113,7 @@ sub reocr {
 sub refresh {
 	my $c = shift;
 $DB::single=1;
-	my $top = shift || Mojo::File->new($Documentix::config->{root_dir})->to_abs;
+	my $top = $c->param("dir")  || Mojo::File->new($Documentix::config->{root_dir})->to_abs;
 	Documentix::Task::Processor::schedule_refresh($top);
        return $c->render(text => 'Refresh filesystem started', status => 200);
 }

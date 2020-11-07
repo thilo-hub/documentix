@@ -12,6 +12,7 @@ use File::MimeInfo::Magic;
 use Documentix::ld_r;
 use Date::Parse;
 use Cwd 'abs_path';
+use Digest::MD5 qw(md5 md5_hex md5_base64);
 
 
 use parent DBI;
@@ -130,15 +131,15 @@ $DB::single = 1;
 
 
  
-use Digest::MD5 qw(md5 md5_hex md5_base64);
  sub load_file {
 	my ($self,$app,$asset,$name) = @_;
+	my $root_dir = abs_path($Docconf::config->{root_dir});
 	my $dh = $self->{"dh"};
    	 $name = "SomeFile" unless $name;
          #chec if local file 
          if ( $asset->size == 0 && ($name =~ /^$Docconf::config->{root_dir}/) && -r $name ) {
 		$asset = Mojo::Asset::File->new(path => $name);
-		$name =~ s/^$Docconf::config->{root_dir}//;
+		$name =~ s|^$Docconf::config->{root_dir}/*||;
 		print STDERR "Local file: $name\n";
 	 }
 	 my $md5 = Digest::MD5->new;
@@ -172,8 +173,10 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 	 my $wdir = $ob;
 	 $ob .= "/$name";
 	
+	 # If file is in doc-area - do not copy it over
 	 $asset->move_to($ob)
-		 unless ($asset->path =~ /^$Docconf::config->{root_dir}/);
+		 unless (abs_path($asset->path) =~ /^$root_dir/);
+
 	 my $id = $self->insert_file($dgst,$asset->path,\@taglist);
 	 return "Loading",{ md5 => $dgst,
 		  doc => $file,
