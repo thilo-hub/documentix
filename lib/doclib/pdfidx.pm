@@ -341,9 +341,9 @@ sub dbmaintenance
 
 sub ocrpdf_sync {
 	my $self=shift;
-	my ( $inpdf, $outpdf, $ascii, $md5) = @_;
+	my ( $inpdf, $outpdf, $ascii, $meta) = @_;
        my ($idx) =
-            $self->{dh}->selectrow_array( "select idx from hash where md5=?", undef, $md5 );
+            $self->{dh}->selectrow_array( "select idx from hash where md5=?", undef, $meta->{hash} );
 	$self->{"idx"} = $idx;
 	print STDERR "ocrpdf_sync: ".Dumper(\@_);
 	# Otherwise the directory would be deleted
@@ -351,7 +351,6 @@ sub ocrpdf_sync {
 	print FH "WIP\n";
 	close(FH);
 	my $res = $self->ocrpdf_offline($self->{"idx"},@_);
-	Documentix::Task::Processor::schedule_maintenance();
 	return $res;
 }
 
@@ -361,21 +360,24 @@ sub ocrpdf_sync {
 # RET:   $text
 sub ocrpdf_offline
 {
-	my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
 	my $self=shift;
-	my $idx=shift;
+	my $idx = shift;
+	my ( $inpdf, $outpdf, $ascii, $meta ) = @_;
 	$self->{"idx"}=$idx;
-        $t = $self->ocrpdf(@_);
+        my ($pdfinfo,$t) = $self->do_ocrpdf(@_);
+
+	# new pdfinfo only if non existant before
+	$self->ins_e( $idx, "pdfinfo", $pdfinfo )
+	    if (defined($pdfinfo) &&  !defined($meta->{pdfinfo}));
+
         if ($t) {
             $t =~ s/[ \t]+/ /g;
-	    $self->del_meta($idx,"Text");
             $self->ins_e( $idx, "Text", $t );
 
             # short version
 	    my $c = summary(\$t);
-	    $self->del_meta($idx,"Content");
             $self->ins_e( $idx, "Content", $c );
-	    my ($popfile,$class) = ( $self->pdf_class_file( $fn, \$t, $md5,  undef ) );
+	    my ($popfile,$class) = ( $self->pdf_class_file( $fn, \$t, $meta->{hash},  join("/",@{$meta->{"_taglist"}})  ) );
         }
 	return count_text($t);
 }
@@ -400,9 +402,10 @@ sub summary {
 }
 # ARGS:  $inpdf, $outpdf, $ascii, $md5
 # RET:   $text
-sub ocrpdf {
+sub do_ocrpdf {
     my $self = shift;
     my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
+    my $pdfinfo= undef;
     my $maxcpu = $self->{config}->{number_ocr_threads};
     my @outpages;
     print STDERR "ocrpdf $inpdf $outpdf\n" if $debug > 1;
@@ -470,15 +473,16 @@ print STDERR Dumper(\$self,\@qr) if $debug > 1;
 		#$cmt .= "Q:$qr";
 		#}
 	    $fail += do_pdfstamp( $outpdf, $cmt,$inpdf );
-	    $self->del_meta($self->{"idx"},"pdfinfo");
+	    $pdfinfo =  $self->pdf_info($outpdf);
 	    $self->ins_e($self->{"idx"},"pdfinfo", $self->pdf_info($outpdf));
+
 	    $txt = do_pdftotext($outpdf);
 	}
 	unlink(@outpages) unless $debug > 2;
     }
     unlink ("$outpdf.wip");
     $txt .= "\n$qr" if $qr;
-    return $txt;
+    return ($pdfinfo,$txt);
 }
 
 # if an other file can be found that contains the other qr code,
@@ -605,7 +609,7 @@ sub load_file
 	return ($idx,undef) unless  $idx; #Error
 
 	$meta->{"Docname"} = basename($fn);
-	$meta->{"Content"} = "Proccesing";
+	$meta->{"Content"} = "ProCcesIng";
 	my @fstat=stat($fn);
 	$meta->{"size"} = $fstat[7];
 	$meta->{"mtime"} = $fstat[9];
@@ -641,13 +645,12 @@ sub load_file
 	$type = $mime_handler{$type}( $self, $totype, $meta ) while $mime_handler{$type};
 
 	( $meta->{"PopFile"}, $meta->{"Class"} ) =
-	  ( $self->pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"}, join("/",@{$meta->{"taglist"}}) ) );
+	  ( $self->pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"}, join("/",@{$meta->{"_taglist"}}) ) );
 
 	$meta->{"keys"} = join( ' ', keys(%$meta) );
 
 	# All metadata not prefixed by '_' is put into db
 	#
-	# $self->del_e($idx,"Content");
 	foreach ( keys %$meta ) {
 	    next if /^_/;
 	    $self->ins_e( $idx, $_, $meta->{$_} );
@@ -783,8 +786,9 @@ sub xtp_any {
 # "application/pdf"
     sub xtp_pdf {
 	my ($self,$totype,$pmeta) = @_;
-        my $t    = $self->pdf_text( $pmeta->{"_file"}, $pmeta->{"hash"} );
+        my $t    = $self->pdf_text( $pmeta->{"_file"}, $pmeta  );
         if ($t) {
+	    print STDERR "Found text ".length($t)." bytes\n";
             $t =~ s/[ \t]+/ /g;
 
             # short version
@@ -814,7 +818,7 @@ sub ins_e {
     my ( $self, $idx, $t, $c, $bin ) = @_;
     $bin = SQL_BLOB if defined $bin;
     $self->{"new_e"} = $self->{"dh"}->prepare(
-        "insert or ignore into metadata (idx,tag,value)
+        "insert or replace into metadata (idx,tag,value)
 			 values (?,?,?)"
     ) unless $self->{"new_e"};
     $self->{"new_e"}->bind_param( 1, $idx, SQL_INTEGER );
@@ -854,12 +858,12 @@ sub pdf_filename {
 sub pdf_totext {
     my $self = shift;
     my $fn   = shift;
-    my $md5   = shift;
+    my $meta   = shift;
     print STDERR " pdf_totext $fn\n" if $debug > 1;
     my $f_path = dirname(abs_path($fn))."/";
     my $f_base = basename($fn,(".pdf",".ocr.pdf"));
 
-    my $lcl_store_dir = $self->get_store( $md5,1);
+    my $lcl_store_dir = $self->get_store( $meta->{hash},1);
     my $lcl_store = $lcl_store_dir . "/$f_base";
     die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
     my @locs=( $lcl_store.".ocr.pdf", $f_path .$f_base.".ocr.pdf", $fn );
@@ -881,16 +885,16 @@ sub pdf_totext {
 print STDERR "XXXXXX> $lcl_store_dir \n" if $debug > 1;
     # do the ocr conversion
     mkdir($lcl_store_dir) unless -d $lcl_store_dir;
-	
-    Documentix::Task::Processor::schedule_ocr($fn, $lcl_store .".ocr.pdf",undef,$md5);
-    # return $self->ocrpdf_sync( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
-    # return $self->ocrpdf_async( $fn, $lcl_store .".ocr.pdf",undef,$md5 );
+
+    $meta->{Content} = "ProCessIng";
+    Documentix::Task::Processor::schedule_ocr($fn, $lcl_store .".ocr.pdf",undef,$meta);
+    return undef;
 }
 
 sub pdf_text {
     my $self = shift;
     my $fn   = shift;
-    my $md5  = shift;
+    my $meta = shift;
     my $txt;
 
     my $ofn = $fn;
@@ -899,11 +903,11 @@ sub pdf_text {
 
     $txt = $dh->selectrow_array(
 q{select value from hash natural join metadata where md5=? and tag="Text"},
-        undef, $md5
+        undef, $meta->{hash}
     );
     return $txt if $txt;
 
-    return $self->pdf_totext( $fn, $md5 );
+    return $self->pdf_totext( $fn, $meta);
 }
 ################# popfile interfaces
 # classify unclassified
@@ -1103,17 +1107,19 @@ sub pdf_class_file {
     my $md5   = shift;
     my $class = shift;    # undef returns class else set class a '-' as the first char removes the class
 
+    my $rv;
+    my $ln;
+
     print STDERR "Add tag: $class\n" if $debug > 0;
     if ( $class =~ m|^(-?)(.*/.*)| ) {
         # allow multiple tags at once
 	my $r="";
 	foreach( split(m|/|,$2)) {
-		$r.=$self->pdf_class_file($fn,$rtxt,$md5,$1.$_);
+		($ln,$rv)=$self->pdf_class_file($fn,$rtxt,$md5,$1.$_);
+		$r.=$rv;
 	}
-	return $r;
+	return ($ln,$r);
     }
-    my $rv;
-    my $ln;
 
     my $tmp_doc = get_popfile_r( $fn, $md5, $rtxt );
     my $op      = "handle_message";

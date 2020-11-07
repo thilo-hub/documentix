@@ -96,7 +96,7 @@
 		{{for items tmpl="template_result_items"/}}
 		</script>
 		<script id="template_result_items" type="text/x-jsrender">
-			<li class="rbox {{if tg && tg.match("deleted")}} deleted {{/if}} {{if tg && tg.match("processing")}} processing {{/if}}"
+			<li class="rbox {{if tg && tg.match("deleted")}} deleted {{/if}} {{if tip && tip.match("ProCessIng")}} processing {{/if}}"
 		    id="{{:md5}}" docname="{{:doc}}"
 		    oncontextmenu="DoContext(event)"
 		    onclick="DoViewer(event)"

@@ -15,7 +15,7 @@ use Date::Parse;
 
 
 my $log = Mojo::Log->new;
-my $ld=dbaccess->new();
+my $dba=dbaccess->new();
 my $ld_r=ld_r->new();
 
 
@@ -27,7 +27,7 @@ $DB::single=1;
    my $hash = $c->stash('hash');
    my $doc = $c->stash('doc');
 
-   my $res = $ld->getFilePath($hash,$type);
+   my $res = $dba->getFilePath($hash,$type);
    return $c->reply->asset($res) if $res;
    # Failures...
    $c->res->headers->cache_control("no-cache");
@@ -60,16 +60,15 @@ sub upload {
 
    my $f=Mojo::Asset::File->new()->add_chunk($c->req->body);
    $f->mtime(str2time($c->req->headers->header('X-File-Date'))) if $c->res->headers->header('X-File-Date');
-   my ($status,$rv)=$ld->load_file($c,$f,$c->req->headers->header('X-File-Name'));
+   my ($status,$rv)=$dba->load_file($c,$f,$c->req->headers->header('X-File-Name'));
    
+   # capture tags returnd from load_file
    if ( $rv->{newtags} ) {
 	   my $md5=$rv->{md5};
 	   foreach( @{$rv->{newtags}} ) {
 		   $ld_r->pdf_class_md5($md5, $_);
 	   }
    }
-
-   	
    
    $c->render(json => {
 		   	nitems => 1,
@@ -91,10 +90,10 @@ sub search {
 sub status {
  	my $c = shift;
 	$DB::single=1;
-	my $rv=$ld->item( $c->param("md5") );
+	my $rv=$dba->item( $c->param("md5") );
 use Data::Dumper; print STDERR Dumper($rv);
         $c->res->headers->cache_control("no-cache")
-		if  $rv->[0]->{tip} eq "processing";
+		if  $rv->[0]->{tip} eq "ProCessIng";
 	$c->render(json => {
 		   	nitems => scalar(@$rv),
 			items  => [ @$rv ],

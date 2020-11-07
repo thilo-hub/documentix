@@ -122,10 +122,13 @@ $DB::single = 1;
 	 my $type = mimetype($ob);
 	 my $dh=$self->{dh};
 	 my $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
-	 my $add_mime = $dh->prepare_cached(q{insert into metadata(idx,tag,value) values((select idx from hash where md5=?),"Mime",?)});
+	 my $add_meta = $dh->prepare_cached(q{insert into metadata(idx,tag,value) values((select idx from hash where md5=?),?,?)});
 
+	 # Create minimal DB entry such that it shows in view
 	 $add_file->execute($dgst,$ob);
-	 $add_mime->execute($dgst,$type);
+	 $add_meta->execute($dgst,"Mime",$type);
+	 $add_meta->execute($dgst,"Content","ProCessIng");
+	 $add_meta->execute($dgst,"mtime",0);
 	 return Documentix::Task::Processor::schedule_loader($dgst,$ob,$tags);
 }
 
@@ -183,7 +186,7 @@ $DB::single = 1;
 		  doct=> $ext,
 		  tg  => 'processing',
 		  pg  => '?',
-		  tip => 'processing='. $id,
+		  tip => 'ProCessIng='. $id,
 		  dt  => ld_r::pr_time(time()),
 		  sz  => conv_size($asset->size),
 	  };
@@ -206,7 +209,7 @@ sub item
 	my $get=$dh->prepare_cached(qq{
 	select  md5,
 		group_concat(tagname) tg,
-		coalesce(content,'processing') tip,
+		coalesce(content,'ProCessIng') tip,
 		pdfinfo,
 		file doc,
 		archive,
@@ -248,7 +251,7 @@ sub item
 		 $hash_ref->{sz} =conv_size($1) if  $hash_ref->{pdfinfo} =~ m|<td>File size</td><td>\s+(\d+) bytes</td>|;
 		 delete $hash_ref->{pdfinfo};
 
-		 $hash_ref->{tip} = $hash_ref->{tg} = "processing" unless  $hash_ref->{tip} && $hash_ref->{tip} ne  "processing";
+		 $hash_ref->{tg} = "processing" unless  $hash_ref->{tip} && $hash_ref->{tip} ne  "ProCessIng";
 		 push @res,$hash_ref;
 	 }
 	 return \@res;
