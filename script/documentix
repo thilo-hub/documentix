@@ -33,8 +33,14 @@ unless (-f (my $c=$config->{pop_userdir}."/popfile.cfg") ){
 	  make_path($f) unless -d $f;
 	my $from=curfile->dirname->sibling('popfile_default.cfg');
   	$from->copy_to($config->{pop_userdir}."/popfile.cfg");
+	$from=curfile->dirname->sibling('lib/popfile/stopwords');
+  	$from->copy_to($config->{pop_userdir}."/stopwords");
 	open(FH,">>",$config->{pop_userdir}."/popfile.cfg");
-	print FH "xmlrpc_port $config->{xmlrpc_port}\n";
+	foreach( keys %$config ) {
+		next unless m/^popfile_(.*)/;
+		print STDERR "Popfile:  $1:  $config->{$_}\n";
+		print FH "$1 $config->{$_}\n";
+	}
 	close(FH);
 }
 unless (-f $config->{database} ){

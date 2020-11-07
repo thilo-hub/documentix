@@ -991,7 +991,7 @@ sub set_class_content {
 }
 
 {
-    my $pop_xml="http://localhost:".$Documentix::config->{xmlrpc_port}."/RPC2";
+    my $pop_xml="http://localhost:".$Documentix::config->{popfile_xmlrpc_port}."/RPC2";
 
     my $pop_cnt = 0;
 
