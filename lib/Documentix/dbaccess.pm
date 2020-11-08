@@ -7,8 +7,7 @@ use Documentix::Docconf;
 use doclib::cache;
 use Documentix::Converter;
 use Mojo::Asset;
-#use File::MimeInfo;
-use File::MimeInfo::Magic;
+use File::MimeInfo::Magic qw{magic};
 use Documentix::ld_r;
 use Date::Parse;
 use Cwd 'abs_path';
@@ -119,7 +118,7 @@ $DB::single = 1;
  # Install file basis in DB and schedule indexing of it
  sub insert_file {
 	 my ($self,$dgst,$ob,$tags)=@_;
-	 my $type = mimetype($ob);
+	 my $type = magic($ob);
 	 my $dh=$self->{dh};
 	 my $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
 	 my $add_meta = $dh->prepare_cached(q{insert into metadata(idx,tag,value) values((select idx from hash where md5=?),?,?)});

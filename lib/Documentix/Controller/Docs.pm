@@ -8,7 +8,6 @@ use Mojo::Upload;
 use Mojo::Util;
  use Mojo::Log;
 use Data::Dumper;
-use File::MimeInfo::Magic;
 use IO::Scalar;
 use Date::Parse;
 
@@ -53,7 +52,7 @@ $DB::single=1;
 # Multipart upload handler
 sub upload {
    my $c = shift;
-
+$DB::single=1;
    # Check file size
    return $c->render(text => 'File is too big.', status => 200)
      if $c->req->is_limit_exceeded;

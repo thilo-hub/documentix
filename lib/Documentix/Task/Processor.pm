@@ -5,7 +5,6 @@ use Mojo::URL;
 use Mojo::Asset::File;
 use doclib::pdfidx;
 use Documentix::dbaccess;;
-#use File::MimeInfo::Magic;
 # use File::Path qw(make_path );
 use Documentix::scantree;
 

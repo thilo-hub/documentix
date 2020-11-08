@@ -590,7 +590,7 @@ sub join_pdf
 # "recursive"
 # Input: to-type , curren_file_info
 #
-use File::MimeInfo::Magic;
+use File::MimeInfo::Magic qw{magic};
 {
 
 sub load_file
@@ -614,7 +614,7 @@ sub load_file
 	$meta->{"size"} = $fstat[7];
 	$meta->{"mtime"} = $fstat[9];
 	my $type =
-	$meta->{"Mime"} = mimetype($fn);
+	$meta->{"Mime"} = magic($fn);
 	print STDERR "Type: $type\n";
 
 	$meta->{_lcl_store} = $self->get_store( $meta->{"hash"},1);
@@ -688,7 +688,7 @@ sub xtp_any {
         do_unopdf( $i, $pmeta->{_file} )
 		unless -r $pmeta->{_file};
 
-        my $type = mimetype( $pmeta->{_file} );
+        my $type = magic( $pmeta->{_file} );
         return $type;
     }
 
@@ -707,7 +707,7 @@ sub xtp_any {
         $pmeta->{"_file"} = $of . "/" . basename($i).".ocr.pdf";;
 	do_convert_pdf($i,$pmeta->{_file});
 	$self->del_meta($self->{"idx"},"pdfinfo");
-        my $type = mimetype( $pmeta->{_file} );
+        my $type = magic( $pmeta->{_file} );
         return $type;
     }
 
@@ -724,7 +724,7 @@ sub xtp_any {
         my $of = $pmeta->{_lcl_store};
         $pmeta->{"_file"} = $of . "/" . basename($i) . ".pdf";
         do_ascii2pdf( $i, $pmeta->{_file} );
-        my $type = mimetype( $pmeta->{_file} );
+        my $type = magic( $pmeta->{_file} );
         return $type;
     }
     

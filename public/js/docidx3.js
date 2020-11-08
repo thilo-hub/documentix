@@ -27,6 +27,16 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 						  $(".rbox").hide();
 						  $(".deleted").show();
 					  }
+					if ( $('.updateneeded').length ) {
+						console.log("Retry ");
+						window.setTimeout(function() {
+							$('.updateneeded').each( function(i,e) {
+							    $(e).removeClass("updateneeded");
+							    $.get("status",{"md5":e.id}, insert_item)
+							})
+						}, 5000);
+						    
+					}
 					  waiting = 0;
 					  watcher();
 			});
@@ -94,11 +104,11 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 	} else {
 		var rv=$('#result').prepend(itm);
 	}
-        if ( $('.processing').length ) {
+        if ( $('.updateneeded').length ) {
 		console.log("Retry ");
 		window.setTimeout(function() {
-			$('.processing').each( function(i,e) {
-			    $(e).removeClass("processing");
+			$('.updateneeded').each( function(i,e) {
+			    $(e).removeClass("updateneeded");
 			    $.get("status",{"md5":e.id}, insert_item)
 			})
 		}, 5000);

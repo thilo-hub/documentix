@@ -1,7 +1,7 @@
 package Documentix::scantree;
 
 use Cwd;
-use File::MimeInfo::Magic;
+use File::MimeInfo::Magic qw{magic};
 use File::Find qw{find};
 use Data::Dumper;
 use Documentix::dbaccess;;
@@ -57,7 +57,7 @@ sub scantree {
     my $add_file = sub
     {
 	my $f = shift;
-	    my $type = mimetype($f);
+	    my $type = magic($f);
 	    print STDERR "File added $f ->  >$type<\n";
 	    if ( $mime_supported{$type}) {
 		# Turn back into relative to root-dir file
