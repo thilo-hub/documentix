@@ -976,7 +976,8 @@ q{select tagname,group_concat(substr(value,1,10000)) txt  from tagname natural j
 sub set_class_content {
     my $self = shift;
     my ( $tg, $rtxt ) = @_;
-    $rv = $self->pop_call( 'create_bucket', to_bucketname($tg) );
+    $tg = to_bucketname($tg);
+    $rv = $self->pop_call( 'create_bucket', $tg );
     print STDERR "TG: $tg -> $rv\n" if $debug > 1;
     my ( $fh, $tmp_doc ) = tempfile(
         'popfileinXXXXXXX',
@@ -988,7 +989,7 @@ sub set_class_content {
     close($fh);
     print STDERR " Add: $tg ($ln) -> " if $debug > 1;
     $rv =
-      $self->pop_call( 'add_message_to_bucket', to_bucketname($tg), $tmp_doc );
+      $self->pop_call( 'add_message_to_bucket', $tg, $tmp_doc );
     my $ln = length($$rtxt);
     print STDERR "$rv\n" if $debug > 1;
     unlink($tmp_doc);
@@ -1027,6 +1028,7 @@ sub set_class_content {
     sub to_bucketname {
         my $bn = lc(shift);
         $bn =~ s/[^a-z0-9\-_]/_/g;
+	$bn = "ignore" if $bn eq "deleted";
         return $bn;
     }
 
