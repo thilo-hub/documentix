@@ -14,9 +14,6 @@ use Cwd 'abs_path';
 use Digest::MD5 qw(md5 md5_hex md5_base64);
 
 
-use parent DBI;
-use DBI qw(:sql_types);
-
 my $debug = 2;
 my $ph;
 
@@ -26,31 +23,11 @@ my $error_pdf= Mojo::Asset::File->new(path => "../public/Error.pdf") ;
 my $lcl;
 sub new {
     my $class  = shift;
-    my $dbn    = $Docconf::config->{database_provider};
-    my $d_name = $Docconf::config->{database};
-    my $user   = $Docconf::config->{database_user};
-    my $pass   = $Docconf::config->{database_pass};
-
-    my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass ,{sqlite_unicode => 1})
-      || die "Err database connection $!";
-    $dh->sqlite_busy_timeout(10000);
-    if ( (my $ext=$Docconf::config->{database_extensions}) ) {
-        $dh->sqlite_enable_load_extension(1);
-        foreach (@$ext) {
-		warn "Extension: $_";
-		$dh->sqlite_load_extension( $_ ) or die "Load extension ($_)failed";
-	}
-    }
-    $dh->do(q{pragma journal_mode=wal});
+    my $dh = $Documentix::db::dh;
 
     print STDERR "New pdf conn: $dh\n" if $debug > 0;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
-    #$self->set_debug(undef);
-    #$self->{"setup_db"} = \&setup_db;
-    #$self->{"dh1"}      = $dh;
-    # trace_db($dh) if  $Docconf::config->{debug} > 3;
-    # setup_db($self) unless $chldno;
-    #$self->{"cache"}  
+
     $cache = cache->new();
     my $q = "select cast(file as blob) file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
     $ph=$dh->prepare_cached($q);

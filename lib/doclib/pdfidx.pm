@@ -2,8 +2,7 @@ package pdfidx;
 use XMLRPC::Lite;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 
-use parent DBI;
-use DBI qw(:sql_types);
+use Documentix::db;
 use Sys::Hostname;
 use File::Temp qw/tempfile tmpnam tempdir/;
 use File::Basename;
@@ -45,22 +44,8 @@ sub new {
     my $chldno = shift;
     my $config = shift;
 
-    my $dbn    = $config->{database_provider};
-    my $d_name = $config->{database};
-    my $user   = $config->{database_user};
-    my $pass   = $config->{database_pass};
+    my $dh = $Documentix::db::dh;
 
-    my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass, {sqlite_unicode => 1} )
-      || die "Err database connection $!";
-    $dh->sqlite_busy_timeout(10000);
-    if ( (my $ext=$config->{database_extensions}) ) {
-        $dh->sqlite_enable_load_extension(1);
-        foreach (@$ext) {
-		$dh->sqlite_load_extension( $_ ) or die "Load extension ($_)failed";
-	}
-    }
-    $dh->do(q{pragma journal_mode=wal});
-    print STDERR "New pdf conn: $dh\n" if $debug > 0;
     my $self = bless { dh => $dh, dbname => $d_name, config => $config }, $class;
     $self->set_debug($config->{"debug"});
     $self->{"setup_db"} = \&setup_db;

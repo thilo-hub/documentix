@@ -1,23 +1,15 @@
 package cache;
 
-use parent DBI;
-use DBI qw(:sql_types);
+use Documentix::db;
 print STDERR ">>> cache.pm\n" if $Docconf::config->{debug} > 2;
 
 
 sub new {
-    my $dbn    = $Docconf::config->{cache_db_provider};
-    my $d_name = $Docconf::config->{cache_db};
-    my $user   = $Docconf::config->{cache_db_user};
-    my $pass   = $Docconf::config->{cache_db_pass};
     my $class  = shift;
 
-    my $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
-      || die "Err database connection $!";
-    print STDERR "New cache conn: $dh\n" if $Docconf::config->{debug} > 0;
+    my $dh = $Documentix::db::cachedh;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
 
-    # $self->{"setup_db"} = \&setup_db;
     $self->setup_db();
     setup_db($self);
     return $self;
