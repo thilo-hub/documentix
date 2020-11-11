@@ -1,7 +1,7 @@
 package cache;
 
 use Documentix::db;
-print STDERR ">>> cache.pm\n" if $Docconf::config->{debug} > 2;
+print STDERR ">>> cache.pm\n" if $Documentix::config->{debug} > 2;
 
 
 sub new {
