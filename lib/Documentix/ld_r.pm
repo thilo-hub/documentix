@@ -9,7 +9,8 @@ use JSON;
 use Sys::Hostname;
 use Date::Parse;
 
-use doclib::pdfidx;
+use Documentix::db;;
+use Documentix::search;
 
 print STDERR ">>> ld_r.pm\n" if $Documentix::config->{debug} > 2;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
@@ -21,27 +22,13 @@ my $myhost = hostname();
 
 my $ANY = "*ANY*";
 
-my $cached_search = q{insert or ignore into cache_q ( qidx,idx,snippet ) 
-                                select ?,docid,snippet(text,1,"<b>","</b>","...",10) 
-					from text  join hash on (docid=idx) where text match ? order by rank  };
-
-# Extend search to include date range
-my $search_date_txt = $cached_search;
-   $search_date_txt =~ s/where/natural join dates where date between ? and ? and/;
-
-# special case only search for dates ( no matching )
-my $search_date = "insert or ignore into cache_q (qidx, idx, snippet) select ?,idx,mtext
-			from dates where date between ? and ?";
-
-
-
 sub new {
     my $class  = shift;
     my $chldno = shift;
 
     my $self = {};
     $self->{pd} = pdfidx->new($chldno,$Documentix::config);
-    $self->{dh} = $self->{pd}->{dh};
+    $self->{dh} = $Documentix::db::dh;
     setup_db( $self->{dh} );
     print STDERR "Child number:$chldno\n" if $Documentix::config->{debug} > 2;
     update_caches($self) unless $chldno;
@@ -146,63 +133,6 @@ q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text,
     );
 }
 
-my $cache_lookup = q{select qidx from cache_lst where query like ?};
-my $cache_setup  = q{insert or ignore into cache_lst (query) values(?)};
-
-sub search {
-    my ( $self, $search ) = @_;
-    my $dh = $self->{"dh"};
-
-    return undef unless $search;
-   
-    # Check if search is already available
-    $dh->do("begin transaction");
-    # the fts search should have a ':' in only quoted....
-    # here we simply reject such queries
-    # Check if we could escape it...
-    return undef if $search =~ m/:/; 
-    my $n = $dh->do( $cache_setup, undef, $search );
-    my $idx = $dh->selectrow_array( $cache_lookup, undef, $search );
-    if ( $n != 0  ) {
-	    # we have a new search
-
-	    # Arguments for search query
-	    my @sargs = ( $idx, $search );
-	    my $srch = $dh->prepare_cached($cached_search);
-
-	    # if a date-range is mentioned, fix the search sql to select the time range only
-	    my $date_match = '\s*(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d)(\s*|$)';
-	    if ( $search && $search =~ s/date$date_match//i ) {
-		# daterange specified...
-		# remove range from search string and process normally
-		# Search restrict to date-range ( will reduce output list )
-		@sargs = ( $idx, $1, $2 );
-		$srch = $dh->prepare_cached($search_date);
-		unless ( $search =~ /^\s*$/ ) {
-		    # date with text match
-		    push @sargs, $search;
-		    $srch = $dh->prepare_cached($search_date_txt);
-		}
-	    }
-
-$DB::single = 1;
-	    # Do search
-	    print STDERR "S:$cached_search\n";
-	    print STDERR "A:" . join( ":", @sargs ) . ":\n";
-	    my $nres = $srch->execute(@sargs);
-	    print STDERR "R: $nres\n";
-	    $dh->do(q{delete from cache_lst where qidx=?},undef,$idx)
-		    if ( $srch->err );
-
-
-	    # record search results
-	    $dh->prepare_cached( 'update cache_lst set nresults=?,last_used=datetime("now")  where qidx=?')
-		->execute( $nres, $idx );
-	}
-    $dh->do("commit");
-    return $idx;
-}
-
 # qidx,idx,rowid,snippet from cache_q_tmp
 sub ldres {
     my $self = shift;
@@ -222,7 +152,7 @@ sub ldres {
     undef $class if defined($class) && $class eq $ANY;
 
     # search results are in cache_q(idx)
-    my $idx = search( $self, $search );
+    my $idx = search( $search );
 
     #Filter tags & dates
     my $subsel = "";
@@ -372,11 +302,6 @@ sub pr_time {
 	return strftime( $str[0], localtime($t) );
 }
 
-sub pdf_class_md5
-{
-	my ($self,$id,$tag) = @_;
-	return $self->{pd}->pdf_class_md5($id,$tag);
-}
 
 
 

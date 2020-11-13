@@ -61,7 +61,6 @@ sub scantree {
 	    print STDERR "File added $f ->  >$type<\n";
 	    if ( $mime_supported{$type}) {
 		# Turn back into relative to root-dir file
-$DB::single=1;
 		$f =~ s|^$dir/*|$Documentix::config{root_dir}|;
 		$dba->load_file("??APP??",$as,$f);
 		return;

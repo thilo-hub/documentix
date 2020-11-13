@@ -1,14 +1,19 @@
 package Documentix::Controller::Docs;
-use Mojo::Base 'Mojolicious::Controller';
-use Documentix::dbaccess;;
-use Documentix::ld_r;
-use Mojo::Asset;
-use Mojo::Upload;
-use Mojo::Util;
- use Mojo::Log;
 use Data::Dumper;
 use IO::Scalar;
 use Date::Parse;
+
+use Mojo::Base 'Mojolicious::Controller';
+use Mojo::JSON qw(decode_json encode_json);
+use Mojo::Util qw{url_unescape};
+use Mojo::Asset;
+use Mojo::Upload;
+use Mojo::Util;
+use Mojo::Log;
+
+use Documentix::classifier qw{pdf_class_md5};
+use Documentix::dbaccess;;
+use Documentix::ld_r;
 
 
 
@@ -32,17 +37,15 @@ $DB::single=1;
    return $c->redirect_to("/Error.pdf") if $type eq "pdf";
    return $c->redirect_to("/icon/Keys-icon.png");
 }
-use Mojo::JSON qw(decode_json encode_json);
-use Mojo::Util qw{url_unescape};
 sub tags {
 	my $c = shift;
-$DB::single=1;
 	my $p=decode_json( url_unescape($c->param('json_string')) );
 
 	my $op=$p->{op};
 	my $id=$p->{md5};
 	my $tag=$p->{tag};
-	my $r=$ld_r->pdf_class_md5($id, ($op eq "rem" )? "-$tag" : "$tag");
+$DB::single=1;
+	my $r= pdf_class_md5($id, ($op eq "rem" )? "-$tag" : "$tag");
 	$c->render(json => $r);
 
 }
@@ -59,20 +62,20 @@ $DB::single=1;
    my $f=Mojo::Asset::File->new()->add_chunk($c->req->body);
    $f->mtime(str2time($c->req->headers->header('X-File-Date'))) if $c->res->headers->header('X-File-Date');
    my ($status,$rv)=$dba->load_file($c,$f,$c->req->headers->header('X-File-Name'));
-   
+
    # capture tags returnd from load_file
    if ( $rv->{newtags} ) {
 	   my $md5=$rv->{md5};
 	   foreach( @{$rv->{newtags}} ) {
-		   $ld_r->pdf_class_md5($md5, $_);
+		   pdf_class_md5($md5, $_);
 	   }
    }
-   
+
    $c->render(json => {
 		   	nitems => 1,
 			items  => [ $rv ],
 			nresults => 9999,
-			msg => $status 
+			msg => $status
 		});
 
 };
@@ -109,7 +112,7 @@ sub reocr {
 
 sub refresh {
 	my $c = shift;
-$DB::single=1;
+	$DB::single=1;
 	my $top = $c->param("dir")  || Mojo::File->new($Documentix::config->{root_dir})->to_abs;
 	Documentix::Task::Processor::schedule_refresh($top);
        return $c->render(text => 'Refresh filesystem started', status => 200);

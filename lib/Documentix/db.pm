@@ -1,6 +1,8 @@
 package Documentix::db;
+use Exporter 'import'; 
+our @EXPORT_OK = qw{$dh};
+$DB::single=1;
 
-use parent DBI;
 use DBI qw(:sql_types);
 
 my $dbn    = $Documentix::config->{database_provider};
@@ -9,7 +11,6 @@ my $user   = $Documentix::config->{database_user};
 my $pass   = $Documentix::config->{database_pass};
 
 
-$DB::single=1;
 
 our $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass ,{sqlite_unicode => 1})
 || die "Err database connection $!";

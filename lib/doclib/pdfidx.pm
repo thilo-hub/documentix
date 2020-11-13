@@ -1,13 +1,15 @@
 package pdfidx;
-use XMLRPC::Lite;
+
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 
 use Documentix::db;
+use Documentix::classifier;
 use Sys::Hostname;
 use File::Temp qw/tempfile tmpnam tempdir/;
 use File::Basename;
 use Cwd 'abs_path';
 use Data::Dumper;
+use DBI qw(:sql_types);
 use doclib::datelib;
 # $File::Temp::KEEP_ALL = 1;
 my $debug=5;
@@ -362,7 +364,7 @@ sub ocrpdf_offline
             # short version
 	    my $c = summary(\$t);
             $self->ins_e( $idx, "Content", $c );
-	    my ($popfile,$class) = ( $self->pdf_class_file( $fn, \$t, $meta->{hash},  join("/",@{$meta->{"_taglist"}})  ) );
+	    my ($popfile,$class) = ( pdf_class_file( $fn, \$t, $meta->{hash},  join("/",@{$meta->{"_taglist"}})  ) );
         }
 	return count_text($t);
 }
@@ -630,7 +632,7 @@ sub load_file
 	$type = $mime_handler{$type}( $self, $totype, $meta ) while $mime_handler{$type};
 
 	( $meta->{"PopFile"}, $meta->{"Class"} ) =
-	  ( $self->pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"}, join("/",@{$meta->{"_taglist"}}) ) );
+	  ( pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"}, join("/",@{$meta->{"_taglist"}}) ) );
 
 	$meta->{"keys"} = join( ' ', keys(%$meta) );
 
@@ -894,278 +896,6 @@ q{select value from hash natural join metadata where md5=? and tag="Text"},
 
     return $self->pdf_totext( $fn, $meta);
 }
-################# popfile interfaces
-# classify unclassified
-
-sub class_unk {
-    my $self = shift;
-    my $all_t =
-q{select idx,md5,file,substr(value,1,10000) txt    from metadata natural join hash natural join file where tag="Text" and idx not in (select idx from tags) group by md5};
-
-    my $all_s = $self->{"dh"}->prepare($all_t);
-    $all_s->execute;
-    while ( my $r = $all_s->fetchrow_hashref() ) {
-        $rv = $self->pdf_class_file( $r->{"file"}, \$r->{"txt"}, $r->{"md5"},
-            undef );
-        $l = length( $r->{"txt"} );
-        print STDERR "Tx: $r->{idx} $r->{md5} ($l)  -> $rv\n" if $debug > 1;
-    }
-
-}
-
-sub get_class {
-    my $self = shift;
-    my $all_t =
-q{select idx,count(*) cnt, group_concat(tagname) lst,value    from tags natural join tagname natural join metadata where tag="Text"  group by idx  order by idx };
-
-    my $all_s = $self->{"dh"}->prepare_cached($all_t);
-    $all_s->execute;
-    while ( my $r = $all_s->fetchrow_hashref() ) {
-        my ( $fh, $tmp_doc ) = tempfile(
-            'popfileinXXXXXXX',
-            SUFFIX => ".msg",
-            UNLINK => 1,
-            DIR    => $temp_dir
-        );
-        print $fh $r->{"value"};
-        close($fh);
-        my $rv = $self->pop_call( 'classify', $tmp_doc );
-        unlink $tmp_doc;
-        next if ( $r->{lst} eq $rv );
-
-        print STDERR "Tx: $r->{idx} $r->{lst}   -> $rv\n" if $debug > 1;
-    }
-}
-
-sub set_classes {
-    my $self = shift;
-    my $all_t =
-q{select tagname,group_concat(substr(value,1,10000)) txt  from tagname natural join tags natural join metadata where tag="Text"  group by tagname};
-
-    # delete all buckets first ....
-    my $rv = $self->pop_call('get_buckets');
-    print STDERR "cln: $tg -> $rv\n" if $debug > 1;
-
-    foreach (@$rv) {
-        $rv = $self->pop_call( 'delete_bucket', $_ );
-        print STDERR "Del: $_ ->$rv\n" if $debug > 1;
-    }
-    my $all_s = $self->{"dh"}->prepare($all_t);
-    $all_s->execute;
-    while ( my $r = $all_s->fetchrow_hashref() ) {
-        my @res =
-          $self->set_class_content( lc( $r->{"tagname"} ), \$r->{"txt"} );
-    }
-}
-
-sub set_class_content {
-    my $self = shift;
-    my ( $tg, $rtxt ) = @_;
-    $tg = to_bucketname($tg);
-    $rv = $self->pop_call( 'create_bucket', $tg );
-    print STDERR "TG: $tg -> $rv\n" if $debug > 1;
-    my ( $fh, $tmp_doc ) = tempfile(
-        'popfileinXXXXXXX',
-        SUFFIX => ".msg",
-        UNLINK => 1,
-        DIR    => $temp_dir
-    );
-    print $fh $$rtxt;
-    close($fh);
-    print STDERR " Add: $tg ($ln) -> " if $debug > 1;
-    $rv =
-      $self->pop_call( 'add_message_to_bucket', $tg, $tmp_doc );
-    my $ln = length($$rtxt);
-    print STDERR "$rv\n" if $debug > 1;
-    unlink($tmp_doc);
-}
-
-{
-    my $pop_xml="http://localhost:".$Documentix::config->{popfile_xmlrpc_port}."/RPC2";
-
-    my $pop_cnt = 0;
-
-    sub pop_call {
-        my $self = shift;
-        my $op   = shift;
-        my $sk   = $self->pop_session();
-        my $r =
-          XMLRPC::Lite->proxy($pop_xml)->call( "POPFile/API.$op", $sk, @_ );
-        return $r->result;
-    }
-
-    sub pop_session {
-        my $self = shift;
-        return $self->{"sk"} if $self->{"sk"};
-        $self->{"sk"} =
-          XMLRPC::Lite->proxy($pop_xml)
-          ->call( 'POPFile/API.get_session_key', 'admin', '' )->result;
-        print STDERR "POP Session: $self->{sk}\n";
-
-     # Check buckets in popfile
-     # ensure that at least a single bucket other than unclassified is available
-        my $bucket_list = $self->pop_call('get_buckets');
-        $self->pop_call( 'create_bucket', 'default' )
-          unless ( scalar(@$bucket_list) );
-        return $self->{"sk"};
-    }
-
-    sub to_bucketname {
-        my $bn = lc(shift);
-        $bn =~ s/[^a-z0-9\-_]/_/g;
-	$bn = "ignore" if $bn eq "deleted";
-        return $bn;
-    }
-
-    sub pop_release {
-        return;
-
-        # return if $pop_cnt>0;
-        # $pop_cnt--;
-        # XMLRPC::Lite->proxy($pop_xml)
-        #   ->call( 'POPfile/API.release_session_key', $popsession )
-        #   if $popsession;
-        # undef $popsession;
-    }
-
-    END {
-        # $self->pop_release();
-    }
-}
-
-sub get_popfile_r {
-    my ( $fn, $md5, $rtxt ) = @_;
-
-    # and a temporary file, with the full path specified
-    my ( $fh, $tmp_doc ) = tempfile(
-        'popfileinXXXXXXX',
-        SUFFIX => ".msg",
-        UNLINK => 1,
-        DIR    => $temp_dir
-    );
-
-    my $f = $fn;
-    $f =~ s/^.*\///;
-    print $fh "Subject:  $f\n";
-    print $fh "From:  Docusys\n";
-    print $fh "To:  Filesystem\n";
-    print $fh "File:  $fn\n";
-    print $fh "Message-ID: $md5\n";
-    print $fh "\n";
-
-    # print $fh "$xinfo";
-
-    # print $fh "$p\n";
-    my $tx = substr( $$rtxt, 0, 100000 );
-    $tx =~ s/[^a-zA-Z_0-9]+/ /g;
-    $tx =~ s/(([a-zA-Z_0-9]+\s){20})/$1\n/g;
-    print $fh $tx;
-
-    print "T:$md5, $tx" if ( $debug > 2 );
-    close($fh);
-    system("cp $tmp_doc /tmp/new.txt");
-    return $tmp_doc;
-}
-
-sub db_prep {
-    my ( $self, $name, $sql ) = @_;
-    $self->{$name} = $self->{"dh"}->prepare($sql)
-      unless $self->{$name};
-    return $self->{$name};
-}
-
-sub pdf_class_md5 {
-    my $self  = shift;
-    my $md5   = shift;
-    my $class = shift;    # undef returns class else set class
-    my $gt_info = $self->db_prep( "get_info",
-q{ select file,substr(value,1,10000) txt from hash natural join file natural join metadata where md5=? and tag="Text"}
-    );
-
-    my $r = $self->{"dh"}->selectrow_hashref( $gt_info, undef, $md5 );
-    return $self->pdf_class_file( $r->{"file"}, \$r->{"txt"}, $md5, $class );
-
-}
-
-sub pdf_class_file {
-    my $self  = shift;
-    my $fn    = shift;    #optional file-name
-    my $rtxt  = shift;    # text to classify
-    my $md5   = shift;
-    my $class = shift;    # undef returns class else set class a '-' as the first char removes the class
-
-    my $rv;
-    my $ln;
-
-    print STDERR "Add tag: $class\n" if $debug > 0;
-    if ( $class =~ m|^(-?)(.*/.*)| ) {
-        # allow multiple tags at once
-	my $r="";
-	foreach( split(m|/|,$2)) {
-		($ln,$rv)=$self->pdf_class_file($fn,$rtxt,$md5,$1.$_);
-		$r.=$rv;
-	}
-	return ($ln,$r);
-    }
-
-    my $tmp_doc = get_popfile_r( $fn, $md5, $rtxt );
-    my $op      = "handle_message";
-    my $dbop    = "insert or ignore into tags (idx,tagid)
-		       select idx,tagid from hash,tagname where md5=? and tagname =?";
-    my $db_op = $self->db_prep( "add_tag", $dbop );
-
-    if ( $class && $class =~ s/^-// ) {
-	# remove tags and message from bucket
-        my $dbop =
-          "delete from tags where idx=(select idx from hash where md5=?) and
-				 tagid = (select tagid from tagname where tagname = ?)";
-        $db_op = $self->db_prep( "rm_tag", $dbop );
-	$rv = $self->pop_call( "remove_message_from_bucket", $class, $tmp_doc )
-		unless $class eq "unclassified";
-    }
-    elsif ($class) {
-        # Set&create  specific class and add tag
-
-        my $dbop = "insert or ignore into tagname (tagname) values(?)";
-	my $b = to_bucketname($class);
-	$rv = $self->pop_call( "create_bucket", $b );
-	$rv = $self->pop_call( "add_message_to_bucket", $b, $tmp_doc );
-	$self->db_prep( "add_class", $dbop )->execute($class);
-	$rv = $class if $rv;
-
-    }
-    else {
-        # ask for class
-        my ( $fh_out, $tmp_out ) = tempfile(
-            'popfileinXXXXXXX',
-            SUFFIX => ".out",
-            UNLINK => 1,
-            DIR    => $temp_dir
-        );
-        $rv = $self->pop_call( 'handle_message', $tmp_doc, $tmp_out );
-        $class = $rv;
-        die "Ups: $class" unless $class;
-        while (<$fh_out>) {
-            ( $ln = $1, last ) if m/X-POPFile-Link:\s*(.*?)\s*$/;
-        }
-
-        print STDERR "$r\nLink: $ln\n" if $debug > 1;
-        close($rh_out);
-        unlink($tmp_out);
-
-        my $dbop = "insert or ignore into tagname (tagname) values(?)";
-	$self->db_prep( "add_class", $dbop )->execute($class);
-
-    }
-    close($fh_out);
-    $db_op->execute( $md5, $class );
-    unlink($tmp_doc);
-    printf STDERR "Class: $rv\n" if $debug > 1;
-
-    return ( $ln, $rv );
-}
-
-####################################################
 sub slurp {
     local $/;
     open( my $fh, "<" . shift )
