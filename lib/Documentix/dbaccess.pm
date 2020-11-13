@@ -3,7 +3,6 @@ use Carp;
 use XMLRPC::Lite;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 use File::Basename;
-use Documentix::Docconf;
 use doclib::cache;
 use Documentix::Converter;
 use Mojo::Asset;
@@ -31,7 +30,7 @@ sub new {
     $cache = cache->new();
     my $q = "select cast(file as blob) file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
     $ph=$dh->prepare_cached($q);
-    $lcl=$Docconf::config->{local_storage};
+    $lcl=$Documentix::config->{local_storage};
 
     return $self;
 }
@@ -112,13 +111,13 @@ $DB::single = 1;
  
  sub load_file {
 	my ($self,$app,$asset,$name) = @_;
-	my $root_dir = abs_path($Docconf::config->{root_dir});
+	my $root_dir = abs_path($Documentix::config->{root_dir});
 	my $dh = $self->{"dh"};
    	 $name = "SomeFile" unless $name;
          #chec if local file 
-         if ( $asset->size == 0 && ($name =~ /^$Docconf::config->{root_dir}/) && -r $name ) {
+         if ( $asset->size == 0 && ($name =~ /^$Documentix::config->{root_dir}/) && -r $name ) {
 		$asset = Mojo::Asset::File->new(path => $name);
-		$name =~ s|^$Docconf::config->{root_dir}/*||;
+		$name =~ s|^$Documentix::config->{root_dir}/*||;
 		print STDERR "Local file: $name\n";
 	 }
 	 my $md5 = Digest::MD5->new;
@@ -145,7 +144,7 @@ $DB::single = 1;
 	 $dgst =~ /^(..)/;
 
 	 # Locate storage place
-	 my $ob=$Docconf::config->{local_storage}."/$1";
+	 my $ob=$Documentix::config->{local_storage}."/$1";
 	 mkdir $ob unless -d $ob;
 	 $ob .= "/$dgst";
 	 mkdir $ob unless -d $ob;

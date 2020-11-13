@@ -70,7 +70,7 @@ sub do_convert_icon {
 
     $pn++ unless $pn;
     my @cmd = (
-        $pdftocairo, "-scale-to", $Docconf::config->{icon_size}, "-png", "-singlefile","-f",
+        $pdftocairo, "-scale-to", $Documentix::config->{icon_size}, "-png", "-singlefile","-f",
         $pn, "-l", $pn, $fn, "-"
     );
 
@@ -114,7 +114,7 @@ sub img_icon {
 	    qexec(@cmd1);
 	    $fn = $tmp_doc;
     }
-    my @cmd = ( $convert, $fn, qw{-trim -normalize -define png:exclude-chunk=iCCP,zCCP -thumbnail}, $Docconf::config->{icon_size}, "png:-" );
+    my @cmd = ( $convert, $fn, qw{-trim -normalize -define png:exclude-chunk=iCCP,zCCP -thumbnail}, $Documentix::config->{icon_size}, "png:-" );
     print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug>2;
     my $png = qexec(@cmd);
     return ( "image/png", $png ) if length($png);

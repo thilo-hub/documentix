@@ -3,10 +3,10 @@ package Documentix::db;
 use parent DBI;
 use DBI qw(:sql_types);
 
-my $dbn    = $Docconf::config->{database_provider};
-my $d_name = $Docconf::config->{database};
-my $user   = $Docconf::config->{database_user};
-my $pass   = $Docconf::config->{database_pass};
+my $dbn    = $Documentix::config->{database_provider};
+my $d_name = $Documentix::config->{database};
+my $user   = $Documentix::config->{database_user};
+my $pass   = $Documentix::config->{database_pass};
 
 
 $DB::single=1;
@@ -14,7 +14,7 @@ $DB::single=1;
 our $dh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass ,{sqlite_unicode => 1})
 || die "Err database connection $!";
 $dh->sqlite_busy_timeout(10000);
-if ( (my $ext=$Docconf::config->{database_extensions}) ) {
+if ( (my $ext=$Documentix::config->{database_extensions}) ) {
 	$dh->sqlite_enable_load_extension(1);
 	foreach (@$ext) {
 		print STDERR "Load extension: $_\n";

@@ -1,6 +1,5 @@
 package Documentix::Controller::Docs;
 use Mojo::Base 'Mojolicious::Controller';
-use Documentix::Docconf;
 use Documentix::dbaccess;;
 use Documentix::ld_r;
 use Mojo::Asset;

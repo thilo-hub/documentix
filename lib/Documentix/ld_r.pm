@@ -9,14 +9,13 @@ use JSON;
 use Sys::Hostname;
 use Date::Parse;
 
-use Documentix::Docconf;
 use doclib::pdfidx;
 
-print STDERR ">>> ld_r.pm\n" if $Docconf::config->{debug} > 2;
+print STDERR ">>> ld_r.pm\n" if $Documentix::config->{debug} > 2;
 $ENV{"PATH"} .= ":/usr/pkg/bin";
 
 my $__meta_sel;
-my $entries = $Docconf::config->{results_per_page};
+my $entries = $Documentix::config->{results_per_page};
 
 my $myhost = hostname();
 
@@ -44,7 +43,7 @@ sub new {
     $self->{pd} = pdfidx->new($chldno,$Documentix::config);
     $self->{dh} = $self->{pd}->{dh};
     setup_db( $self->{dh} );
-    print STDERR "Child number:$chldno\n" if $Docconf::config->{debug} > 2;
+    print STDERR "Child number:$chldno\n" if $Documentix::config->{debug} > 2;
     update_caches($self) unless $chldno;
     return bless $self, $class;
 }
