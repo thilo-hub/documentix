@@ -29,20 +29,10 @@ our $cachedh;
 	my $d_name = $Documentix::config->{cache_db};
 	my $user   = $Documentix::config->{cache_db_user};
 	my $pass   = $Documentix::config->{cache_db_pass};
-	my $class  = shift;
 
 	$cachedh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
 	|| die "Err database connection $!";
 }
-my $self = bless { dh => $dh, dbname => $d_name }, $class;
-
 
 print STDERR  "Db loaded\n";
-
-
-
-
 1;
-
-
-
