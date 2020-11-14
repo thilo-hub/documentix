@@ -50,7 +50,7 @@ sub get_cache {
       
     my $date = time();
     $ins_d->bind_param( 1, $ref );
-    $ins_d->bind_param( 2, \$date, SQL_INTEGER );
+    $ins_d->bind_param( 2, $date, SQL_INTEGER );
     $ins_d->bind_param( 3, $type );
     $ins_d->bind_param( 4, $data, SQL_BLOB );
     $ins_d->execute;

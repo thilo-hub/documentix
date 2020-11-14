@@ -5,6 +5,7 @@ use Mojo::URL;
 use Mojo::Asset::File;
 use doclib::pdfidx;
 use Documentix::dbaccess;;
+use Documentix::db;
 # use File::Path qw(make_path );
 use Documentix::scantree;
 
@@ -64,8 +65,7 @@ sub _refreshIndexes {
 	                    unless my $guard = $minion->guard('maintenance', 600);
 
   $DB::single = 1;
-	my $pdfidx  = pdfidx->new(0,$Documentix::config);
-	my $res=$pdfidx->dbmaintenance(@args);
+	my $res=dbmaintenance(@args);
 	$job->finish(\$res);
 }
 

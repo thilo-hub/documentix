@@ -53,7 +53,6 @@ sub new {
     $self->{"setup_db"} = \&setup_db;
     $self->{"dh1"}      = $dh;
     trace_db($dh) if  $config->{debug} > 3;
-    setup_db($self) unless $chldno;
     return $self;
 }
 
@@ -288,43 +287,6 @@ sub ocrpdf_async {
 	close(FH);
 	return Ocr::push_job($self->{"idx"},@_);
 }
-sub dbmaintenance
-{
-	my $self=shift;
-	warn "dbmaintenance";
-	my $dh=$self->{dh};
-	$dh->do("begin exclusive transaction");
-	$dh->do(qq{insert into text_tmp(rowid,docid,content) 
-			 select rowid,docid,content from vtext 
-			 where docid>(select value from config where var='max_idx') });
-	$dh->do(q{
-		create temporary table cache_q1 as
-			select qidx,text_tmp.docid idx,snippet(text_tmp,1,"<b>","</b>","...",4) snippet 
-			       from cache_lst a,text_tmp(a.query);
-		});
-	$dh->do(q{
-		insert or replace into cache_q(qidx,idx,snippet) select qidx,idx,snippet from cache_q1;
-		});
-	$dh->do(q{
-		update cache_lst set 
-			last_used=datetime('now'), 
-			nresults=count(*) from cache_q 
-		       where cache_lst.qidx in (select distinct(qidx) from cache_q1) and 
-		             cache_q.qidx=cache_lst.qidx;
-		});
-	$dh->do(q{
-		delete from text_tmp;
-		});
-	$dh->do(q{
-		drop table cache_q1;
-		});
-	$dh->do(q{
-		update config set value=max(idx) from hash where var="max_idx";
-		});
-	$dh->do(q{commit });
-	return "Done";
-}
-
 
 sub ocrpdf_sync {
 	my $self=shift;
