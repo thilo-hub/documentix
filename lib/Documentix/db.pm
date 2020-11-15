@@ -1,7 +1,6 @@
 package Documentix::db;
 use Exporter 'import'; 
-our @EXPORT_OK = qw{$dh};
-$DB::single=1;
+our @EXPORT_OK = qw{$dh dbmaintenance};
 
 use DBI qw(:sql_types);
 
@@ -104,7 +103,7 @@ sub updated_idx {
 sub dbmaintenance
 {
 	my $self=shift;
-	warn "dbmaintenance";
+	printf STDERR  "dbmaintenance\n";
 	$dh->do("begin exclusive transaction");
 	$dh->do(qq{insert into text_tmp(rowid,docid,content) 
 			 select rowid,docid,content from vtext 
