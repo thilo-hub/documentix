@@ -66,6 +66,8 @@ sub _refreshIndexes {
 
   $DB::single = 1;
 	my $res=dbmaintenance(@args);
+	# Cleanup empty upload dirs
+	system("find '$Documentix::config->{local_storage}' -depth -empty -exec rmdir {} \\;");
 	$job->finish(\$res);
 }
 
