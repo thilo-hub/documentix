@@ -134,6 +134,10 @@ sub pdf_class_file {
         $db_op = $dh->prepare_cached( $dbop );
 	$rv = pop_call( "remove_message_from_bucket", $class, $tmp_doc )
 		unless $class eq "unclassified";
+
+	$dh->do( qq{
+		update metadata set value=trim(replace('/'||value||'/','/'||?2||'/','/'),'/') where idx=(select idx from hash where md5=?1)
+		},undef,($md5,$class));
     }
     elsif ($class) {
         # Set&create  specific class and add tag
@@ -144,6 +148,9 @@ sub pdf_class_file {
 	$rv = pop_call( "add_message_to_bucket", $b, $tmp_doc );
 	$dh->prepare_cached( $dbop )->execute($class);
 	$rv = $class if $rv;
+	$dh->do( qq{
+		update metadata set value=trim(replace('/'||value||'/','/'||?2||'/','/'),'/')||'/'||?2  where idx=(select idx from hash where md5=?1)
+		},undef,($md5,$class));
 
     }
     else {
@@ -180,6 +187,7 @@ sub pdf_class_file {
 ################# popfile interfaces
 # classify unclassified
 
+# get all unclassified files (not manually assigned) and ask popfile for classification
 sub class_unk {
     my $self = shift;
     my $all_t =

@@ -595,10 +595,12 @@ sub load_file
 	# or a message if processing should end
 	$type = $mime_handler{$type}( $self, $totype, $meta ) while $mime_handler{$type};
 
-	( $meta->{"PopFile"}, $meta->{"Class"} ) =
-	  ( pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"}, join("/",@{$meta->{"_taglist"}}) ) );
+	my $Class=join("/",@{$meta->{"_taglist"}});
+	( $meta->{"PopFile"}, $meta->{"_Class"} ) =
+	  ( pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"},$Class ) );
+        $meta->{"Class"} = $Class;
 
-	$meta->{"keys"} = join( ' ', keys(%$meta) );
+	#$meta->{"keys"} = join( ' ', keys(%$meta) );
 
 	# All metadata not prefixed by '_' is put into db
 	#
