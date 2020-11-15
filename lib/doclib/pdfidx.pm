@@ -596,6 +596,7 @@ sub load_file
 	$type = $mime_handler{$type}( $self, $totype, $meta ) while $mime_handler{$type};
 
 	my $Class=join("/",@{$meta->{"_taglist"}});
+	$Class =~ s|^/*(.*?)/*$|$1|;
 	( $meta->{"PopFile"}, $meta->{"_Class"} ) =
 	  ( pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"},$Class ) );
         $meta->{"Class"} = $Class;
@@ -733,7 +734,7 @@ sub xtp_any {
     sub xtp_tar {
 	my ($self,$totype,$pmeta) = @_;
         my $i = $pmeta->{"_file"};
-	$pmeta->{__file}=$i;
+	#$pmeta->{__file}=$i;
 
         my $of = $pmeta->{_lcl_store};
 
@@ -746,6 +747,9 @@ sub xtp_any {
 		print STDERR "Do: $f\n" if $debug > 1;
 		push @archive,$f;
 	}
+	delete $pmeta->{_file};
+	# unlink $i if $pmeta->{_tempremove}; delete $pmeta->{_tempremove};
+
 	my @md5_archive=();
 	$DB::single=1;
 	foreach ( @archive ) {
@@ -768,9 +772,10 @@ sub xtp_any {
     sub xtp_gzip {
 	my ($self,$totype,$pmeta) = @_;
         my $i    = $pmeta->{"_file"};
-        $self->{"_fh"} = File::Temp->new( SUFFIX => '.pdf' );
+        $self->{"_fh"} = File::Temp->new( SUFFIX => '.unzipped' );
         $pmeta->{"_file"} = $self->{"_fh"}->filename;
         do_ungzip( $i, $pmeta->{_file} );
+	# $pmeta->{_tempremove}=1;  # Flag that this can be removed after usage
 
 	push @{$pmeta->{_taglist}},"deleted";
         my $type = magic( $pmeta->{_file} );

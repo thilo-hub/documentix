@@ -149,7 +149,7 @@ sub pdf_class_file {
 	$dh->prepare_cached( $dbop )->execute($class);
 	$rv = $class if $rv;
 	$dh->do( qq{
-		update metadata set value=trim(replace('/'||value||'/','/'||?2||'/','/'),'/')||'/'||?2  where idx=(select idx from hash where md5=?1)
+		update metadata set value=trim(trim(replace('/'||value||'/','/'||?2||'/','/'),'/'),'/')||'/'||?2  where idx=(select idx from hash where md5=?1)
 		},undef,($md5,$class));
 
     }
