@@ -10,6 +10,7 @@ sub fixup_dates
 	my $dh=shift;
 
 	my $sel = $dh->prepare(q{select file  from file});
+	$dh->do("begin exclusive transaction");
 	$dh->do( 'insert or ignore into config (var,value) values("max_datesidx",0)');
 	$dh->do( 'delete from dates where idx > (select value from config where var="max_datesidx")');
 	$setmidx = $dh->prepare( 'insert or replace into config (var,value) values("max_datesidx",?)');
@@ -20,7 +21,6 @@ sub fixup_dates
 
 	my $upd = $dh->prepare("insert or replace into dates(date,mtext,idx) values(?,?,?)");
 
-	$dh->do("begin transaction");
 	my $idx = 0;
 	$get_t->execute("Text");
 	while ( my @r = $get_t->fetchrow_array ) {
