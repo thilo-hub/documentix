@@ -700,7 +700,7 @@ sub xtp_any {
 		my $hash = file_md5_hex($_);
 		my $t0=$_;
 		$t0 =~ s/$of(\/\.\/)?\/?//;
-		my @tags=split("/",$t0);
+		my @tags=split("/+",$t0);
 		pop @tags; 
 		dbaccess::insert_file($self,$hash,$_,\@tags);
 		push @md5_archive,$hash;
@@ -749,8 +749,8 @@ sub xtp_any {
 	foreach ( @archive ) {
 		my $hash = file_md5_hex($_);
 		my $t0=$_;
-		$t0 =~ s/$of(\/\.\/)?//;
-		my @tags=split("/",$t0);
+		$t0 =~ s/$of(\/\.\/)?\/*//;
+		my @tags=split("/+",$t0);
 		pop @tags; 
 		dbaccess::insert_file($self,$hash,$_,\@tags);
 		push @md5_archive,$hash;
