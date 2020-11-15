@@ -571,6 +571,8 @@ sub load_file
 	my %mime_handler = (
 	    "application/zip" => \&xtp_unzip,
 	    "application/x-gzip" => \&xtp_gzip,
+	    "application/x-tar" => \&xtp_tar,
+	    "application/gzip" => \&xtp_gzip,
 	    "application/pdf"    => \&xtp_pdf,
 	    "application/msword" => \&xtp_any,
 	    "image/png"         => \&xtp_jpg,
@@ -696,10 +698,15 @@ sub xtp_any {
 	$DB::single=1;
 	foreach ( @archive ) {
 		my $hash = file_md5_hex($_);
-		dbaccess::insert_file($self,$hash,$_);
+		my $t0=$_;
+		$t0 =~ s/$of(\/\.\/)?\/?//;
+		my @tags=split("/",$t0);
+		pop @tags; 
+		dbaccess::insert_file($self,$hash,$_,\@tags);
 		push @md5_archive,$hash;
 	}
 	$pmeta->{"archive"}=join(",",@md5_archive);
+	push @{$pmeta->{_taglist}},"deleted";
 	$type = "Unizped (".scalar(@md5_archive).") files";
 
         return $type;
@@ -716,7 +723,42 @@ sub xtp_any {
         my $of = $self->get_store( $pmeta->{"hash"},0);
         $pmeta->{"_file"} = $of . "/" . basename($i) . ".pdf";
         do_calibrepdf( $i, $pmeta->{_file} );
-        my $type = do_file( $pmeta->{_file} );
+        my $type = magic( $pmeta->{_file} );
+        return $type;
+    }
+
+# "application/x-gzip" 
+    sub xtp_tar {
+	my ($self,$totype,$pmeta) = @_;
+        my $i = $pmeta->{"_file"};
+	$pmeta->{__file}=$i;
+
+        my $of = $pmeta->{_lcl_store};
+
+	my @archive=();
+	foreach( qx{tar xvf  '$i' -C '$of' 2>&1} ) {
+		next unless /^(x\s+)?(.*)\/?\s*\n$/;
+		my $f=$of."/".$2;
+		next if -d $f;
+		die "untar problem? >$2<" unless -r $f;
+		print STDERR "Do: $f\n" if $debug > 1;
+		push @archive,$f;
+	}
+	my @md5_archive=();
+	$DB::single=1;
+	foreach ( @archive ) {
+		my $hash = file_md5_hex($_);
+		my $t0=$_;
+		$t0 =~ s/$of(\/\.\/)?//;
+		my @tags=split("/",$t0);
+		pop @tags; 
+		dbaccess::insert_file($self,$hash,$_,\@tags);
+		push @md5_archive,$hash;
+	}
+	$pmeta->{"archive"}=join(",",@md5_archive);
+	$type = "Unizped (".scalar(@md5_archive).") files";
+	push @{$pmeta->{_taglist}},"deleted";
+
         return $type;
     }
 
@@ -724,11 +766,12 @@ sub xtp_any {
     sub xtp_gzip {
 	my ($self,$totype,$pmeta) = @_;
         my $i    = $pmeta->{"_file"};
-        $self->{"fh"} = File::Temp->new( SUFFIX => '.pdf' );
-        $pmeta->{"_file"} = $pmeta->{"_fh"}->filename;
+        $self->{"_fh"} = File::Temp->new( SUFFIX => '.pdf' );
+        $pmeta->{"_file"} = $self->{"_fh"}->filename;
         do_ungzip( $i, $pmeta->{_file} );
 
-        my $type = do_file( $pmeta->{_file} );
+	push @{$pmeta->{_taglist}},"deleted";
+        my $type = magic( $pmeta->{_file} );
         return $type;
     }
 
@@ -1050,15 +1093,9 @@ sub do_unopdf {
     return;
 }
 
-sub do_file {
-    my ($in) = @_;
-    chomp( my $type = qexec(qw{file -b --mime-type}, $in));
-    return $type;
-}
-
 sub do_ungzip {
     my ( $in, $out ) = @_;
-    qx|gzip -dc $i > "$out"|;
+    qx|gzip -dc $in > "$out"|;
     return;
 }
 sub get_store {
