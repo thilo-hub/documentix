@@ -174,7 +174,8 @@ $(function() {
 	$("#resview").appendTo(".right");
 	$("#resview").show();
 	e.currentTarget.scrollIntoViewIfNeeded();
-	$(".navigator").show();
+	$(".navigator").addClass("navigatorBig");
+        $(".viewopt").show();
     }
     Showpdf = function(u,e) {
 	    var p=$('#pdfview');
@@ -186,15 +187,12 @@ $(function() {
 	    $(".rbox").removeClass("viewing",500);
 	    if ( p.length ) {
 		    // pdfview frame available, go load content
-		    $("#navi").hide();
+		    $(".navigator").removeClass("navigatorBig");
+		    $(".viewopt").hide();
 		    $("#resview").appendTo(".left");
 
-		    // var r=$("#result");
-		    // var h=r.width() * 1.42;
-		    // $("#resview").width($(".navigator").width()) ;
 		    if (typeof e.currentTarget != "undefined"){
 			    e.currentTarget.scrollIntoViewIfNeeded();
-			    // $(".navigator").hide();
 			    $(e.currentTarget).addClass("viewing",500,function(){
 
 			    p.prop("src",u);

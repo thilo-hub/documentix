@@ -59,10 +59,12 @@
 	  display: flex;
 	  flex-flow: row wrap;
   }
+  .navigatorBig {
+	  height: 100%;
+  }
   .navigator {
 	  border: solid 1px red;
 	  _width: 100%;
-	  height: 100%;
 	  
 	  display: flex;
 	flex-flow: row wrap;

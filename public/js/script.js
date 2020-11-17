@@ -104,6 +104,13 @@ $(".custom-menu li").click(function(){
     switch($(this).attr("data-action")) {
 
         // A case for each action. Your actions here
+	case "open":
+		    var el=$('li.rbox.selecting');
+		    var u=el.attr('id')+'/'+el.attr('docname');
+		    console.log( u);
+		    u=viewer_url.replace("%doc",u);
+		    window.open(u);
+		    break;
 	case "log":
           var j=$("li.rbox.selecting").clone()
           $("#fmsg").append(j);
