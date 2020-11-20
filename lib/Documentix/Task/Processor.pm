@@ -17,6 +17,7 @@ sub register {
   $minion->add_task(loader => \&_loader);
   $minion->add_task(refreshDirectories => \&_refreshDirectories);
   $minion->add_task(refreshIndexes => \&_refreshIndexes);
+  #  schedule_maintenance();
 }
 
 #############################
@@ -55,19 +56,36 @@ sub _loader {
 }
 
 #############################
+use Data::Dumper;
+my $mainenance_task;
 sub schedule_maintenance
 {
+	$DB::single=1;
+
+	my $jobs = $minion->jobs({tasks => ['refreshIndexes']});
+	
+	# while (my $info = $jobs->next) { print Dumper($info); }
+	$jobs = $minion->jobs({tasks => ['refreshIndexes']});
+	while (my $info = $jobs->next) {
+		print "Here\n";
+		$DB::single=1;
+		$minion->broadcast('retry',[$info->{id}]) if $info->{state} eq "finished";
+		print "restart\n";
+		$DB::single=1;
+		return
+	}
         $minion->enqueue(refreshIndexes=> [@_]=>{priority=>0, delay=>5} );
 }
 sub _refreshIndexes {
 	my ($job, @args)=@_;
+	print STDERR "refresh\n";
        return $job->finish('Previous job is still active')
 	                    unless my $guard = $minion->guard('maintenance', 600);
 
   $DB::single = 1;
 	my $res=dbmaintenance(@args);
 	# Cleanup empty upload dirs
-	system("find '$Documentix::config->{local_storage}' -depth -empty -exec rmdir {} \\;");
+	system("find '$Documentix::config->{local_storage}' -depth -type d -empty -exec rmdir {} \\;");
 	$job->finish(\$res);
 }
 

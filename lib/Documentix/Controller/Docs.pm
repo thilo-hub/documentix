@@ -115,7 +115,7 @@ sub refresh {
 	$DB::single=1;
 	my $top = $c->param("dir")  || Mojo::File->new($Documentix::config->{root_dir})->to_abs;
 	Documentix::Task::Processor::schedule_refresh($top);
-       return $c->render(text => 'Refresh filesystem started', status => 200);
+       return $c->render(text => 'Refresh filesystem started '.$top, status => 200);
 }
 
 1;

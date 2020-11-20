@@ -35,11 +35,11 @@ sub search {
     return undef unless $search;
    
     # Check if search is already available
-    $dh->do("begin transaction");
     # the fts search should have a ':' in only quoted....
     # here we simply reject such queries
     # Check if we could escape it...
     return undef if $search =~ m/:/; 
+    $dh->do("begin transaction");
     my $n = $dh->do( $cache_setup, undef, $search );
     my $idx = $dh->selectrow_array( $cache_lookup, undef, $search );
     if ( $n != 0  ) {
@@ -52,6 +52,7 @@ sub search {
 	    # if a date-range is mentioned, fix the search sql to select the time range only
 	    my $date_match = '\s*(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d)(\s*|$)';
 	    if ( $search && $search =~ s/date$date_match//i ) {
+		print STDERR "Datesearch:  $1 -- $2\n";
 		# daterange specified...
 		# remove range from search string and process normally
 		# Search restrict to date-range ( will reduce output list )
