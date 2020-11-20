@@ -691,9 +691,11 @@ sub xtp_any {
         my $of = $pmeta->{_lcl_store};
 
 	my @archive=();
+	my $err="";
 	foreach( qx{echo A | unzip -d "$of" "$i"} ) {
-		next unless /extracting:\s+(.*)\s*$/;
-		die "unzip problem? >$1<" unless -r $1;
+		$err .= $_;
+		next unless /(?:inflating|extracting):\s+(.*?)\s*$/;
+		die "$err\nunzip problem? >$1<" unless -r $1;
 		print STDERR "Do: $1\n" if $debug > 1;
 		push @archive,$1;
 	}
