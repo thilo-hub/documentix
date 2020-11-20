@@ -6,7 +6,7 @@ our @EXPORT = qw{search};
 use Documentix::db qw{$dh};
 
 
-print $dh,"\n";
+print STDERR $dh,"\n";
 
 #input 
 # search-string

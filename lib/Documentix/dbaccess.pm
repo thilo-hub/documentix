@@ -78,7 +78,7 @@ sub get_bestpdf
 	$name =~ s/\.?$/./;
 	my $lcl=get_store($ra->{hash},0);
 	# search path
-	foreach( $lcl.$name."ocr.pdf",$path.$name."ocr.pdf",$lcl.$name.$suffix,$path.$name.$suffix ) {
+	foreach( $lcl.$name."ocr.pdf",$path.$name."ocr.pdf",$lcl.$name."pdf",$path.$name."pdf",$lcl.$name.$suffix,$path.$name.$suffix ) {
 		return Mojo::Asset::File->new(path => $_)  if -r $_;
 	}
 	return undef;

@@ -1,7 +1,7 @@
 FROM ubuntu:latest
 MAINTAINER thilo-hub@nispuk.com
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update 
+RUN apt-get update --fix-missing
 RUN  apt-get install -y sqlite3 \
 	 libhtml-template-perl  libdigest-md5-file-perl \
 	 libxmlrpc-lite-perl\

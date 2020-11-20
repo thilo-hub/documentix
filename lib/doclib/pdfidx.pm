@@ -271,7 +271,7 @@ sub w_load {
 	}
 	if ( $pid < 0 ) {
 		print STDERR "Failed .. no more childs\n";
-		print Dumper(\%childs);
+		print STDERR Dumper(\%childs);
 		return 0;
 	}
     }

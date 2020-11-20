@@ -29,7 +29,6 @@ sub  schedule_ocr
 sub _ocr {
   my ($job, @args)=@_;
   my $pdfidx  = pdfidx->new(0,$Documentix::config);
-  $DB::single = 1;
   $job->on( finish => &schedule_maintenance );
   $job->finish( $pdfidx->ocrpdf_sync(@args));
 }
@@ -47,7 +46,6 @@ sub _loader {
   my @results=@_;
   say 'Process';
   # sleep 1;
-  $DB::single = 1;
   my $txt = $pdfidx->load_file(  "application/pdf",{file=>$fn,_taglist=>$tags});
   say 'done';
   $results[5] = {summary=>$txt,url=>"/docs/pdf/$dgst/result.pdf"};
@@ -67,11 +65,9 @@ sub schedule_maintenance
 	# while (my $info = $jobs->next) { print Dumper($info); }
 	$jobs = $minion->jobs({tasks => ['refreshIndexes']});
 	while (my $info = $jobs->next) {
-		print "Here\n";
-		$DB::single=1;
+		print STDERR "Here\n";
 		$minion->broadcast('retry',[$info->{id}]) if $info->{state} eq "finished";
-		print "restart\n";
-		$DB::single=1;
+		print STDERR "restart\n";
 		return
 	}
         $minion->enqueue(refreshIndexes=> [@_]=>{priority=>0, delay=>5} );
@@ -82,7 +78,6 @@ sub _refreshIndexes {
        return $job->finish('Previous job is still active')
 	                    unless my $guard = $minion->guard('maintenance', 600);
 
-  $DB::single = 1;
 	my $res=dbmaintenance(@args);
 	# Cleanup empty upload dirs
 	system("find '$Documentix::config->{local_storage}' -depth -type d -empty -exec rmdir {} \\;");
