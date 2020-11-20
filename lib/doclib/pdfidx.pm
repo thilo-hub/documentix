@@ -1071,9 +1071,7 @@ sub do_calibrepdf {
     $in  = abs_path($in);
     $out = abs_path($out);
     print STDERR "convert: $in\n" if $debug > 1;
-    #main::lock();
     qexec("ebook-convert", $in ,$out);
-    #main::unlock();
     die "failed: calibre: ebook-convert $in $out" unless -f $out;
     return;
 }
@@ -1093,9 +1091,7 @@ sub do_unopdf {
     $in  = abs_path($in);
     $out = abs_path($out);
     #print STDERR "convert: $in\n" if $debug > 1;
-    main::lock();
     qexec(qw{unoconv -o}, $out,$in);
-    #main::unlock();
     die "failed: -o $out $in" unless -f $out;
     return;
 }
