@@ -6,7 +6,7 @@ use File::Basename;
 use doclib::cache;
 use Documentix::Converter;
 use Mojo::Asset;
-use File::MimeInfo::Magic qw{magic};
+use Documentix::Magic qw{magic};
 use Documentix::ld_r;
 use Date::Parse;
 use Cwd 'abs_path';

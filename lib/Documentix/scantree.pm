@@ -1,7 +1,7 @@
 package Documentix::scantree;
 
 use Cwd;
-use File::MimeInfo::Magic qw{magic};
+use Documentix::Magic qw{magic};
 use File::Find qw{find};
 use Data::Dumper;
 use Documentix::dbaccess;;

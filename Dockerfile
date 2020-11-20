@@ -8,7 +8,7 @@ RUN  apt-get install -y sqlite3 \
 	 imagemagick unoconv poppler-utils \
 	calibre-bin \
 	a2ps libjson-perl \
-	zbar-tools libgd-barcode-perl  exiftool qpdf \
+	libfile-libmagic-perl zbar-tools libgd-barcode-perl  exiftool qpdf \
 	unzip \
 	libjs-bootstrap4 libjs-popper.js libmojolicious-perl libminion-perl libmojo-sqlite-perl libminion-backend-sqlite-perl \
 	tesseract-ocr tesseract-ocr-deu  tesseract-ocr-eng

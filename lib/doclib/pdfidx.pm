@@ -539,7 +539,7 @@ sub join_pdf
 # "recursive"
 # Input: to-type , curren_file_info
 #
-use File::MimeInfo::Magic qw{magic};
+use Documentix::Magic qw{magic};
 {
 
 sub load_file
