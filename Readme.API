@@ -1,0 +1,134 @@
+Content:
+
+* Response format
+* API's 
+* Debugging tips
+
+
+
+
+* Response format
+
+    Standard json response is like this:
+
+ 
+	{
+	  "items": [
+	    {
+	      "doc": "testdata",
+	      "doct": ".zip",
+	      "dt": "Sat 22:16",
+	      "md5": "9adc3bb329a18bdb26df0bcf2cdaad0b",
+	      "pg": "?",
+	      "sz": "931.7 kb",
+	      "tg": "processing",
+	      "tip": "ProCessIng=39"
+	    }
+	  ],
+	  "msg": "Loading",
+	  "nitems": 1,
+	  "nresults": 9999
+	 "classes": [
+	    {
+	      "count": 3,
+	      "tagname": "file2"
+	    },
+	    .....
+	  ],
+
+	}
+   (While an item is being processed, the tip is "processing" )
+	doc, doct try to give the document a name and endig. This is sometimes not accurate.
+	dt:  date/time in an abreviated format ( last few days will include hours,  older items have only a date
+	md5: The files md5 hash
+	pg:  Number of pages in document
+	sz:  Size
+	tg:  Document tags
+	tip: either the search result text or a short content of the text
+	
+     Search queries also return extra tag information for all tags
+
+
+
+* API's 
+
+    Supported API's
+
+    /                       GET     
+	    Returns index.html
+
+    /docs/:type/:hash/#doc  GET     docstypehashdoc
+       type:  {raw|ico|pdf}   md5  {some doc-name}
+     ==> returns the document
+
+
+    /ldres                  GET     ldres
+	    Search API  
+		    default returns nitems from full list
+			    class :  restrict results to class
+			    idx   :  request results beginngin at idx
+			    ppages : max number of items to return
+			    search : search query
+	    returns standard json 
+
+    /status                 GET     status
+	    Parameter:  md5=...
+	    returns standard json (if the file is an archive, all members are returns as items)
+
+    /upload                 POST    upload
+      Upload new files
+	    i.e:  curl -v --data-binary '@data.tar.gz' -H "X-File-Name: testdata.tar.gz" {url}/upload
+	    returns standard json (if the file is an archive, all members are returns as items)
+
+    /reocr                  GET     reocr
+	    : not maintained ...
+
+    /tags                   POST    tags
+      set or reset tags for files
+	input: json_string:  op: {add|rem}
+			     md5: {fileid}
+			     tag: {tag name}
+		    i.e.:  get -M POST -f 'json_string={"op":"rem","md5":"b5681751a87cdd5dc1b79c89791a822f","tag":"WWW"}'  /tags
+	    returns tag
+	    
+
+    /refresh                GET     refresh
+	    Loads/refresh local directory into database
+	    Optional "dir=Docs/{.....}"   Only scans tree below {...}
+
+	    
+    /export/:tag            GET     exporttag
+	    Export ZIP filearchive,  all files that have the tag will be added.
+	    The files will be put under directory according to their labels
+
+    /minion                 *       minion
+	    standard minion API's 
+
+* Debugging tips
+    Some usefull tips to debug the server:
+
+    If you want to debug the docker image, mount the current git-tree from you local directory as well
+    GITTREE="-v $PWD:/documentix"
+
+    DB_="-v $PWD/db:/volumes/db"
+    DOCS_="-v $PWD/Docs:/volumes/Docs"
+
+    docker run $GITTREE $DB_ $DOCS_  -p 8080:80 --rm --name dx thiloj/documentix:latest 
+
+
+    Then you can connect and debug using:
+
+    docker exec -ti dx bash
+
+
+    In the shell you can debug normally
+
+    ie.  perl -d /documentix/script/documentix ....
+
+    Very usefull is:
+
+    $DB::single=1;
+
+    Perl debug breaks at this
+
+
