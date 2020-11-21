@@ -11,7 +11,7 @@ use Mojo::Upload;
 use Mojo::Util;
 use Mojo::Log;
 
-use Documentix::classifier qw{pdf_class_md5};
+use Documentix::Classifier qw{pdf_class_md5};
 use Documentix::dbaccess;;
 use Documentix::ld_r;
 

@@ -96,20 +96,6 @@ sub do_convert_icon {
 }
 
 
-sub pdf_thumb {
-    my $fn   = shift;
-    my $pn   = ( shift || 1 ) - 1;
-    $fn .= ".pdf" if ( -f $fn . ".pdf" );
-    my $png = do_convert_thumb( $fn, $pn );
-    return ( "image/png", $png ) if length($png);
-
-    # Error case - return lock
-    $png=slurp("../public/icon/Keys-icon.png"); 
-    # Return failure icon
-    return undef unless length($png);
-    return ( "image/png", $png );
-}
-
 sub pdf_icon {
     my $fn   = shift;
     my $pn   = ( shift || 1 ) - 1;

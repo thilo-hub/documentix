@@ -1,4 +1,4 @@
-package Documentix::classifier;
+package Documentix::Classifier;
 
 use Exporter 'import';
 our @EXPORT = qw(pdf_class_file pdf_class_md5);

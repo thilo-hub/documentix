@@ -268,5 +268,51 @@ sub get_store {
 
 1;
 
+# Return zip archive having the taged files in it
+# deleted files are only exported if the tag is "deleted"
+#
+sub export_files {
+    my ( $self,$tag ) = @_;
+    # For the moment just return the files tagged
+    #  select 'mkdir -p "'||dir||'" ; cp "'||file||'" "'||dir||'/.";' 'export' 
+    my $exp_query = $self->{dh}->prepare_cached(qq{
+		select file filename,dir zipName 
+		from (
+			select idx,"ExportDocs/"||group_concat(tagname,"/") dir  from (
+				select idx from tags where 
+					tagid = (select tagid from tagname where tagname = ?1 ) 
+				) natural join tags natural join tagname where tagname != ?1
+			group by idx order by tagname
+		) natural join hash natural join file
+	    });
+
+    $exp_query->execute($tag);
+    {
+    my $zip=Archive::Zip->new;
+    my @r=();
+    while( my $ra = $exp_query->fetchrow_hashref ) {
+	    next if ($ra->{dir} =~ m|/deleted/| && $tag ne "deleted");
+	    my $oname =$ra->{filename};
+	    $oname =~ s,^.*/,/,;
+	    $ra->{zipName}.= $oname;
+	    $zip->addFile($ra);
+	    push @r,$ra;
+    }
+    $DB::single=1;
+    my $asset = Mojo::Asset::File->new();
+    my $s;
+    use IO::Scalar;
+    my $h = new IO::Scalar \$s;
+    #$file->handle($h);
+    #my $h=$file->handle;
+    unless ( $zip->writeToFileHandle($h,0) == AZ_OK ) {
+             die "whoops!";
+         }
+	 #$zip ->  writeCentralDirectory( $h);
+    $asset->add_chunk($s);
+	    
+    return $asset;
+    }
+}
 
 1;

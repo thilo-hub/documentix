@@ -3,7 +3,7 @@ package pdfidx;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 
 use Documentix::db;
-use Documentix::classifier;
+use Documentix::Classifier;
 use Sys::Hostname;
 use File::Temp qw/tempfile tmpnam tempdir/;
 use File::Basename;
@@ -956,24 +956,6 @@ sub qexec
   my $r=<$f>;
   close($f);
   return $r;
-}
-
-sub do_convert_thumb {
-    my ( $fn, $pn ) = @_;
-    my ( $fh, $tmp_doc ) = tempfile(
-            'onepageXXXXXXX',
-            SUFFIX => ".pdf",
-            UNLINK => 1,
-            DIR    => $temp_dir
-        );
-    $pn = 1 unless defined $pn;
-    my @cmd1 = ( "pdfseparate","-f",$pn,"-l",$pn,$fn,$tmp_doc );
-    print STDERR "X:" . join( " ", @cmd1 ) . "\n" if $debug>2;
-    qexec(@cmd1);
-    my @cmd = ( $convert, $tmp_doc, qw{-trim -normalize -define png:exclude-chunk=iCCP,zCCP -thumbnail 400 png:-} );
-    print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug>2;
-    my $png = qexec(@cmd);
-    return $png;
 }
 
 #convert single pdf-page to ocr-pdfpage
