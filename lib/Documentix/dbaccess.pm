@@ -55,6 +55,8 @@ sub getFilePath {
     }
     return undef;
 }
+
+#Only raw / pdf or icon is supported
 sub converter
 {
 	my ($totype,$ra)=@_;
@@ -62,33 +64,48 @@ sub converter
 		"raw" => sub { return Mojo::Asset::File->new(path=>$ra->{"file"}) },
 		"pdf" => \&get_bestpdf,
 		"ico" => \&get_icon,
-
 	};
 	my $c=$cv->{$totype};
 	return   undef  unless $c;
 	return &$c($ra);
 }
-sub get_bestpdf
+
+#
+# Look for the best pdf file
+# in a number of places
+#
+sub find_pdf
 {
 	my ($ra)=shift;
 	
 	#croak "Wrong file-type: $ra->{Mime}" unless $ra->{Mime} =~ m|application/pdf|;
 
-	my ($name,$path,$suffix) = fileparse($ra->{file},qw{ocr.pdf pdf});
-	$name =~ s/\.?$/./;
+	my ($name,$path) = fileparse($ra->{file});
+
 	my $lcl=get_store($ra->{hash},0);
 	# search path
-	foreach( $lcl.$name."ocr.pdf",$path.$name."ocr.pdf",$lcl.$name."pdf",$path.$name."pdf",$lcl.$name.$suffix,$path.$name.$suffix ) {
-		return Mojo::Asset::File->new(path => $_)  if -r $_;
+	foreach $ext (qw{ .ocr.pdf .pdf },"") {
+		foreach( $lcl.$name.$ext ,$path.$name.$ext ) {
+			return $_ if -r $_;
+		}
 	}
 	return undef;
+}	
+sub get_bestpdf
+{
+	my ($ra)=shift;
+	my $pdf=find_pdf($ra);
+	return undef unless $pdf;
+	return Mojo::Asset::File->new(path => $pdf);
 }
- sub get_icon{ 
+
+sub get_icon{ 
 	 my $ra=shift;
-$DB::single = 1;
-	 my ( $m, $res ) = $cache->get_cache( $ra->{"file"}, "$ra->{hash}-ico", \&Converter::mk_ico,$self,$ra->{Mime} );
-	 
-	 return Mojo::Asset::Memory->new()->add_chunk($res);
+	my $pdf=find_pdf($ra);
+	return undef unless $pdf;
+	$ra->{pdf}=$pdf;
+	my ( $m, $res ) = $cache->get_cache( $ra->{file}, "$ra->{hash}-ico", \&Converter::mk_ico,$self,$ra );
+	return Mojo::Asset::Memory->new()->add_chunk($res);
  }
 
  # Install file basis in DB and schedule indexing of it

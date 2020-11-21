@@ -58,7 +58,6 @@ use Data::Dumper;
 my $mainenance_task;
 sub schedule_maintenance
 {
-	$DB::single=1;
 
 	my $jobs = $minion->jobs({tasks => ['refreshIndexes']});
 	

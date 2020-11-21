@@ -30,6 +30,7 @@ $DB::single=1;
    my $hash = $c->stash('hash');
    my $doc = $c->stash('doc');
 
+
    my $res = $dba->getFilePath($hash,$type);
    return $c->reply->asset($res) if $res;
    # Failures...

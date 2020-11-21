@@ -4,6 +4,20 @@ my $temp_dir = "/var/tmp";
 
 my $debug=3;
 
+#
+# this module is called when a resource in (/ico/) is requested
+#
+# It shall
+# return the file if in the cache_db and the original hasn't been touched
+# or create (and cache) the ico file from the (mandatory existing pdf)
+# if the requested file is an archive a zip icon will be returned
+# else a temporary redirect to a lock icon
+
+# Note: the pdf is created by the loader (or ocr)
+#
+#
+# 
+
 # External tools used
 my $pdftocairo = "pdftocairo";
 my $convert    = "convert";
@@ -11,23 +25,25 @@ my $convert    = "convert";
 
 #
 # Will be called by cacher
+# And checks if cached item is older the original
 sub mk_ico {
-	my ( $self,$item, $ignore, $mtime,$fromtype ) = @_;
+	my ( $self,$item, $ignore, $mtime,$ra ) = @_;
+	$fromtype = $ra->{Mime};
 	my $ntime = ( stat($item) )[9]; # Time of file
 	$mtime = 0 unless $mtime;
 	my $pg  = undef;
 	my $rot = undef;
 
 	print STDERR "mk_ico... $fromtype $item\n" if ( $debug > 2 );
+
 	return undef if ( $mtime && -r $item && $ntime < $mtime );
 	
 	my ( $typ, $out );
-	if ( $fromtype eq "application/pdf" ) {
-		( $typ, $out ) = pdf_icon( $item, $pg, $rot );
-	} elsif ( $fromtype eq "application/zip" ) {
+	if ( $fromtype eq "application/zip" ) {
 		( $typ, $out ) = ("image/png", slurp("../public/icon/zip.png"));
+
 	} else {
-		( $typ, $out ) = img_icon( $item, $pg, $rot );
+		( $typ, $out ) = pdf_icon( $ra->{pdf}, $pg, $rot );
 	}
 	return undef unless $out;
 	print STDERR "     ...new cache\n" if ( $debug > 1 );
@@ -94,37 +110,6 @@ sub pdf_thumb {
     return ( "image/png", $png );
 }
 
-sub img_icon {
-    my $fn   = shift;
-    my $pn   = ( shift || 1 ) - 1;
-    my $rot  = shift;
-
-    my ( $fh, $tmp_doc );
-    if ( $fn =~ /\.pdf$/ ) {
-	    ( $fh, $tmp_doc ) = tempfile(
-		    'onepageXXXXXXX',
-		    SUFFIX => ".pdf",
-		    UNLINK => 1,
-		    DIR    => $temp_dir
-		);
-	    $pn = 0 unless defined $pn;
-	    $pn++;
-	    my @cmd1 = ( "pdfseparate","-f",$pn,"-l",$pn,$fn,$tmp_doc );
-	    print STDERR "X:" . join( " ", @cmd1 ) . "\n" if $debug>2;
-	    qexec(@cmd1);
-	    $fn = $tmp_doc;
-    }
-    my @cmd = ( $convert, $fn, qw{-trim -normalize -define png:exclude-chunk=iCCP,zCCP -thumbnail}, $Documentix::config->{icon_size}, "png:-" );
-    print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug>2;
-    my $png = qexec(@cmd);
-    return ( "image/png", $png ) if length($png);
-
-    # Error case - return lock
-    $png=slurp("../public/icon/Keys-icon.png"); 
-    # Return failure icon
-    return undef unless length($png);
-    return ( "image/png", $png );
-}
 sub pdf_icon {
     my $fn   = shift;
     my $pn   = ( shift || 1 ) - 1;
