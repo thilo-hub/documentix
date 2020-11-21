@@ -1,0 +1,102 @@
+Overview of source tree
+
+ disclaimer -- it's still in very unstable state as i'm moving things around
+
+
+script/documentix
+	main executable using the Mojolicious framwork
+	run "help" for infos
+	This script is started as "daemon" will fork 
+		popfile - for classification
+		minion  - for background processes
+
+    Directories:
+	lib/Documentix
+	lib/Documentix/Controller
+	lib/Documentix/Task
+	lib/doclib
+	lib/popfile
+	lib/dates
+	public
+
+    Files (perl):
+
+	lib/Documentix.pm
+	    - Mojolicious web router (All api's are handled here)
+	lib/Documentix/Controller/Docs.pm
+	    - Mojolicios main controler for wweb requests
+	lib/Documentix/db.pm
+	    - basic db handles are done here
+	lib/Documentix/dbaccess.pm
+	    - resolve queries for files and similar
+	lib/Documentix/Magic.pm
+	    - Classify a file unsing file magic
+	lib/Documentix/Classifier.pm
+	    - Classify a file using content (and popfile)
+	lib/Documentix/scantree.pm
+	    - Load directroy tree function
+	lib/Documentix/ld_r.pm
+	    - Main entry point for searching from API
+	lib/Documentix/search.pm
+	    - utilities for searchin
+	lib/Documentix/Cache.pm
+	    - manage icon (or other) files in a separate data-base  for cached access.
+	      It is (maybe) not wanted to store every thing in the /uploads folder
+	lib/Documentix/Converter.pm
+	    - get ico/raw or PDF (OCRed) back to user
+	lib/popfile
+	    - popfile source tree
+
+	lib/Documentix/Task/Processor.pm
+		* Minion tasks
+		    ocr
+			- Do the OCR processing using tesseract 
+		    loader
+			- Load new files into DB and eventually create PDF representation
+		    refreshDirectories
+			- Load directory tree in background
+		    refreshIndexes
+			- search results are cached. If new documents are loaded these need to be updated in the background
+	lib/dates/datematch.pm
+	    - handles the database interface for dates in documents
+	lib/doclib/datelib.pm
+	    - Scan ascii text for various date's listed
+	lib/doclib/pdfidx.pm
+	    - main db-manager for incomming new files. This (until now0 will load the file into the database)
+
+
+	Dockerfile
+	    -
+	build_local.sh
+	    - Some things need to be compiled (sqlite, snowball tokenizer
+	      Since this is "just" a perl module, a simple shell script to load them from the internet and compile them.
+	      - you probably only need todo this once
+	db_schema-porter.sql
+	db_schema-snowball.sql
+	documentix.conf.tmpl
+	popfile_default.cfg
+	public
+	templates
+	tests
+
+    Files (html):
+	public/
+		- index.html...
+	public/js
+		- documentix sources
+	public/js/3rd
+		- tooltip & filedrop
+	public/lib
+		- jquery...
+
+	public/web
+		- pdf viewer
+	public/widgEditor
+		- html editor 
+
+	public/fonts
+	public/icon
+	public/webfonts
+		-
+
+
