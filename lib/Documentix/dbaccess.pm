@@ -3,7 +3,7 @@ use Carp;
 use XMLRPC::Lite;
 use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 use File::Basename;
-use doclib::cache;
+use Documentix::Cache;
 use Documentix::Converter;
 use Mojo::Asset;
 use Documentix::Magic qw{magic};
@@ -27,7 +27,7 @@ sub new {
     print STDERR "New pdf conn: $dh\n" if $debug > 0;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
 
-    $cache = cache->new();
+    $cache = Documentix::Cache->new();;
     my $q = "select cast(file as blob) file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
     $ph=$dh->prepare_cached($q);
     $lcl=$Documentix::config->{local_storage};

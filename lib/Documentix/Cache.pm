@@ -1,4 +1,4 @@
-package cache;
+package Documentix::Cache;
 
 use DBI qw(:sql_types);
 use Documentix::db;
@@ -22,7 +22,7 @@ sub setup_db {
 
     $dh->sqlite_busy_timeout(10000);
     my @slist = (
-q{create table if not exists cache (ref primary key unique,date,type text,data blob)},
+	q{create table if not exists cache (ref primary key unique,date,type text,data blob)},
         q{pragma journal_mode=wal},
     );
     foreach (@slist) {
