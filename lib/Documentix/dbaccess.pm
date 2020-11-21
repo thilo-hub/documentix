@@ -11,6 +11,7 @@ use Documentix::ld_r;
 use Date::Parse;
 use Cwd 'abs_path';
 use Digest::MD5 qw(md5 md5_hex md5_base64);
+use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 
 
 my $debug = 2;
@@ -264,10 +265,7 @@ sub get_store {
     return $wdir."/";
 }
 
-
-
-1;
-
+#
 # Return zip archive having the taged files in it
 # deleted files are only exported if the tag is "deleted"
 #

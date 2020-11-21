@@ -118,5 +118,12 @@ sub refresh {
 	Documentix::Task::Processor::schedule_refresh($top);
        return $c->render(text => 'Refresh filesystem started '.$top, status => 200);
 }
+sub exportfiles {
+	my $c = shift;
+	my $tag = $c->param("tag");
+	my $r = $dba->export_files($tag);
+	return $c->reply->asset($r);
+}
+
 
 1;
