@@ -110,7 +110,7 @@
 			<div class="itemtip">{{html:tip}}</div>
 			<div class="descr">
 			  <div class="doclink" onclick="event.stopPropagation()">
-			    <a tabindex=-1 class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}</a> 
+			    <a tabindex=-1 class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}{{if !doct.match("pdf")}}.{{:doct}}{{/if}}</a> 
 			  </div>
 			  <a tabindex=-1 class="dtags">
 			    <p class="tagfield" >
