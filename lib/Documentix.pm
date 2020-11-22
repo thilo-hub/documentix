@@ -31,7 +31,8 @@ $self->hook(before_dispatch => sub {
 
   #my $worker = Minion::Command::minion::worker->new;
   #$worker->run;
-  Documentix::Task::Processor::schedule_maintenance();
+  # Not good on fresh db...
+  #Documentix::Task::Processor::schedule_maintenance();
 
   # Router
   my $r = $self->routes;
