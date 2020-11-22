@@ -1,0 +1,8 @@
+#!/bin/sh
+
+ROOT="$(dirname $0)/.."
+
+find $ROOT/Documentation -type f | while read F; do
+perl  $ROOT/script/documentix get -M POST  -H "X-File-Name: documentix/$(basename "$F")" /upload <$F
+done
+
