@@ -106,7 +106,8 @@ sub get_icon{
 	return undef unless $pdf;
 	$ra->{pdf}=$pdf;
 	my ( $m, $res ) = $cache->get_cache( $ra->{file}, "$ra->{hash}-ico", \&Converter::mk_ico,$self,$ra );
-	return Mojo::Asset::Memory->new()->add_chunk($res);
+	return Mojo::Asset::Memory->new()->add_chunk($res) if (length($res));
+	return undef;
  }
 
  # Install file basis in DB and schedule indexing of it
@@ -177,9 +178,9 @@ sub get_icon{
 	 return "Loading",{ md5 => $dgst,
 		  doc => $file,
 		  doct=> $ext,
-		  tg  => 'processing',
+		  tg  => 'processing='.$id,
 		  pg  => '?',
-		  tip => 'ProCessIng='. $id,
+		  tip => 'ProCessIng',
 		  dt  => ld_r::pr_time(time()),
 		  sz  => conv_size($asset->size),
 	  };

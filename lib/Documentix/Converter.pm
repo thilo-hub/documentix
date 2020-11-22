@@ -92,6 +92,7 @@ sub do_convert_icon {
 
     print STDERR "X:" . join( " ", @cmd ) . "\n" if $debug > 1;
     my $png = qexec(@cmd);
+    print STDERR "Return: ".length($png)."\n";
     return $png;
 }
 
@@ -104,6 +105,7 @@ sub pdf_icon {
     $fn .= ".pdf" if ( -f $fn . ".pdf" );
     my $png = do_convert_icon( $fn, $pn );
     return ( "image/png", $png ) if length($png);
+    return undef unless length($png);
 
     # Error case - return lock
     $png=slurp("../public/icon/Keys-icon.png"); 
