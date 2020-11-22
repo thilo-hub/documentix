@@ -18,14 +18,16 @@ RUN rm -f  /usr/share/javascript/popper.js
 #RUN cp /usr/share/nodejs/popper.js/dist/umd/popper.js /usr/share/javascript/popper.js
 WORKDIR /build
 RUN apt-get install -y git make gcc wget
+ADD https://raw.githubusercontent.com/thilo-hub/documentix/mojofw/build_local.sh build_local.sh
+RUN  sh build_local.sh /
+RUN rm -r /build
 
-ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/mojofw version.json
+ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/mojofw /version.json
+
+WORKDIR /documentix
 #ADD . /documentix
 RUN git clone --depth 1 -b mojofw https://github.com/thilo-hub/documentix /documentix
-WORKDIR /documentix
-RUN  sh build_local.sh /
 #RUN apt-get remove  -y git make gcc wget
-RUN rm -r /build
 LABEL version="0.93"
 LABEL description="documentix provides a document management system\
  connect the port 80 of this docker to any port you want \
