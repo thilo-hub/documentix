@@ -1,0 +1,170 @@
+Architecture overview
+Future ideas
+
+* Architecture overview
+
+    The basic concept of documentix is, to provide a google or spotlight like functionality on in an opensource package.
+
+    Main requirements:
+	    - fast search in all! documents
+	    - fast retrieval of documents
+	    - consistent access to all files using pdf
+	    - automatically ocr documents if needed to enable searching
+	    - web browerse as the only interface
+	    - automatically classify documents based on content
+	    - easy sharing of documents without compromising all documents
+
+    Current features:
+	    build as a docker image
+	    runs on native bsd/linux & macos
+	    uses tesseract as the OCR engine
+	    uses popfile for classification
+	    uses sqlite fts5 fulltext search engine with snowball as a stemmer (good for german!)
+	    uses Mojolicious/Minion framework as the web server
+	    uses md5 as the file-id, (you know the file's md5 then you can see the file)
+	    uses unoconv/openoffice to read some file formats
+	    uses imagemagic to convert images
+	    imports:
+		    pdf,jpeg,zip,tar,gzip,docx,xlsx,ascii, (maybe more)
+		    simple rest interface (plugins available for ipados, canon scanner, email attachments)
+	    imports via drag&drop and fileupload
+	    uses Mozillas PDFjs for viewing 
+	    uses jquery and other libraries 
+	    
+	    
+    Current structure:
+	    
+	    new files are send from the html interface into the backend.
+	    the files are stored under a local storage directory (Docs/uploads)
+	    the first two chars of the md5 and the md5 define the directory path.
+	    All intermedite files are stored here as well (ocr, zip content,..)
+	    A minion job loads the metadata of this file into the database.
+	    If the file has not enough words using pdftotext, an OCR jobs is queued.
+	    The OCR job, will first separate the input into single-page files.
+	    each file will be analysed for QR code and similar. 
+	    Then tesseract will create single page pdf documents which are joined afterwards.
+	    the extracted text will be analyzed for strings that look like date information.
+	    The extracted text will then be analysed by popfile and classified.
+	    All knowlede of a file is captured in a table called metadata.
+	    Text will also be made available to a FTS5 table using a snowball tokenizer.
+
+	    Queries on the web interface will be handed into the search engine which uses date and fts5 features to find the document id's & snippets.
+	    The web interface will present the results and will be requesting the icons and full text from the server.
+	    There are three supported types:
+	    raw:  as the file was uploaded
+	    pdf:  a pdf file. If there has been an OCR run on the raw file, this pdf will also contain the OCRed text.
+	    ico:  an icon version of the first page.
+
+	    file import's will either auto-classify files or if a directory name is provided will inherit the tags from the directory names
+	    manual classification (via web or during import) will be forwarded to the popfile instance.
+	    These data will be used for automatic classification later on.
+
+    Basic db structure:
+    Tables:
+	    # Information about files 
+	    file:
+		file: path to original file
+		md5:  files md5
+
+	    hash:
+		idx: main key for all tables for this file
+		md5: this files fingerprint
+		refcnt: how many files in the file table referening this entry
+
+	    metadata:
+		idx:  file index
+		value: this items value as defined by "tag"
+		tag:  this data item type 
+		    Class	: manually set classifications fro the file
+		    Content : Short summary of file content
+		    Docname : Filename (w/o directoy)
+		    Mime    : file format type
+		    PopFile : - obsolete - handle to popfiles classification for this file
+		    Text	: full utf-8 text content of file  (beware the FTS5 table refers to this item)
+		    hash	: md5 fingerprint of file
+		    mtime	: known modification time
+		    pdfinfo : pdfinfo's content for this file (
+		    size	: 
+
+	    text:
+		    docid:   the documents idx
+		    text:	the text
+	    tagname:
+		    tagid:	 
+		    tagname:
+	    tags:
+		    idx: document idx
+		    tagid: link to tagname
+
+	    # Search queries are captured in these tables
+	    cache_lst:
+		    qidx: query index
+		    query: searched text
+		    nresults: number of results in cache_q table
+		    last_used: timestamp of query run
+
+	    cache_q:
+		    qidx: query index 
+		    idx: document index
+		    snippet text:   matching snippet
+		    
+
+* Future ideas
+
+    Miscelanious notes/ideas for tagging enhancements
+    These are potential items:
+
+    Tagging:
+
+    Proposed WEB interface:
+
+    Click on any tag opens pop-up tag-editor - done
+
+	cross in editor deletes tag - done
+	typing creates tag - done
+	,  stores tag and starts new entry
+	return stores tag and closes editor - done
+
+	while typing, auto-complete shows available tags
+	tab selects highlighted tag
+	arrow up/down selects different suggestion
+
+	esc aborts editing - done
+
+
+
+    tags MUST start with a lowercase character and may only be followed by numbers or lower case characters or space
+    Tags are stored in db using Camel-case ( capitalized chars are replaced by space in viewer )
+    automatically generated tags start with a 4 digit number (liklyhood)  followed by a colon and the tagname (camelcase)
+    tag "unclassified" is reserved and will not be transmitted
+
+    API's:
+	query on first page w/o serach strings returns all known tags
+	query on /status?md5=.... return  json { ... tg: "tag{ tag}*"}
+	query on /status?md5=....  return json { ... tg: "tag{ tag}*"}
+	query on /status?md5=.... &{set|add|rm}tag="..."  manipulates tags and return json { ... tg: "tag{ tag}*"}
+
+
+
+    Tagging feature "folder like viewer":
+
+    When a user double clicks on the tag-list the "tageditor" opens.
+
+    It is a window above the result windows.
+    It contains folder-icons of the tags that are currently loaded + a "special-tag with a + symbol in it"
+
+    Documents can be selected using click + shift-click
+
+    selected tags can be moved over the folders. 
+    Dropping them on a named folder, will add the tag to the document (and remove the documents from the list.
+    Dropping them on the "+" folder will open a text-box for the tag-label, pressing enter will assign and hide the files.
+    Double click on the folder-icon will change the view to show on the bottom all items that are tagged with the label.
+    An extra folder icon with a cross in it and the name off the view is added.
+    Dropping files on this folder removes the tags from the files (and removes them from the view).
+    Double click on it, will go back into the "initial view".
+
+
+    In the "normal" view, clicking on the tag-list of an item will open the "little" editor. clicking on the cross 
+    of a label remvoves it, typeing text will add a new tag (return closes the editor, tab, saves the tag and allows 
+    to start a new tag, escap aborts the current tagname.
+
