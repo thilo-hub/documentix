@@ -1,4 +1,9 @@
+Content:
+	Docker notes
+
+
 Docker is a container solution to encapsulate and deliver complex software packages
+
 
 Running documentix (after installing docker) is as simple as:
 
