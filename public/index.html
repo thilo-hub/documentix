@@ -105,7 +105,7 @@
 		      <div class="rcell" >
 			  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" ontouchcancel="UnTip()" onmouseover="itemTip(event)">
 
-			    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}.ico" />
+			    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}{{if tip == "ProCessIng"}}.tmp{{/if}}.ico" />
 			  </a>
 			<div class="itemtip">{{html:tip}}</div>
 			<div class="descr">
