@@ -7,6 +7,7 @@ use Data::Dumper;
 use Documentix::dbaccess;;
 use Mojo::File qw{curfile path };
 use Mojo::Asset::File;
+use Encode qw{encode decode};
 
 use doclib::pdfidx;
 
@@ -56,7 +57,7 @@ sub scantree {
     };
     my $add_file = sub
     {
-	my $f = shift;
+	my $f = decode("UTF-8",shift);
 	    my $type = magic($f);
 	    print STDERR "File added $f ->  >$type<\n";
 	    if ( $mime_supported{$type}) {

@@ -10,7 +10,7 @@ CREATE TABLE cache_q ( qidx integer, idx integer, snippet text, unique(qidx,idx)
 CREATE TABLE config (var primary key unique,value);
 CREATE TABLE tagname (tagid integer primary key autoincrement, tagname text unique);
 CREATE TABLE IF NOT EXISTS "dates"(date DATE, mtext TEXT, idx INTEGER,unique(date,idx));
-CREATE TABLE file ( md5 text ,file text unique, host text);
+CREATE TABLE file ( md5 text ,file blob unique, host text);
 CREATE TABLE hash ( idx integer primary key autoincrement, md5 text unique, refcnt integer default 0);
 CREATE INDEX mtime_i on mtime(mtime);
 CREATE INDEX tagsi on tags(tagid);

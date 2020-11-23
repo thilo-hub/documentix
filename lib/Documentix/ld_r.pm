@@ -8,7 +8,7 @@ use POSIX;
 use JSON;
 use Sys::Hostname;
 use Date::Parse;
-
+use Encode qw{encode decode};
 use Documentix::db;;
 use Documentix::search;
 
@@ -170,7 +170,7 @@ sub ldres {
 	$f =~ s|^.*/||;
 	$f =~ s|\.([^\.]*)$||;
 	$_->{doct} = $1;
-	$_->{doc}  = $f;
+	$_->{doc}  = decode("UTF-8",$f);
 	$_->{doc}  =~ s/%20/ /g;
 
 	# $_->{tip}  => $tip,
