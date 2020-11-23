@@ -280,7 +280,7 @@ sub export_files {
 			select idx,"ExportDocs/"||group_concat(tagname,"/") dir  from (
 				select idx from tags where 
 					tagid = (select tagid from tagname where tagname = ?1 ) 
-				) natural join tags natural join tagname where tagname != ?1
+				) natural join tags natural join tagname
 			group by idx order by tagname
 		) natural join hash natural join file
 	    });
