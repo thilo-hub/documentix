@@ -81,7 +81,7 @@ sub find_pdf
 	
 	#croak "Wrong file-type: $ra->{Mime}" unless $ra->{Mime} =~ m|application/pdf|;
 
-	my ($name,$path) = fileparse($ra->{file});
+	my ($name,$path) = fileparse($ra->{file},qw{.pdf .ocr.pdf});
 
 	my $lcl=get_store($ra->{hash},0);
 	# search path
