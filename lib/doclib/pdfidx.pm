@@ -817,16 +817,17 @@ sub del_meta {
 }
 sub ins_e {
     my ( $self, $idx, $t, $c, $bin ) = @_;
-    $bin = SQL_BLOB if defined $bin;
-    $self->{"new_e"} = $self->{"dh"}->prepare(
+    $bin = SQL_BLOB if !defined $bin;
+    my $ins_sql = $self->{dh}->prepare_cached(
         "insert or replace into metadata (idx,tag,value)
 			 values (?,?,?)"
-    ) unless $self->{"new_e"};
-    $self->{"new_e"}->bind_param( 1, $idx, SQL_INTEGER );
-    $self->{"new_e"}->bind_param( 2, $t );
-    $self->{"new_e"}->bind_param( 3, $c,   $bin );
-    die "DBerror :$? $idx:$t:$c: " . $self->{"new_e"}->errstr
-      unless $self->{"new_e"}->execute;
+	);
+    
+    $ins_sql->bind_param( 1, $idx, SQL_INTEGER );
+    $ins_sql->bind_param( 2, $t );
+    $ins_sql->bind_param( 3, $c,   $bin );
+    die "DBerror :$? $idx:$t:$c: " . $ins_sql->errstr
+      unless $ins_sql->execute;
 print STDERR "ins_e: $idx: $t (".length($c).")\n" if $debug > 1;
 }
 
