@@ -299,17 +299,9 @@ sub export_files {
     }
     $DB::single=1;
     my $asset = Mojo::Asset::File->new();
-    my $s;
-    use IO::Scalar;
-    my $h = new IO::Scalar \$s;
-    #$file->handle($h);
-    #my $h=$file->handle;
-    unless ( $zip->writeToFileHandle($h,0) == AZ_OK ) {
+    unless ( $zip->writeToFileHandle($asset->handle,1) == AZ_OK ) {
              die "whoops!";
          }
-	 #$zip ->  writeCentralDirectory( $h);
-    $asset->add_chunk($s);
-	    
     return $asset;
     }
 }
