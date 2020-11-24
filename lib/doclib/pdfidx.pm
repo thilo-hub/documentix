@@ -11,6 +11,7 @@ use Cwd 'abs_path';
 use Data::Dumper;
 use DBI qw(:sql_types);
 use doclib::datelib;
+use Encode qw{encode decode};
 # $File::Temp::KEEP_ALL = 1;
 my $debug=5;
 
@@ -1048,7 +1049,7 @@ sub do_pdftotext {
 
     my $txt = qexec( @cmd );
     unlink $tmp;
-    return $txt;
+    return encode('UTF-8',$txt);
 }
 
 sub do_calibrepdf {

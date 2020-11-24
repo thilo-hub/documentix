@@ -1,5 +1,6 @@
 package datelib;
 use dates::datematch;
+use Encode qw{encode decode};
 
 #Add missing databas information
 
@@ -25,7 +26,7 @@ sub fixup_dates
 	$get_t->execute("Text");
 	while ( my @r = $get_t->fetchrow_array ) {
 	    print ">> $r[1]\n";
-	    my $t = $r[0] || "";
+	    my $t = encode('UTF-8', $r[0] )|| "";
 	    $idx = $r[1];
 	    my @pot = grep( /\D(19|20)\d\d\D/, split( /\n/, $t ) );
 	    my %log;
