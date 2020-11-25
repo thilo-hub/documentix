@@ -160,7 +160,6 @@ print STDERR "New File: $name\n";
 
 		 return "Known", @$rv ;
 	 }
-	 $name =~ s/%20/ /g; # 
 	 $name =~ m|([^/]*)(\.[^\.]*)$|;
 	 my $file = $1;
 	 my $ext  = $2;

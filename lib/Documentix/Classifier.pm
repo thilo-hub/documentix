@@ -79,6 +79,7 @@ sub get_popfile_r {
         UNLINK => 1,
         DIR    => $temp_dir
     );
+    binmode( $fh, ":utf8" );
 
     my $f = $fn;
     $f =~ s/^.*\///;

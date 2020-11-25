@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-
+binmode STDERR, ':utf8';
 print STDERR "> $ARGV[0]\n";
 use strict;
 use warnings;
