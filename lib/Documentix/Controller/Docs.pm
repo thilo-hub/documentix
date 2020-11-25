@@ -25,7 +25,6 @@ my $ld_r=ld_r->new();
 # This action will render a template
 sub senddoc {
    my $c   = shift;
-$DB::single=1;
    my $type = $c->stash('type');
    my $hash = $c->stash('hash');
    my $doc = $c->stash('doc');
@@ -45,7 +44,6 @@ sub tags {
 	my $op=$p->{op};
 	my $id=$p->{md5};
 	my $tag=$p->{tag};
-$DB::single=1;
 	my $r= pdf_class_md5($id, ($op eq "rem" )? "-$tag" : "$tag");
 	$c->render(json => $r);
 
@@ -55,7 +53,6 @@ $DB::single=1;
 # Multipart upload handler
 sub upload {
    my $c = shift;
-$DB::single=1;
    # Check file size
    return $c->render(text => 'File is too big.', status => 200)
      if $c->req->is_limit_exceeded;
@@ -91,7 +88,6 @@ sub search {
 
 sub status {
  	my $c = shift;
-	$DB::single=1;
 	my $rv=$dba->item( $c->param("md5") );
 use Data::Dumper; print STDERR Dumper($rv);
         $c->res->headers->cache_control("no-cache")
@@ -113,7 +109,6 @@ sub reocr {
 
 sub refresh {
 	my $c = shift;
-	$DB::single=1;
 	my $top = $c->param("dir")  || Mojo::File->new($Documentix::config->{root_dir})->to_abs;
 	Documentix::Task::Processor::schedule_refresh($top);
        return $c->render(text => 'Refresh filesystem started '.$top, status => 200);

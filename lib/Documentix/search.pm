@@ -65,7 +65,6 @@ sub search {
 		}
 	    }
 
-$DB::single = 1;
 	    # Do search
 	    print STDERR "S:$cached_search\n";
 	    print STDERR "A:" . join( ":", @sargs ) . ":\n";

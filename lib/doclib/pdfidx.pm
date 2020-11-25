@@ -548,6 +548,7 @@ sub fail_file
 	my ($self)=shift;
 	my ($hint,$meta)=@_;
 	my $dh=$self->{dh};
+	print STDERR "Failed file: $hint ($meta->{hash})\n";
 	my ($idx) =
 	$dh->selectrow_array( "select idx from hash where md5=?", undef, $meta->{hash} );
 	pdf_class_file(undef,undef,$meta->{hash},"failed");
@@ -569,7 +570,6 @@ sub load_file
 	my ($idx) =
 	  $dh->selectrow_array( "select idx from hash where md5=?", undef, $meta->{hash} );
 	return ($idx,undef) unless  $idx; #Error
-
 	$meta->{"Docname"} = basename($fn);
 	$meta->{"Content"} = "ProCcesIng";
 	my @fstat=stat($fn);
@@ -713,7 +713,6 @@ sub xtp_any {
 		push @archive,$1;
 	}
 	my @md5_archive=();
-	$DB::single=1;
 	foreach ( @archive ) {
 		my $hash = file_md5_hex($_);
 		my $t0=$_;
@@ -766,7 +765,6 @@ sub xtp_any {
 	# unlink $i if $pmeta->{_tempremove}; delete $pmeta->{_tempremove};
 
 	my @md5_archive=();
-	$DB::single=1;
 	foreach ( @archive ) {
 		my $hash = file_md5_hex($_);
 		my $t0=$_;
