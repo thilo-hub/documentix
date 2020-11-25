@@ -34,7 +34,6 @@ sub scantree {
     print STDERR ">>>>> $top\n";
     my $dir = getcwd;
 
-    my $as=Mojo::Asset::File->new();
     my $pdfidx  = pdfidx->new(0,$Documentix::config);
     my $dba = dbaccess->new();
     my $check = $pdfidx->{dh}->prepare_cached(q{select md5,file from file where file not like ? and file like ?});
@@ -63,7 +62,7 @@ sub scantree {
 	    if ( $mime_supported{$type}) {
 		# Turn back into relative to root-dir file
 		$f =~ s|^$dir/*|$Documentix::config{root_dir}|;
-		$dba->load_file("??APP??",$as,$f);
+		$dba->load_asset("??APP??",undef,$f);
 		return;
 	    }
 	    #die "Type: $type";

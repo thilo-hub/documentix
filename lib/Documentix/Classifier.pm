@@ -126,6 +126,9 @@ sub pdf_class_file {
     my $dbop    = "insert or ignore into tags (idx,tagid)
 		       select idx,tagid from hash,tagname where md5=? and tagname =?";
     my $db_op = $dh->prepare_cached( $dbop );
+    # dont try to classify too small documents
+    my $toosmall= length($$rtxt) < 100 ;
+    $class = "empty" if ( !$class && $toosmall);
 
     if ( $class && $class =~ s/^-// ) {
 	# remove tags and message from bucket
@@ -135,6 +138,7 @@ sub pdf_class_file {
         $db_op = $dh->prepare_cached( $dbop );
 	
 	my $b = to_bucketname($class);
+	$b = undef if $toosmall;
 	$rv = pop_call( "remove_message_from_bucket", $b, $tmp_doc ) if $b;
 
 	$dh->do( qq{
@@ -143,6 +147,8 @@ sub pdf_class_file {
     }
     elsif ($class) {
         # Set&create  specific class and add tag
+	my $b = to_bucketname($class);
+	$b = undef if $toosmall;
 
         my $dbop = "insert or ignore into tagname (tagname) values(?)";
 	$rv = pop_call( "create_bucket", $b ) if $b;

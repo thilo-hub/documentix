@@ -36,7 +36,10 @@ sub _ocr {
 #############################
 sub schedule_loader
 {
-	$minion->enqueue(loader=>[@_]=>{priority=>2});
+	my $id = $minion->enqueue(loader=>[@_]=>{priority=>2});
+        $minion->result_p($id);
+	print STDERR "YYYYYYYYYYYYYYYYYYYY OK\n";
+
 }
 sub _loader {
   my ($job, $dgst,$fn,$tags) = @_;
@@ -47,21 +50,15 @@ sub _loader {
   say 'Process';
   # sleep 1;
   my $txt;
-{
-                   my $e;
-                   {
-                     #local $@; # protect existing $@
-                     eval { 
+  eval { 
 $DB::single=1;
-				  $txt = $pdfidx->load_file(  "application/pdf",{file=>$fn,hash=>$dgst,_taglist=>$tags});
-			};
-		     $pdfidx->fail_file(Dumper($job),{hash=>$dgst});
-		     die $@ if $@;
-                     # $@ =~ /failed/ and die $@; # Perl 5.14 and higher only
-                     #$@ =~ /failed/ and $e = $@;
-                   }
-                   #die $e if defined $e
-                }
+	$txt = $pdfidx->load_file(  "application/pdf",{file=>$fn,hash=>$dgst,_taglist=>$tags});
+  };
+  if ( $@ ) {
+	# $Documentix::db::dh->disconnect();
+	$pdfidx->fail_file($job->id,{hash=>$dgst});
+	die $@;
+  }
   say 'done';
   $results[5] = {summary=>$txt,url=>"/docs/pdf/$dgst/result.pdf"};
   $job->finish(\@results);

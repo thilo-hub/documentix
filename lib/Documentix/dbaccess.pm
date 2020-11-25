@@ -130,28 +130,42 @@ sub get_icon{
 
 
  
- sub load_asset {
+
+# passed in name is used for tagging
+# content  is in asset
+sub load_asset {
 	my ($self,$app,$asset,$name) = @_;
-   	 $name = "SomeFile" unless $name;
-print STDERR "New File: $name\n";
-	$name=decode("UTF-8",$name);
+
+        $name = "Unknown" unless $name;
 	my $root_dir = abs_path($Documentix::config->{root_dir});
-	my $dh = $self->{"dh"};
-         #chec if local file  and no asset
-         if ( $asset->size == 0 && ($name =~ /^$Documentix::config->{root_dir}/) && -r $name ) {
+	unless ( $asset ) {
+		# create an asset 
+		# resolve potential dangers
+		$name = abs_path($name);
+		# name 
+
+		return unless -r $name; # give up
 		$asset = Mojo::Asset::File->new(path => $name);
-		$name =~ s|^$Documentix::config->{root_dir}/*||;
-		print STDERR "Local file: $name\n";
-	 }
+
+		return unless $name =~ s|^$root_dir/*||;  # Only inside OK
+	}
+	$name=decode("UTF-8",$name);
+	my $dh = $self->{"dh"};
+
+
+	print STDERR "New File: $name\n";
+
 	 my $md5 = Digest::MD5->new;
 	 $dgst = $md5->add($asset->slurp)->hexdigest;
 
 	 # Check db if content exist
 	 my $add_hash = $dh->prepare_cached(q{insert or ignore into hash (md5) values(?)});
 	 my $rv = $add_hash->execute($dgst);
+
+	 #TODO: shall we mandate CamelCase for tasg ?
 	 my @taglist=split("/",lc($name));
 	 $name=pop @taglist;  # remove basename
-   $DB::single = 1;
+$DB::single = 1;
 	 if ( $rv == 0E0 ) {
 		 # return know info
 		 my $rv=item($self,$dgst);
@@ -163,9 +177,9 @@ print STDERR "New File: $name\n";
 	 $name =~ m|([^/]*)(\.[^\.]*)$|;
 	 my $file = $1;
 	 my $ext  = $2;
-	 $dgst =~ /^(..)/;
 
 	 # Locate storage place
+	 $dgst =~ /^(..)/;
 	 my $ob=$Documentix::config->{local_storage}."/$1";
 	 mkdir $ob unless -d $ob;
 	 $ob .= "/$dgst";
