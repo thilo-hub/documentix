@@ -54,7 +54,7 @@ sub pop_session {
 sub to_bucketname {
         my $bn = lc(shift);
         $bn =~ s/[^a-z0-9\-_]/_/g;
-	$bn = "ignore" if $bn eq "deleted";
+	return undef if $bn eq "deleted" || $bn eq "~ailed";
         return $bn;
 }
 
@@ -132,8 +132,9 @@ sub pdf_class_file {
           "delete from tags where idx=(select idx from hash where md5=?) and
 				 tagid = (select tagid from tagname where tagname = ?)";
         $db_op = $dh->prepare_cached( $dbop );
-	$rv = pop_call( "remove_message_from_bucket", $class, $tmp_doc )
-		unless $class eq "unclassified";
+	
+	my $b = to_bucketname($class);
+	$rv = pop_call( "remove_message_from_bucket", $b, $tmp_doc ) if $b;
 
 	$dh->do( qq{
 		update metadata set value=trim(replace('/'||value||'/','/'||?2||'/','/'),'/') where idx=(select idx from hash where md5=?1)
@@ -143,9 +144,8 @@ sub pdf_class_file {
         # Set&create  specific class and add tag
 
         my $dbop = "insert or ignore into tagname (tagname) values(?)";
-	my $b = to_bucketname($class);
-	$rv = pop_call( "create_bucket", $b );
-	$rv = pop_call( "add_message_to_bucket", $b, $tmp_doc );
+	$rv = pop_call( "create_bucket", $b ) if $b;
+	$rv = pop_call( "add_message_to_bucket", $b, $tmp_doc ) if $b;
 	$dh->prepare_cached( $dbop )->execute($class);
 	$rv = $class if $rv;
 	$dh->do( qq{
@@ -251,8 +251,8 @@ q{select tagname,group_concat(substr(value,1,10000)) txt  from tagname natural j
 
 sub set_class_content {
     my ( $tg, $rtxt ) = @_;
-    $tg = to_bucketname($tg);
-    $rv = pop_call( 'create_bucket', $tg );
+    $b = to_bucketname($tg);
+    $rv = pop_call( 'create_bucket', $b ) if $b;
     print STDERR "TG: $tg -> $rv\n" if $debug > 1;
     my ( $fh, $tmp_doc ) = tempfile(
         'popfileinXXXXXXX',
@@ -264,7 +264,7 @@ sub set_class_content {
     close($fh);
     print STDERR " Add: $tg ($ln) -> " if $debug > 1;
     $rv =
-      pop_call( 'add_message_to_bucket', $tg, $tmp_doc );
+      pop_call( 'add_message_to_bucket', $b, $tmp_doc ) if $b;
     my $ln = length($$rtxt);
     print STDERR "$rv\n" if $debug > 1;
     unlink($tmp_doc);

@@ -12,6 +12,8 @@ use Date::Parse;
 use Cwd 'abs_path';
 use Digest::MD5 qw(md5 md5_hex md5_base64);
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
+use Encode qw{encode decode};
+
 
 
 my $debug = 2;
@@ -128,12 +130,14 @@ sub get_icon{
 
 
  
- sub load_file {
+ sub load_asset {
 	my ($self,$app,$asset,$name) = @_;
+   	 $name = "SomeFile" unless $name;
+print STDERR "New File: $name\n";
+	$name=decode("UTF-8",$name);
 	my $root_dir = abs_path($Documentix::config->{root_dir});
 	my $dh = $self->{"dh"};
-   	 $name = "SomeFile" unless $name;
-         #chec if local file 
+         #chec if local file  and no asset
          if ( $asset->size == 0 && ($name =~ /^$Documentix::config->{root_dir}/) && -r $name ) {
 		$asset = Mojo::Asset::File->new(path => $name);
 		$name =~ s|^$Documentix::config->{root_dir}/*||;
@@ -239,6 +243,7 @@ sub item
 		 $hash_ref->{tg} = "" unless defined $hash_ref->{tg};
 		 $hash_ref->{doct} = $2;
 		 $hash_ref->{doc} =~ s|%20| |g;
+		 $hash_ref->{doc} = encode('UTF-8',$hash_ref->{doc});
 
 		 $hash_ref->{dt} = ld_r::pr_time(str2time($1)) if  $hash_ref->{pdfinfo} =~ m|<td>ModDate</td><td>\s+(.*?)</td>|;
 		 $hash_ref->{pg} =$1 if  $hash_ref->{pdfinfo} =~ m|<td>Pages</td><td>\s+(.*?)</td>|;

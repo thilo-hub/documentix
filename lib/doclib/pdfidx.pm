@@ -543,6 +543,18 @@ sub join_pdf
 use Documentix::Magic qw{magic};
 {
 
+sub fail_file
+{
+	my ($self)=shift;
+	my ($hint,$meta)=@_;
+	my $dh=$self->{dh};
+	my ($idx) =
+	$dh->selectrow_array( "select idx from hash where md5=?", undef, $meta->{hash} );
+	pdf_class_file(undef,undef,$meta->{hash},"failed");
+        $self->ins_e( $idx, "Content", "Failed=$hint" );
+	$self->ins_e( $idx, "pdfinfo", "unknown" );
+	return ($idx,undef) unless  $idx; #Error
+}
 sub load_file
 {
 	my ($self)=shift;

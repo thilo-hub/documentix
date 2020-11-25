@@ -244,6 +244,9 @@ div.descr {
     background: #ff6a6a;
     */
 }
+.failed {
+	background: #df0d0d;
+}
 .processing {
 	background: #cfb4b4;
 }

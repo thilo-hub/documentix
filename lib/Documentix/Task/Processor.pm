@@ -46,7 +46,22 @@ sub _loader {
   my @results=@_;
   say 'Process';
   # sleep 1;
-  my $txt = $pdfidx->load_file(  "application/pdf",{file=>$fn,_taglist=>$tags});
+  my $txt;
+{
+                   my $e;
+                   {
+                     #local $@; # protect existing $@
+                     eval { 
+$DB::single=1;
+				  $txt = $pdfidx->load_file(  "application/pdf",{file=>$fn,hash=>$dgst,_taglist=>$tags});
+			};
+		     $pdfidx->fail_file(Dumper($job),{hash=>$dgst});
+		     die $@ if $@;
+                     # $@ =~ /failed/ and die $@; # Perl 5.14 and higher only
+                     #$@ =~ /failed/ and $e = $@;
+                   }
+                   #die $e if defined $e
+                }
   say 'done';
   $results[5] = {summary=>$txt,url=>"/docs/pdf/$dgst/result.pdf"};
   $job->finish(\@results);

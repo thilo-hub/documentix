@@ -62,7 +62,7 @@ $DB::single=1;
 
    my $f=Mojo::Asset::File->new()->add_chunk($c->req->body);
    $f->mtime(str2time($c->req->headers->header('X-File-Date'))) if $c->res->headers->header('X-File-Date');
-   my ($status,$rv)=$dba->load_file($c,$f,$c->req->headers->header('X-File-Name'));
+   my ($status,$rv)=$dba->load_asset($c,$f,url_unescape($c->req->headers->header('X-File-Name')));
 
    # capture tags returnd from load_file
    if ( $rv->{newtags} ) {
