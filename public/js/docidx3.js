@@ -4,55 +4,63 @@ var viewer_url_base="web/viewer.html?file=../docs/pdf/%doc";
 var viewer_url=viewer_url_base;
 var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 
-     var monitor = function(win,loader) {
+var check_updates = function() {
+	var items=[];
+	$('.updateneeded').each( function(i,e) {
+		    $(e).removeClass("updateneeded");
+		    items.push(e.id);
+	});
 
-		var scrollWindowHeight=win.height() * 2;
-		var scrollWindow=win;
-		var lastElement=win;
-		var waiting = 0;
+	console.log("Retry ");
+	window.setTimeout(function() {
+		items.forEach(function(id) {
+		    $.get("status",{"md5":id}, insert_item);
+		});
+	}, 5000);
+	    
+}
+var monitor = function(win,loader) {
 
-		var watcher = function() {
-		  if ( waiting  ) {
-			  return 0;
-		  }
-		  var bottom = lastElement.offset().top +
-			       lastElement.height()  - scrollWindow.offset().top;
-		  if ( bottom  < scrollWindowHeight){
-			  waiting = 1;
-			  loader( function(data) {
-					  if ( ! data )
-						return;
-			      		  lastElement = scrollWindow.append(data).children().last();
-				  	  if ( clname == "deleted" ) {
-						  $(".rbox").hide();
-						  $(".deleted").show();
-					  }
-					if ( $('.updateneeded').length ) {
-						console.log("Retry ");
-						window.setTimeout(function() {
-							$('.updateneeded').each( function(i,e) {
-							    $(e).removeClass("updateneeded");
-							    $.get("status",{"md5":e.id}, insert_item)
-							})
-						}, 5000);
-						    
-					}
-					  waiting = 0;
-					  watcher();
-			});
-		  };
-		}
-		// Start filling box
-		watcher();
-		win.scroll( watcher );
-    }
+	var scrollWindowHeight=win.height() * 2;
+	var scrollWindow=win;
+	var lastElement=win;
+	var waiting = 0;
 
-    // Request page from server
-    // idx:  item number
-    //   search & tags are merged in the query
-    //     if the search has changed, drop all cached results
-    //
-    var docscroll = function(element) {
+	var watcher = function() {
+	  if ( waiting  ) {
+		  return 0;
+	  }
+	  var bottom = lastElement.offset().top +
+		       lastElement.height()  - scrollWindow.offset().top;
+	  if ( bottom  < scrollWindowHeight){
+		  waiting = 1;
+		  loader( function(data) {
+				  if ( ! data )
+					return;
+				  lastElement = scrollWindow.append(data).children().last();
+				  if ( clname == "deleted" ) {
+					  $(".rbox").hide();
+					  $(".deleted").show();
+				  }
+				if ( $('.updateneeded').length ) {
+					check_updates();
+				}
+				  waiting = 0;
+				  watcher();
+		});
+	  };
+	}
+	// Start filling box
+	watcher();
+	win.scroll( watcher );
+}
+
+// Request page from server
+// idx:  item number
+//   search & tags are merged in the query
+//     if the search has changed, drop all cached results
+//
+var docscroll = function(element) {
 	var idx=1;
 	var nsrch;
 	var clsname;
@@ -105,14 +113,7 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 		var rv=$('#result').prepend(itm);
 	}
         if ( $('.updateneeded').length ) {
-		console.log("Retry ");
-		window.setTimeout(function() {
-			$('.updateneeded').each( function(i,e) {
-			    $(e).removeClass("updateneeded");
-			    $.get("status",{"md5":e.id}, insert_item)
-			})
-		}, 5000);
-		    
+		check_updates();
 	}
         var msg = data.msg;
 	$('#msg').html("Item:" + data.doc + "</br>");
@@ -149,14 +150,14 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 		    }
 		});
 	    });
-    };
+};
 
-    dbg_msg = function(msg) {
-	  if (msg)
-		$("#fmsg").show().prepend(msg+"<br>");
-    }
+dbg_msg = function(msg) {
+  if (msg)
+	$("#fmsg").show().prepend(msg+"<br>");
+}
 
-    do_tags = function(classes) {
+do_tags = function(classes) {
 	var tg=$("#taglist").html("");
 	//classes.sort((a, b) => a.value - b.value);
 	classes.sort((a,b)=>b.count-a.count).forEach(function (e) {
@@ -165,7 +166,7 @@ var viewer_url_srch=viewer_url_base+'#&search="%qu"';
 		v += " tagfilter ";
 	      tg.append('<div class="tgbbox"><a class="'+v+'" >'+e.tagname+'</a></div>');
 	})
-    }
+}
 
 $(function() {
     Hidepdf = function(e) {
@@ -289,6 +290,7 @@ $(function() {
 
 });
 
+$.views.settings.allowCode(true);
 var itemTip=function(e){
 console.log(e);
 Tip( e.currentTarget.nextElementSibling.innerText)

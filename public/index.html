@@ -53,7 +53,7 @@
 				<div class="input-group-prepend">
 					<span class="input-group-text">
 						<span class="fa fa-search"></span>
-					</span>                    
+					</span>
 				</div>
 				<input id="search" class="form-control" type="text" placeholder="search string">
 			</div>
@@ -96,10 +96,10 @@
 		{{for items tmpl="template_result_items"/}}
 		</script>
 		<script id="template_result_items" type="text/x-jsrender">
-			<li class="rbox 
-				{{if tg.match("deleted")}} deleted {{/if}}
-				{{if tg.match("ProCessIng")}} processing {{/if}}
-				{{if tg.match("failed")}} failed {{/if}}
+			<li class="rbox
+				{{if tg && tg.match("deleted")}} deleted {{/if}}
+				{{if tip && tip.match("ProCessIng")}}  updateneeded  processing {{/if}}
+				{{if tg && tg.match("failed")}} failed {{/if}}
 			"
 		    id="{{:md5}}" docname="{{:doc}}"
 		    oncontextmenu="DoContext(event)"
@@ -114,7 +114,7 @@
 			<div class="itemtip">{{html:tip}}</div>
 			<div class="descr">
 			  <div class="doclink" onclick="event.stopPropagation()">
-			    <a tabindex=-1 class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}{{if doct && !doct.match("pdf")}}.{{:doct}}{{/if}}</a> 
+			    <a tabindex=-1 class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}{{if doct && !doct.match("pdf")}}.{{:doct}}{{/if}}</a>
 			  </div>
 			  <a tabindex=-1 class="dtags">
 			    <p class="tagfield" >
@@ -125,7 +125,7 @@
 			  <span class="info"><p> Pages: {{:pg}} / {{:sz}}</p></span>
 			</div>
 		      </div>
-		  </li> 
+		  </li>
 		</script>
 	</div>
 	<iframe id="pdfview" class="pdfviewer " name="pdfviewer" src="" ></iframe>
