@@ -458,7 +458,7 @@ print STDERR "Check if merge for $this_page_qr:$this_page_code possible\n" if $d
 			     and b.tag = "QR" and b.value like ?
 			     and c.tag="mtime" and cast(c.value as int)  between (?-600) and (?+600)
 		};
-    $sel_qr =$dh->prepare($sel_qr);
+    $sel_qr =$dh->prepare_cached($sel_qr);
     die "DBerror :$? $idx:$t:$c: " . $sel_qr->errstr unless
 	$sel_qr->execute("%$npages%","%QR-Code:$other_page_code Page%",$mtime,$mtime);
     my $doc->{"out"}=$this_file;
@@ -821,10 +821,10 @@ sub xtp_any {
 
 sub del_meta {
     my ( $self, $idx, $t, ) = @_;
-    $self->{"del_meta"} = $self->{"dh"}->prepare(
+    my $del_meta = $self->{"dh"}->prepare_cached(
         "delete from metadata where idx=? and tag=?"
-    ) unless $self->{"del_meta"};
-    $self->{"del_meta"}->execute($idx,$t);
+    );
+    $del_meta->execute($idx,$t);
 }
 sub ins_e {
     my ( $self, $idx, $t, $c, $bin ) = @_;
