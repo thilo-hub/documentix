@@ -23,6 +23,11 @@ RUN  sh build_local.sh /
 RUN rm -r /build
 
 ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/mojofw /version.json
+WORKDIR /build
+RUN git clone https://github.com/mojolicious/minion.git .
+RUN perl Makefile.PL
+RUN make install
+
 
 WORKDIR /documentix
 #ADD . /documentix
