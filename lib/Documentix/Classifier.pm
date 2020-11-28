@@ -7,6 +7,12 @@ use XMLRPC::Lite;
 use File::Temp qw{tempfile };
 use Documentix::db qw{$dh};
 
+# Special handled classes
+my $unclass="unclassified";
+my $empyt="empty";
+my $deleted="deleted";
+my $processing="processing";
+my $failed="failed";
 my $sk;
 
 my $pop_xml="http://localhost:".$Documentix::config->{popfile_xmlrpc_port}."/RPC2";
@@ -54,7 +60,7 @@ sub pop_session {
 sub to_bucketname {
         my $bn = lc(shift);
         $bn =~ s/[^a-z0-9\-_]/_/g;
-	return undef if $bn eq "deleted" || $bn eq "~ailed";
+	return undef if $bn eq $deleted || $bn eq $failed;
         return $bn;
 }
 
@@ -128,7 +134,7 @@ sub pdf_class_file {
     my $db_op = $dh->prepare_cached( $dbop );
     # dont try to classify too small documents
     my $toosmall= length($$rtxt) < 100 ;
-    $class = "empty" if ( !$class && $toosmall);
+    $class = $empty if ( !$class && $toosmall);
 
     if ( $class && $class =~ s/^-// ) {
 	# remove tags and message from bucket
@@ -169,7 +175,7 @@ sub pdf_class_file {
             DIR    => $temp_dir
         );
         $rv = pop_call( 'handle_message', $tmp_doc, $tmp_out );
-        $class = $rv || "undefined";
+        $class = $rv || $unclassified;
 	# die "Ups: $class" unless $class;
         while (<$fh_out>) {
             ( $ln = $1, last ) if m/X-POPFile-Link:\s*(.*?)\s*$/;
