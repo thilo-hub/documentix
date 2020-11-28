@@ -317,9 +317,10 @@ sub export_files {
     }
     $DB::single=1;
     my $asset = Mojo::Asset::File->new();
-    unless ( $zip->writeToFileHandle($asset->handle,1) == AZ_OK ) {
+    unless ( $zip->writeToFileHandle($asset->handle,0) == AZ_OK ) {
              die "whoops!";
          }
+    $asset->handle->flush;
     return $asset;
     }
 }
