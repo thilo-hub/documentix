@@ -27,7 +27,7 @@ WORKDIR /build
 RUN git clone https://github.com/mojolicious/minion.git .
 RUN perl Makefile.PL
 RUN make install
-
+RUN rm -r /build
 
 WORKDIR /documentix
 #ADD . /documentix
