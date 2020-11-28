@@ -314,6 +314,7 @@ sub ocrpdf_offline
 	my $idx = shift;
 	my ( $inpdf, $outpdf, $ascii, $meta ) = @_;
 	$self->{"idx"}=$idx;
+	$DB::single=1;
         my ($pdfinfo,$t) = $self->do_ocrpdf(@_);
 
 	# new pdfinfo only if non existant before
@@ -327,6 +328,7 @@ sub ocrpdf_offline
             # short version
 	    my $c = summary(\$t);
             $self->ins_e( $idx, "Content", $c );
+	    $self->{dh}->do(qq{delete from tags where idx=? and tagid=(select tagid from tagname where tagname = 'empty') },undef,$idx);
 	    my ($popfile,$class) = ( pdf_class_file( $fn, \$t, $meta->{hash},  join("/",@{$meta->{"_taglist"}})  ) );
         }
 	return count_text($t);
@@ -609,7 +611,7 @@ sub load_file
 	$type = $mime_handler{$type}( $self, $totype, $meta ) while $mime_handler{$type};
 
 	my $Class=join("/",@{$meta->{"_taglist"}});
-	$Class =~ s|^/*(.*?)/*$|$1|;
+	$Class =~ s|^/*(.*?)/*$|$1/-failed|;
 	( $meta->{"PopFile"}, $meta->{"_Class"} ) =
 	  ( pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"},$Class ) );
         $meta->{"Class"} = $Class;

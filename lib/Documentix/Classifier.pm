@@ -111,10 +111,10 @@ sub pdf_class_file {
     my $ln;
 
     print STDERR "Add tag: $class\n" if $debug > 0;
-    if ( $class =~ m|^(-?)(.*/.*)| ) {
+    if ( $class =~ m|/| ) {
         # allow multiple tags at once
 	my $r="";
-	foreach( split(m|/|,$2)) {
+	foreach( split(m|/|,$class)) {
 		($ln,$rv)=pdf_class_file($fn,$rtxt,$md5,$1.$_);
 		$r.=$rv;
 	}
@@ -169,8 +169,8 @@ sub pdf_class_file {
             DIR    => $temp_dir
         );
         $rv = pop_call( 'handle_message', $tmp_doc, $tmp_out );
-        $class = $rv;
-        die "Ups: $class" unless $class;
+        $class = $rv || "undefined";
+	# die "Ups: $class" unless $class;
         while (<$fh_out>) {
             ( $ln = $1, last ) if m/X-POPFile-Link:\s*(.*?)\s*$/;
         }
