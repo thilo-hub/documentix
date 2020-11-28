@@ -1,0 +1,78 @@
+# apt install easy-rsa
+PKI=/documentix/PKI
+EASYRSA=/documentix/easyrsa3/easyrsa3
+
+export EASYRSA_REQ_ORG="documentix"
+export EASYRSA_REQ_COUNTRY=
+export EASYRSA_REQ_PROVINCE=
+export EASYRSA_REQ_CITY=
+export EASYRSA_REQ_OU=documentix
+export EASYRSA_REQ_EMAIL=hidden@world
+
+
+# Install prerequisites
+which haproxy || apt-get -y install haproxy
+test -f $EASYRSA || git clone https://github.com/OpenVPN/easy-rsa.git /documentix/easyrsa3
+INSECURE="nopass"
+mkdir -p $PKI
+cd $PKI
+$EASYRSA/easyrsa $AOPTS  init-pki
+
+#CA 
+$EASYRSA/easyrsa $AOPTS  --req-cn=documentix --batch build-ca $INSECURE
+
+#Server
+$EASYRSA/easyrsa $AOPTS  --subject-alt-name="DNS:localhost" --req-cn="Documentix"  --batch gen-req documentix $INSECURE
+$EASYRSA/easyrsa $AOPTS  --batch sign-req server documentix
+$EASYRSA/easyrsa gen-crl
+
+
+
+#Make sure the 
+export EASYRSA_DN=org
+AOPTS="--dn-mode=org"
+
+# client auth cert
+$EASYRSA/easyrsa $AOPTS  --req-cn="Documentix-client" --req-ou=Documentix-server  --batch gen-req docclnt $INSECURE
+$EASYRSA/easyrsa --batch $AOPTS  --req-ou=Documentix-server  sign-req client docclnt
+cat $PKI/pki/issued/docclnt.crt $PKI/pki/private/docclnt.key >client.crt
+
+mkdir /haproxy
+cd /haproxy
+cat $PKI/pki/issued/documentix.crt $PKI/pki/private/documentix.key >server.crt
+cp $PKI/pki/ca.crt $PKI/pki/crl.pem  .
+
+
+cat >haproxy.conf <<"EOF"
+global
+daemon
+maxconn 256
+ssl-default-bind-ciphers AES:ALL:!aNULL:!eNULL:!RC4:@STRENGTH:!DHE
+log 127.0.0.1 local0
+
+
+defaults
+log global
+option httplog
+option dontlognull
+retries 3
+mode http
+timeout connect 5000ms
+timeout client 50000ms
+timeout server 50000ms
+
+
+frontend http-in
+bind 0.0.0.0:443 ssl crt server.crt  ca-file ca.crt no-sslv3 no-tlsv10 verify optional  crl-file crl.pem 
+default_backend servers
+acl validcert ssl_c_s_dn(o) -m str documentix
+acl url_open path_beg /docs /web 
+http-request allow if url_open
+#http-request deny if !validcert 
+
+backend servers
+server server1 127.0.0.1:80 maxconn 500
+EOF
+
+haproxy -f haproxy.conf
+
