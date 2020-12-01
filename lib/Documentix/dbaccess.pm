@@ -27,8 +27,6 @@ my $lcl;
 sub new {
     my $class  = shift;
     my $dh = Documentix::db::dh();
-    die "Bad init $$ - $jobid"
-    	unless $jobid == $$;
 
     print STDERR "New pdf conn: $dh\n" if $debug > 0;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
