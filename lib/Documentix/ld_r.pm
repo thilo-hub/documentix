@@ -12,9 +12,7 @@ use Documentix::db;;
 use Documentix::search;
 
 print STDERR ">>> ld_r.pm\n" if $Documentix::config->{debug} > 2;
-$ENV{"PATH"} .= ":/usr/pkg/bin";
 
-my $__meta_sel;
 my $entries = $Documentix::config->{results_per_page};
 
 my $myhost = hostname();
@@ -28,19 +26,6 @@ sub new {
     $self->{pd} = pdfidx->new(0,$Documentix::config);
     $self->{dh} = Documentix::db::dh;
     return bless $self, $class;
-}
-
-sub trace_db {
-    my $dh = shift;
-    open( TRC, ">>/tmp/db.trace" );
-
-    sub trace_it {
-        my $r = shift;
-
-        print TRC "DB: $r\n";
-    }
-
-    $dh->sqlite_trace( \&trace_it );
 }
 
 sub setup_db {
