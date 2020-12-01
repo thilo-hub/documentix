@@ -57,6 +57,7 @@ sub upload {
    return $c->render(text => 'File is too big.', status => 200)
      if $c->req->is_limit_exceeded;
 
+     $DB::single=1;
    my $f=Mojo::Asset::File->new()->add_chunk($c->req->body);
    my $mtime = str2time($c->req->headers->header('X-File-Date')) || time;
    my ($status,$rv)=$dba->load_asset($c,$f,url_unescape($c->req->headers->header('X-File-Name')),$mtime);
