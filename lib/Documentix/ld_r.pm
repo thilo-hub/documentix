@@ -2,7 +2,6 @@ package ld_r;
 
 use strict;
 use warnings;
-use Data::Dumper;
 use Cwd 'abs_path';
 use POSIX;
 use JSON;

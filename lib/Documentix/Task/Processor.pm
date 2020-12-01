@@ -38,8 +38,6 @@ sub schedule_loader
 {
 	my $id = $minion->enqueue(loader=>[@_]=>{priority=>2});
         $minion->result_p($id);
-	print STDERR "YYYYYYYYYYYYYYYYYYYY OK\n";
-
 }
 sub _loader {
   my ($job, $dgst,$fn,$tags) = @_;
@@ -66,14 +64,12 @@ $DB::single=1;
 }
 
 #############################
-use Data::Dumper;
 my $mainenance_task;
 sub schedule_maintenance
 {
 
 	my $jobs = $minion->jobs({tasks => ['refreshIndexes']});
 	
-	# while (my $info = $jobs->next) { print Dumper($info); }
 	$jobs = $minion->jobs({tasks => ['refreshIndexes']});
 	while (my $info = $jobs->next) {
 		print STDERR "Here\n";

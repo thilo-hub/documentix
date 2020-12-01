@@ -846,7 +846,7 @@ sub ins_e {
     $ins_sql->bind_param( 3, encode("UTF-8",$c),   $bin );
     die "DBerror :$? $idx:$t:$c: " . $ins_sql->errstr
       unless $ins_sql->execute;
-print STDERR "ins_e: $idx: $t (".length($c).")\n" if $debug > 1;
+print STDERR "ins_e: $idx: $t (".length($c).")\n" if $debug > 2;
 }
 
 #
