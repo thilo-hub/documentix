@@ -1086,7 +1086,11 @@ sub do_ascii2pdf {
     $in  = abs_path($in);
     $out = abs_path($out);
     print STDERR "ascii 2 pdf: $in\n" if $debug > 1;
-    qx{a2ps -o - "$in" | ps2pdf - "$out"};
+    #handle non ascii as well
+    my $ttl = $in;
+    $ttl =~ s,^.*/,,;
+    my @c = (qx{ file --mime "$in"} =~ m/charset=(\S+)/);
+    qx{iconv -f "$c[0]" -t  ISO-8859-1//TRANSLIT  "$in" | a2ps  --stdin="$ttl" -X ISO-8859-1 -o - | ps2pdf - "$out"};
     die "failed: -o $out $in" unless -f $out;
     utime ((stat($in))[8..9],$out);
     return;
