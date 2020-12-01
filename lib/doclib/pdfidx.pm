@@ -840,7 +840,7 @@ sub ins_e {
         "insert or replace into metadata (idx,tag,value)
 			 values (?,?,?)"
 	);
-    
+    die "WOha ?  @_   " unless $idx > 0;
     $ins_sql->bind_param( 1, $idx, SQL_INTEGER );
     $ins_sql->bind_param( 2, $t );
     $ins_sql->bind_param( 3, encode("UTF-8",$c),   $bin );
