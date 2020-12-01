@@ -58,8 +58,8 @@ sub upload {
      if $c->req->is_limit_exceeded;
 
    my $f=Mojo::Asset::File->new()->add_chunk($c->req->body);
-   $f->mtime(str2time($c->req->headers->header('X-File-Date'))) if $c->res->headers->header('X-File-Date');
-   my ($status,$rv)=$dba->load_asset($c,$f,url_unescape($c->req->headers->header('X-File-Name')));
+   my $mtime = str2time($c->req->headers->header('X-File-Date')) || time;
+   my ($status,$rv)=$dba->load_asset($c,$f,url_unescape($c->req->headers->header('X-File-Name')),$mtime);
 
    # capture tags returnd from load_file
    if ( $rv->{newtags} ) {

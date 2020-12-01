@@ -141,7 +141,7 @@ sub get_icon{
 # passed in name is used for tagging
 # content  is in asset
 sub load_asset {
-	my ($self,$app,$asset,$name) = @_;
+	my ($self,$app,$asset,$name,$mtime) = @_;
 
         $name = "Unknown" unless $name;
 	my $root_dir = abs_path($Documentix::config->{root_dir});
@@ -195,8 +195,11 @@ $DB::single = 1;
 	 $ob .= "/$name";
 	
 	 # If file is in doc-area - do not copy it over
-	 $asset->move_to($ob)
-		 unless (abs_path($asset->path) =~ /^$root_dir/);
+	 unless (abs_path($asset->path) =~ /^$root_dir/) {
+		$asset->move_to($ob);
+		utime($mtime,$mtime,$ob);
+	}
+
 
 	 my $id = $self->insert_file($dgst,$asset->path,\@taglist);
 	 return "Loading",{ md5 => $dgst,
@@ -205,7 +208,7 @@ $DB::single = 1;
 		  tg  => 'processing='.$id,
 		  pg  => '?',
 		  tip => 'ProCessIng',
-		  dt  => ld_r::pr_time(time()),
+		  dt  => ld_r::pr_time($mtime),
 		  sz  => conv_size($asset->size),
 	  };
   }

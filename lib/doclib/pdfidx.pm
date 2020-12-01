@@ -965,6 +965,7 @@ sub do_convert_pdf {
     $out .= ".pdf";
 	#qexec("convert", $in, $out);
     die "failed: convert: $in $out" unless -f $out;
+    utime ((stat($in))[8..9],$out);
     return;
 }
 sub qexec
@@ -1038,7 +1039,7 @@ sub do_pdfstamp {
     qexec("qpdf","--linearize",$outpdf,$outpdf1);
 
     $fail++ unless  -r $outpdf1;
-    qexec("touch","-r",$orig,$outpdf1) if $orig && !$fail;
+    utime ((stat($orig))[8..9],$outpdf1) if $orig && !$fail;
     rename $outpdf1,$outpdf unless $fail;
     return $fail;
 }
@@ -1076,6 +1077,7 @@ sub do_calibrepdf {
     print STDERR "convert: $in\n" if $debug > 1;
     qexec("ebook-convert", $in ,$out);
     die "failed: calibre: ebook-convert $in $out" unless -f $out;
+    utime ((stat($in))[8..9],$out);
     return;
 }
 
@@ -1086,6 +1088,7 @@ sub do_ascii2pdf {
     print STDERR "ascii 2 pdf: $in\n" if $debug > 1;
     qx{a2ps -o - "$in" | ps2pdf - "$out"};
     die "failed: -o $out $in" unless -f $out;
+    utime ((stat($in))[8..9],$out);
     return;
 }
 
@@ -1096,6 +1099,7 @@ sub do_unopdf {
     #print STDERR "convert: $in\n" if $debug > 1;
     qexec(qw{unoconv -o}, $out,$in);
     die "failed: -o $out $in" unless -f $out;
+    utime ((stat($in))[8..9],$out);
     return;
 }
 
