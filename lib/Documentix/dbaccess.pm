@@ -14,6 +14,7 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use Encode qw{encode decode};
 
+my $jobid=$$;
 
 
 my $debug = 2;
@@ -25,7 +26,9 @@ my $error_pdf= Mojo::Asset::File->new(path => "../public/Error.pdf") ;
 my $lcl;
 sub new {
     my $class  = shift;
-    my $dh = $Documentix::db::dh;
+    my $dh = Documentix::db::dh();
+    die "Bad init $$ - $jobid"
+    	unless $jobid == $$;
 
     print STDERR "New pdf conn: $dh\n" if $debug > 0;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
@@ -44,6 +47,9 @@ sub new {
 # return mime-type and path
 sub getFilePath {
     my ( $self,$hash,$type ) = @_;
+
+    die "Bad init $$ - $jobid"
+    	unless $jobid == $$;
 
     my $dh = $self->{"dh"};
     die "Bad input"  unless $hash =~ m/^[0-9a-f]{32}$/;
@@ -119,7 +125,7 @@ sub get_icon{
 	 return undef unless $pdfidx::mime_handler->{$type};
 	 my $dh=$self->{dh};
 	 my $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
-	 my $add_meta = $dh->prepare_cached(q{insert into metadata(idx,tag,value) values((select idx from hash where md5=?),?,?)});
+	 my $add_meta = $dh->prepare_cached(q{insert or ignore into metadata(idx,tag,value) values((select idx from hash where md5=?),?,?)});
 
 	 # Create minimal DB entry such that it shows in view
 	 $add_file->execute($dgst,$ob);

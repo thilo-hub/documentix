@@ -1,14 +1,13 @@
 package Documentix::Cache;
 
-use DBI qw(:sql_types);
 use Documentix::db;
+use DBI qw(:sql_types);
 print STDERR ">>> cache.pm\n" if $Documentix::config->{debug} > 2;
-
 
 sub new {
     my $class  = shift;
 
-    my $dh = $Documentix::db::cachedh;
+    my $dh = Documentix::db::cachedh();
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
 
     $self->setup_db();

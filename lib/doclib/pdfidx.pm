@@ -47,7 +47,7 @@ sub new {
     my $chldno = shift;
     my $config = shift;
 
-    my $dh = $Documentix::db::dh;
+    my $dh = Documentix::db::dh();
 
     my $self = bless { dh => $dh, dbname => $d_name, config => $config }, $class;
     $self->set_debug($config->{"debug"});

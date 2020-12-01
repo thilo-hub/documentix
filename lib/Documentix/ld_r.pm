@@ -27,7 +27,7 @@ sub new {
 
     my $self = {};
     $self->{pd} = pdfidx->new(0,$Documentix::config);
-    $self->{dh} = $Documentix::db::dh;
+    $self->{dh} = Documentix::db::dh;
     return bless $self, $class;
 }
 

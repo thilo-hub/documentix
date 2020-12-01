@@ -5,7 +5,7 @@ our @EXPORT = qw(pdf_class_file pdf_class_md5);
 
 use XMLRPC::Lite;
 use File::Temp qw{tempfile };
-use Documentix::db qw{$dh};
+use Documentix::db qw{dh};
 
 # Special handled classes
 my $unclass="unclassified";
@@ -23,9 +23,9 @@ my $pop_cnt = 0;
 sub pdf_class_md5 {
     my $md5   = shift;
     my $class = shift;    # undef returns class else set class
-    my $gt_info = $dh->prepare_cached( q{ select file,substr(value,1,10000) txt from hash natural join file natural join metadata where md5=? and tag="Text"});
+    my $gt_info = dh->prepare_cached( q{ select file,substr(value,1,10000) txt from hash natural join file natural join metadata where md5=? and tag="Text"});
 
-    my $r = $dh->selectrow_hashref( $gt_info, undef, $md5 );
+    my $r = dh->selectrow_hashref( $gt_info, undef, $md5 );
     return pdf_class_file( $r->{"file"}, \$r->{"txt"}, $md5, $class );
 
 }
@@ -131,6 +131,7 @@ sub pdf_class_file {
     my $op      = "handle_message";
     my $dbop    = "insert or ignore into tags (idx,tagid)
 		       select idx,tagid from hash,tagname where md5=? and tagname =?";
+    my $dh = dh();
     my $db_op = $dh->prepare_cached( $dbop );
     # dont try to classify too small documents
     my $toosmall= length($$rtxt) < 100 ;
@@ -206,7 +207,7 @@ sub class_unk {
     my $all_t =
 q{select idx,md5,file,substr(value,1,10000) txt    from metadata natural join hash natural join file where tag="Text" and idx not in (select idx from tags) group by md5};
 
-    my $all_s = $dh->prepare_cached($all_t);
+    my $all_s = dh->prepare_cached($all_t);
     $all_s->execute;
     while ( my $r = $all_s->fetchrow_hashref() ) {
         $rv = pdf_class_file( $r->{"file"}, \$r->{"txt"}, $r->{"md5"},
@@ -222,7 +223,7 @@ sub get_class {
     my $all_t =
 q{select idx,count(*) cnt, group_concat(tagname) lst,value    from tags natural join tagname natural join metadata where tag="Text"  group by idx  order by idx };
 
-    my $all_s = $dh->prepare_cached($all_t);
+    my $all_s = dh->prepare_cached($all_t);
     $all_s->execute;
     while ( my $r = $all_s->fetchrow_hashref() ) {
         my ( $fh, $tmp_doc ) = tempfile(
@@ -254,7 +255,7 @@ q{select tagname,group_concat(substr(value,1,10000)) txt  from tagname natural j
         $rv = pop_call( 'delete_bucket', $_ );
         print STDERR "Del: $_ ->$rv\n" if $debug > 1;
     }
-    my $all_s = $dh->prepare_cached($all_t);
+    my $all_s = dh->prepare_cached($all_t);
     $all_s->execute;
     while ( my $r = $all_s->fetchrow_hashref() ) {
         my @res =
