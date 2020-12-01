@@ -558,6 +558,27 @@ sub fail_file
 	$self->ins_e( $idx, "pdfinfo", "unknown" );
 	return ($idx,undef) unless  $idx; #Error
 }
+# use to check if we will process the file
+our $mime_handler = {
+	    "application/zip" => \&xtp_unzip,
+	    "application/x-gzip" => \&xtp_gzip,
+	    "application/x-tar" => \&xtp_tar,
+	    "application/gzip" => \&xtp_gzip,
+	    "application/pdf"    => \&xtp_pdf,
+	    "application/msword" => \&xtp_any,
+	    "image/png"         => \&xtp_jpg,
+	    "image/jpeg"         => \&xtp_jpg,
+	    "image/jpg"         => \&xtp_jpg,
+	    "text/plain"	     => \&xtp_ascii,
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+	      => \&xtp_any,
+	    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" =>
+	      \&xtp_any,
+	      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+	      => \&xtp_any,
+	    "application/epub+zip"          => \&xtp_ebook,
+	    "application/vnd.ms-powerpoint" => \&xtp_any
+	};
 sub load_file
 {
 	my ($self)=shift;
@@ -583,32 +604,12 @@ sub load_file
 
 	$meta->{_lcl_store} = $self->get_store( $meta->{"hash"},1);
 
-	my %mime_handler = (
-	    "application/zip" => \&xtp_unzip,
-	    "application/x-gzip" => \&xtp_gzip,
-	    "application/x-tar" => \&xtp_tar,
-	    "application/gzip" => \&xtp_gzip,
-	    "application/pdf"    => \&xtp_pdf,
-	    "application/msword" => \&xtp_any,
-	    "image/png"         => \&xtp_jpg,
-	    "image/jpeg"         => \&xtp_jpg,
-	    "image/jpg"         => \&xtp_jpg,
-	    "text/plain"	     => \&xtp_ascii,
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-	      => \&xtp_any,
-	    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" =>
-	      \&xtp_any,
-	      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-	      => \&xtp_any,
-	    "application/epub+zip"          => \&xtp_ebook,
-	    "application/vnd.ms-powerpoint" => \&xtp_any
-	);
 
 	# $type =~ s/;.*//;
 
 	# The handler return their output type if not correct 
 	# or a message if processing should end
-	$type = $mime_handler{$type}( $self, $totype, $meta ) while $mime_handler{$type};
+	$type = $mime_handler->{$type}( $self, $totype, $meta ) while $mime_handler->{$type};
 
 	my $Class=join("/",@{$meta->{"_taglist"}});
 	$Class =~ s|^/*(.*?)/*$|$1/-failed|;
