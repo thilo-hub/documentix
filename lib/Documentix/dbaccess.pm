@@ -116,6 +116,7 @@ sub get_icon{
  sub insert_file {
 	 my ($self,$dgst,$ob,$tags)=@_;
 	 my $type = magic($ob);
+	 return undef unless $pdfidx::mime_handler->{$type};
 	 my $dh=$self->{dh};
 	 my $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
 	 my $add_meta = $dh->prepare_cached(q{insert into metadata(idx,tag,value) values((select idx from hash where md5=?),?,?)});

@@ -722,7 +722,9 @@ sub xtp_any {
 		$t0 =~ s/$of(\/\.\/)?\/?//;
 		my @tags=split("/+",$t0);
 		pop @tags; 
-		dbaccess::insert_file($self,$hash,$_,\@tags);
+		# remove file unles it will be processed
+		unlink unless
+			dbaccess::insert_file($self,$hash,$_,\@tags);
 		push @md5_archive,$hash;
 	}
 	$pmeta->{"archive"}=join(",",@md5_archive);
@@ -774,7 +776,9 @@ sub xtp_any {
 		$t0 =~ s/$of(\/\.\/)?\/*//;
 		my @tags=split("/+",$t0);
 		pop @tags; 
-		dbaccess::insert_file($self,$hash,$_,\@tags);
+		# remove file unles it will be processed
+		unlink unless
+			dbaccess::insert_file($self,$hash,$_,\@tags);
 		push @md5_archive,$hash;
 	}
 	$pmeta->{"archive"}=join(",",@md5_archive);
