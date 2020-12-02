@@ -1063,11 +1063,11 @@ sub do_pdftotext {
     #Obsolete??# pdftotext has issues with spaces in the name
     #my $tmp=tmpnam().".pdf";
     #symlink(abs_path($pdfin),$tmp);
-    @cmd = ( $pdftotext,"-layout", $pdfin, "-" );
+    @cmd = ( $pdftotext,qw{-enc UTF-8 -layout}, $pdfin, "-" );
 
     my $txt = qexec( @cmd );
     unlink $tmp;
-    return encode('UTF-8',$txt);
+    return decode('UTF-8',$txt);
 }
 
 sub do_calibrepdf {

@@ -159,7 +159,7 @@ sub ldres {
 
 	# $_->{tip}  => $tip,
 	# $_->dt   => $day,
-	$_->{tip} = $_->{snippet}; delete $_->{"snippet"};
+	$_->{tip} = decode("UTF-8",$_->{snippet}); delete $_->{"snippet"};
 	$_->{tip} =~ s/["']/&quot;/g;
 	$_->{tip} =~ s/\n/<br>/g;
 	$_->{tg} = $_->{tags}|| ""; delete $_->{"tags"};
