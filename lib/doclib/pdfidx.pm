@@ -35,6 +35,7 @@ my $pdftoppm   = "pdftoppm";
 my $pdftotext  = "pdftotext";
 my $pdftocairo = "pdftocairo";
 my $zbarimg    = "zbarimg";
+my @tessopts=qw{-l deu+eng --psm 1 --oem 1 pdf};
 
 # use threads;
 # use threads::shared;
@@ -348,9 +349,8 @@ sub count_text {
 # Create summary of text -- can be imporved
 sub summary {
     my $t = shift;
-    $t =$$t;
-    $$t =~ s/^\s*(([^\n]*\n){24}).*/$1/s;
-    return  $t;
+    $$t =~ m/^\s*(([^\n]*\n){1,24}).*/s;
+    return  $1 || "";
 }
 # ARGS:  $inpdf, $outpdf, $ascii, $md5
 # RET:   $text
@@ -810,11 +810,8 @@ sub xtp_any {
 	    print STDERR "Found text ".length($t)." bytes\n";
             $t =~ s/[ \t]+/ /g;
 
-            # short version
-            $t =~ m/^\s*(([^\n]*\n){1,24}).*/s;
-            my $c = $1 || "";
             $pmeta->{"Text"}    = $t;
-            $pmeta->{"Content"} = $c;
+            $pmeta->{"Content"} = summary(\$t);
         }
 	my $fn=$pmeta->{"_file"};
 	$pmeta->{"pdfinfo"} = $self->pdf_info($fn)
@@ -960,7 +957,7 @@ sub do_convert_pdf {
     $in  =~ s/"/\\"/g;
     $out =~ s/"/\\"/g;
     $out =~ s/\.pdf$//;
-    my @cmd = ( $tesseract, $in, $out, qw{ -l deu+eng --psm 1 --oem 1 pdf} );
+    my @cmd = ( $tesseract, $in, $out, @tessopts );
     qexec(@cmd);
     $out .= ".pdf";
 	#qexec("convert", $in, $out);
@@ -995,14 +992,13 @@ sub do_tesseract {
 	system(@rot);
 	$image=$oi;
     }
-    my @cmd = ( $tesseract, $image, $outpage, qw{ -l deu+eng --psm 1 pdf} );
-    my @cmd1 = ( $tesseract, $image, $outpage, qw{ -l deu+eng --psm 1 --oem 1 pdf} );
+    my @cmd = ( $tesseract, $image, $outpage, @tessopts );
 
 
     $msg .= "CMD: " . join( " ", @cmd, "\n" ) if $debug > 3;
     print STDERR "$msg" if $debug > 3;
     $outpage .= ".pdf";
-    $fail += ( system(@cmd) && system(@cmd1) ? 1 : 0 ) unless -f $outpage;
+    $fail += ( system(@cmd) ? 1 : 0 ) unless -f $outpage;
     print STDERR "Done $outpage\n";
     return $fail;
 }
