@@ -14,9 +14,9 @@ use Digest::MD5 qw(md5 md5_hex md5_base64);
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use Encode qw{encode decode};
 
+my $dbversion = "1";
+
 my $jobid=$$;
-
-
 my $debug = 2;
 my $ph;
 
@@ -35,6 +35,15 @@ sub new {
     my $q = "select cast(file as blob) file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
     $ph=$dh->prepare_cached($q);
     $lcl=$Documentix::config->{local_storage};
+    # Check db version and run maintenance if (major) version is too small
+
+    $dh->do(q{begin exclusive transaction});
+    my $dbver = $dh->selectrow_hashref(q{select value from config where var = 'dbversion'});
+    unless ($dbver && $dbver >= $dbversion) {
+	    dbupgrade($dh);
+	    $dh->do(q{insert or replace into config (var,value) values("dbversion",?)},undef,$dbversion);
+    }
+    $dh->do(q{commit});
 
     return $self;
 }
@@ -332,5 +341,28 @@ sub export_files {
     return $asset;
     }
 }
+sub dbupgrade
+{
+    my $dh=shift;
+    require doclib::pdfidx;
+    # First the pdftotext had a UTF-* bug
+    # Re-do all pdftotext conversions
+    $DB::single=1;
+    my $ins =  $dh->prepare(q{update metadata set value=?3 where tag = ?2 and idx = cast(?1 as integer)});
+
+    my $getf = $dh->prepare(q{select idx,md5 hash,file from hash natural join file});
+    $getf->execute();
+    print STDERR "Re convert pdftotext\n";
+    while(($r=$getf->fetchrow_hashref) ){
+	next unless -r $r->{file};
+	my $pdf=find_pdf($r);
+	next unless $pdf =~ /\.pdf$/;
+	my $txt = pdfidx::do_pdftotext($pdf);
+	my $c   = pdfidx::summary(\$txt);
+	$ins->execute($r->{idx}+0,"Text",encode("UTF-8",$txt));
+	$ins->execute($r->{idx}+0,"Content",encode("UTF-8",$c));
+    }
+}
+
 
 1;

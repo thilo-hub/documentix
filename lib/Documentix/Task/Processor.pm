@@ -17,7 +17,7 @@ sub register {
   $minion->add_task(loader => \&_loader);
   $minion->add_task(refreshDirectories => \&_refreshDirectories);
   $minion->add_task(refreshIndexes => \&_refreshIndexes);
-  #  schedule_maintenance();
+  #schedule_maintenance();
 }
 
 #############################
@@ -85,6 +85,10 @@ sub _refreshIndexes {
        return $job->finish('Previous job is still active')
 	                    unless my $guard = $minion->guard('maintenance', 600);
 
+	print STDERR "Starting\n";
+    $DB::single=1;
+
+	dbaccess::new();
 	my $res=dbmaintenance(@args);
 	# Cleanup empty upload dirs
 	system("find '$Documentix::config->{local_storage}' -depth -type d -empty -exec rmdir {} \\;");
