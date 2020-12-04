@@ -154,12 +154,11 @@ sub ldres {
 	$f =~ s|^.*/||;
 	$f =~ s|\.([^\.]*)$||;
 	$_->{doct} = $1;
-	$_->{doc}  = decode("UTF-8",$f);
+	utf8::decode($f);
+	$_->{doc}  = $f;
 	$_->{doc}  =~ s/%20/ /g;
 
-	# $_->{tip}  => $tip,
-	# $_->dt   => $day,
-	$_->{tip} = decode("UTF-8",$_->{snippet}); delete $_->{"snippet"};
+	$_->{tip} = $_->{snippet}; delete $_->{"snippet"};
 	$_->{tip} =~ s/["']/&quot;/g;
 	$_->{tip} =~ s/\n/<br>/g;
 	$_->{tg} = $_->{tags}|| ""; delete $_->{"tags"};
@@ -195,7 +194,7 @@ sub reocr
 }
 
 sub conv_size
-{  
+{
 
     my $s=shift;
     return sprintf("%.1f Gb",$s/2**30) if $s > 2**30;
@@ -211,9 +210,9 @@ sub pr_time {
 	my $dt = time() - $t;
 	my @str = ( "%a %H:%M",  "last %a",         "%b-%d",             "%b %Y" );
 	my @off = ( 24 * 60 * 60, 7 * 24 * 60 * 60, 180 * 24 * 60 * 60 );
-	foreach (@off) { 
-		last if $dt < $_; 
-		shift @str; 
+	foreach (@off) {
+		last if $dt < $_;
+		shift @str;
 	}
 	return strftime( $str[0], localtime($t) );
 }

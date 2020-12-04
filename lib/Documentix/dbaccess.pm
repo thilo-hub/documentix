@@ -5,7 +5,7 @@ use Digest::MD5::File qw(dir_md5_hex file_md5_hex url_md5_hex);
 use File::Basename;
 use Documentix::Cache;
 use Documentix::Converter;
-use Mojo::Asset;
+use Mojo::Asset::File;
 use Documentix::Magic qw{magic};
 use Documentix::ld_r;
 use Date::Parse;
@@ -39,7 +39,7 @@ sub new {
 
     $dh->do(q{begin exclusive transaction});
     my $dbver = $dh->selectrow_hashref(q{select value from config where var = 'dbversion'});
-    unless ($dbver && $dbver >= $dbversion) {
+    unless (defined($dbver->{value}) && $dbver->{value} >= $dbversion) {
 	    dbupgrade($dh);
 	    $dh->do(q{insert or replace into config (var,value) values("dbversion",?)},undef,$dbversion);
     }
@@ -115,7 +115,7 @@ sub get_bestpdf
 	return Mojo::Asset::File->new(path => $pdf);
 }
 
-sub get_icon{ 
+sub get_icon{
 	 my $ra=shift;
 	my $pdf=find_pdf($ra);
 	return undef unless $pdf;
@@ -143,7 +143,7 @@ sub get_icon{
 }
 
 
- 
+
 
 # passed in name is used for tagging
 # content  is in asset
@@ -153,10 +153,10 @@ sub load_asset {
         $name = "Unknown" unless $name;
 	my $root_dir = abs_path($Documentix::config->{root_dir});
 	unless ( $asset ) {
-		# create an asset 
+		# create an asset
 		# resolve potential dangers
 		$name = abs_path($name);
-		# name 
+		# name
 
 		return unless -r $name; # give up
 		$asset = Mojo::Asset::File->new(path => $name);
@@ -183,7 +183,7 @@ $DB::single = 1;
 	 if ( $rv == 0E0 ) {
 		 # return know info
 		 my $rv=item($self,$dgst);
-		 $rv->[0]->{newtags} = \@taglist 
+		 $rv->[0]->{newtags} = \@taglist
 		 	if @taglist;
 
 		 return "Known", @$rv ;
@@ -221,7 +221,7 @@ $DB::single = 1;
   }
 
 sub conv_size
-{  
+{
 
 	my $s=shift;
 	return sprintf("%.1f Gb",$s/2**30) if $s > 2**30;
@@ -247,7 +247,7 @@ sub item
 		  natural outer left join m_content
 		  natural outer left join m_pdfinfo
 		  natural outer left join m_archive
-	where 
+	where
 		md5=?
 	limit 1
 	});
@@ -273,7 +273,8 @@ sub item
 		 $hash_ref->{tg} = "" unless defined $hash_ref->{tg};
 		 $hash_ref->{doct} = $2;
 		 $hash_ref->{doc} =~ s|%20| |g;
-		 $hash_ref->{doc} = encode('UTF-8',$hash_ref->{doc});
+		 #$hash_ref->{doc} = decode('UTF-8',$hash_ref->{doc});
+		 #$hash_ref->{doc} = "---".$hash_ref->{doc};
 
 		 $hash_ref->{dt} = ld_r::pr_time(str2time($1)) if  $hash_ref->{pdfinfo} =~ m|<td>ModDate</td><td>\s+(.*?)</td>|;
 		 $hash_ref->{pg} =$1 if  $hash_ref->{pdfinfo} =~ m|<td>Pages</td><td>\s+(.*?)</td>|;
@@ -308,13 +309,13 @@ sub get_store {
 sub export_files {
     my ( $self,$tag ) = @_;
     # For the moment just return the files tagged
-    #  select 'mkdir -p "'||dir||'" ; cp "'||file||'" "'||dir||'/.";' 'export' 
+    #  select 'mkdir -p "'||dir||'" ; cp "'||file||'" "'||dir||'/.";' 'export'
     my $exp_query = $self->{dh}->prepare_cached(qq{
-		select file filename,dir zipName 
+		select file filename,dir zipName
 		from (
 			select idx,"ExportDocs/"||group_concat(tagname,"/") dir  from (
-				select idx from tags where 
-					tagid = (select tagid from tagname where tagname = ?1 ) 
+				select idx from tags where
+					tagid = (select tagid from tagname where tagname = ?1 )
 				) natural join tags natural join tagname
 			group by idx order by tagname
 		) natural join hash natural join file
@@ -350,11 +351,16 @@ sub dbupgrade
     $DB::single=1;
     my $ins =  $dh->prepare(q{update metadata set value=?3 where tag = ?2 and idx = cast(?1 as integer)});
 
-    my $getf = $dh->prepare(q{select idx,md5 hash,file from hash natural join file});
+    my $getf = $dh->prepare(q{select idx,md5 hash,cast( file as blob) file   from hash natural join file
+	order  by md5});
     $getf->execute();
     print STDERR "Re convert pdftotext\n";
+    my $pmd="";;
     while(($r=$getf->fetchrow_hashref) ){
+	next if $r->{hash} eq $pmd;
 	next unless -r $r->{file};
+	$pmd=$r->{hash};
+print STDERR $r->{file}."\n";
 	my $pdf=find_pdf($r);
 	next unless $pdf =~ /\.pdf$/;
 	my $txt = pdfidx::do_pdftotext($pdf);
