@@ -348,5 +348,8 @@ div.tagsinput span.tag {
 .itemtip {
 	display: none;
 }
+li.viewopt {
+    width: 98%;
+}
 
 

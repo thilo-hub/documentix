@@ -18,7 +18,7 @@
     /* Hides <input type="file"> while simulating "Browse" button: */
     .fd-file {
       opacity: 0;
-      font-size: 118px;
+      /* font-size: 118px; */
       position: absolute;
       right: 0;
       top: 0;
@@ -33,5 +33,15 @@
     /* Provides visible feedback when use drags a file over the drop zone: */
     .fd-zone.over { border-color: maroon; background: #eee; }
     /* .filedrop.over { border-color: maroon; background: #eee; } */
-    .filedrop:hover::before { content: "Paste files here"; font-size: 40px; border-color: maroon; background: #eee; 
+    .Xfiledrop:hover::before { content: "Paste files here"; font-size: 40px; border-color: maroon; background: #eee; }
     .filedrop:hover { font-size: 4px; }
+    .xdrop:hover { display: none; font-size: 40px; }
+.filedrop {
+  background: grey;
+  width: 100%;
+  margin-top: 1em;
+  display: flex;
+}
+.leg1 {
+	width: auto;
+}

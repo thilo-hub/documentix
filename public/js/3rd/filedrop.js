@@ -916,7 +916,7 @@
       // Firefox and Chrome-based browsers are the only ones supporting this
       // event which we use to read dropped file data in the FileDrop class.
       global.isIE9 || self.delegate(zoneNode, 'drop', 'upload')
-      global.isIE9 || self.delegate(zoneNode, 'paste', 'upload')
+      //global.isIE9 || self.delegate(zoneNode, 'paste', 'upload')
     }
 
     // Listens for DOM events and initiates corresponding DropHandle's events.

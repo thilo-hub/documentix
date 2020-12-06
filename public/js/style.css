@@ -100,19 +100,12 @@
     border-color:green;
 }
 
-.filedrop {
-  background: grey;
-  _width: 100px;
-  float: right;
-  margin-top: 1em;
-  
-}
 #droplist {
     border: inset thin blue;
     float: left;
     text-align: left;
     _width: 100%;
-    height: 50px;
+    height: auto;
     word-wrap: break-word
 }
 

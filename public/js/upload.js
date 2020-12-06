@@ -9,13 +9,15 @@ fd.jQuery();
 	      // Check if it is a url
 	      // then retrieve it and send upstream
 	      var itm=files.dataTransfer && files.dataTransfer.getData("text/uri-list")
-	      var url="/web/viewer.html?url='"+itm+"'";
 	      if ( itm ) {
+		      var url="/web/viewer.html?url='"+itm+"'";
 		      // var win = window.open(url, "_blank");
 		      // if ( win )
 			//       win.focus();
 			downld(itm,"myfile.pdf");
 		      $('#droplist').append("<hr>"+itm);
+	      } else {
+		      return files;
 	      }
       };
       var upl_s=function (files) {
@@ -119,3 +121,13 @@ function downld(url,filename)
 		  })
 	}
 }
+$(function() {
+	$("#search").on("paste", function(e) {
+	     var files = e.originalEvent.clipboardData;
+		if ( files.files.length ) {
+			zone.onUpload(e.originalEvent);
+		}
+	}
+	)
+});
+
