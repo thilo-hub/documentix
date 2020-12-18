@@ -47,6 +47,7 @@ $self->hook(before_dispatch => sub {
   $r->get('/reocr')->to('docs#reocr');
   $r->post('/tags')->to('docs#tags');
   $r->get('/refresh')->to('docs#refresh');
+  $r->get('/import')->to('docs#importer');
   $r->get('/export/<:tag>.zip')->to('docs#exportfiles');
  
 

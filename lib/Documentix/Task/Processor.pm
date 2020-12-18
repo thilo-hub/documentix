@@ -17,6 +17,7 @@ sub register {
   $minion->add_task(loader => \&_loader);
   $minion->add_task(refreshDirectories => \&_refreshDirectories);
   $minion->add_task(refreshIndexes => \&_refreshIndexes);
+  $minion->add_task(importer => \&_importer);
   #schedule_maintenance();
 }
 
@@ -34,6 +35,12 @@ sub _ocr {
 }
 
 #############################
+sub _importer {
+  my ($job) = @_;
+  use Documentix::Importer;
+  Documentix::Importer::update();
+}
+
 sub schedule_loader
 {
 	my $id = $minion->enqueue(loader=>[@_]=>{priority=>2});

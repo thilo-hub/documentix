@@ -14,6 +14,7 @@ use Mojo::Log;
 use Documentix::Classifier qw{pdf_class_md5};
 use Documentix::dbaccess;;
 use Documentix::ld_r;
+use Documentix::Importer;
 
 
 
@@ -78,6 +79,23 @@ sub upload {
 		});
 
 };
+
+sub importer {
+   my $c = shift;
+   # Check file size
+   $DB::single=1;
+   my $items = Documentix::Importer::update();
+   my $status = "Importing";
+
+   $c->render(json => {
+		   	nitems => scalar(@$items),
+			items  => $items,
+			nresults => 9999,
+			msg => $status
+		});
+
+};
+
 
 sub search {
         my $c = shift;
