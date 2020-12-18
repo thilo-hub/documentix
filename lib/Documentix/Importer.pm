@@ -9,12 +9,11 @@ my @importers = glob("$INC[0]/Documentix/Importer/*.pm");
 foreach ( @importers ) {
 	require $_;
 }
-# Call all registered importer
+# Call all registered importer(s)
 sub update 
 {
 	my $dba = dbaccess->new();   
 	$DB::single=1;
-	#HACK
 	my @items;
 	foreach my $imp ( @importer ) {
 		my @list=$imp->();

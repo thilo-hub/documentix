@@ -351,5 +351,9 @@ div.tagsinput span.tag {
 li.viewopt {
     width: 98%;
 }
+#importing {
+	font-size: x-large;
+	display: none;
+}
 
 

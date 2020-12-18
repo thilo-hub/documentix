@@ -59,6 +59,8 @@
 				<script type="text/javascript" src="js/upload.js"></script>
 			</li>
 			<li class="viewopt"><a class="glyphicon glyphicon-check" href="minion">minion</a></li>
+				<li class="viewopt"><a class="glyphicon glyphicon-check" href="import"  onclick="DoImport(event)"
+						>Import</a></li>
 
 				<li class="viewopt"><div id="taglist" ondrop="dropTag(event)" ondragleave="dragoverend(event)" ondragover="dragovertag(event)"></div></li>
 				<li style=" max-height: 600px" class="viewopt">
@@ -73,6 +75,9 @@
 				<li class="viewopt dbg" id="fmsg">Debug Field</li>
 				<li class="viewopt dbg" id="status">Status Field</li>
 			</ul>
+	</div>
+	<div class="left" id="importing" style="display: none"> 
+		<p>Loading from Scanner...</p>
 	</div>
 	</div>
 	<div class="vb" id="Oviewer"></div>

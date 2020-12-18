@@ -43,7 +43,7 @@ $self->hook(before_dispatch => sub {
   $r->get('/docs/:type/:hash/#doc')->to('docs#senddoc');
   $r->post('/upload')->to('docs#upload');
   $r->get('/ldres')->to('docs#search');
-  $r->get('/status')->to('docs#status');
+  $r->get('/status/:md5')->to('docs#status');
   $r->get('/reocr')->to('docs#reocr');
   $r->post('/tags')->to('docs#tags');
   $r->get('/refresh')->to('docs#refresh');

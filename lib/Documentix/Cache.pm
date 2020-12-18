@@ -17,7 +17,6 @@ sub new {
 
 sub setup_db {
     my $self = shift;
-    $DB::single=1;
     my $dh   = $self->{"dh"};
 
     $dh->sqlite_busy_timeout(10000);

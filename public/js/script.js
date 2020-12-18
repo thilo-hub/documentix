@@ -50,6 +50,7 @@ $(function(){
 // Xmonitor($(".lb:first>ul"),{n:100,getMore: getMore});
 function DoViewer(event) {
   event.stopPropagation();
+  event.preventDefault();
   var rb=$(event.target).closest(".rbox");
    if ( rb.hasClass("viewing") ) {
 	   // Hide the lot
@@ -58,9 +59,12 @@ function DoViewer(event) {
    } else {
 	   var id=$(rb).attr("id")
 	   var doc=$(rb).attr("docname")
+	    // Remove active viewing red frames
+	   $(".rbox.viewing").removeClass("viewing",500);
+	   rb.addClass("viewing",500);
 	   Showpdf(id+'/'+doc+'.pdf',event);
-	   rb.off("click");
-	   rb.on("click",(DoViewer));
+	   // rb.off("click");
+	   // rb.on("click",(DoViewer));
    }
    return false;
 }

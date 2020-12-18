@@ -14,14 +14,20 @@ var check_updates = function() {
 	console.log("Retry ");
 	window.setTimeout(function() {
 		items.forEach(function(id) {
-		    $.get("status",{"md5":id}, insert_item);
+		    $.get("status/"+id, insert_item);
 		});
 	}, 5000);
 	    
 }
 var DoImport = function(event) {
 	event.preventDefault();
-	$.get("import", insert_item);
+	$("#importing").show();
+	$("#left").hide();
+	$.get("import", function(data) {
+		insert_item(data)
+		$("#importing").hide();
+		$("#left").show();
+	});
 }
 var monitor = function(win,loader) {
 
@@ -183,58 +189,47 @@ $(function() {
         $(".viewopt").show();
     }
     Showpdf = function(u,e) {
+	    // bring up viewer and load it with url
 	    var p=$('#pdfview');
 
 	    if ( u !== undefined ){
 		    u=viewer_url.replace("%doc",u);
 	    }
-	    // Remove active viewing red frames
-	    $(".rbox").removeClass("viewing",500);
 	    if ( p.length ) {
-		    // pdfview frame available, go load content
-		    $(".navigator").removeClass("navigatorBig");
-		    $(".viewopt").hide();
-		    $("#resview").appendTo(".left");
-
-		    if (typeof e.currentTarget != "undefined"){
-			    e.currentTarget.scrollIntoViewIfNeeded();
-			    $(e.currentTarget).addClass("viewing",500,function(){
-
-			    p.prop("src",u);
+		    // Frame on this page
+		    if ( !p.is(":visible") ){
+			    // rework windows to show viewer
+			    $(".navigator").removeClass("navigatorBig");
+			    $(".viewopt").hide();
+			    $("#resview").appendTo("#left");
 			    p.show();
-		    });
 		    }
-		    if(e && e.preventDefault) {
-				e.preventDefault();
-			}
-			return false;
+
+		    if (e) {
+			    e.target.scrollIntoViewIfNeeded(true);
+		    }
+		    p.prop("src",u);
 		}
 		else
 		{
-		    $(e.currentTarget).addClass("viewing",1000);
-		    	
+		    // pdfview frame not available, go load content in a new window
 			if ( u !== undefined ){
 				if (!viewer_frame) {
 					viewer_frame="pdfviewer";
 				}
 				window.open(u,viewer_frame);
-				if(e && e.preventDefault) {
-					e.preventDefault();
-				}
-				return false;
 			}
 		}
-		return true;
-	}
+    }
     // register for events
     $(document).ajaxStart(function() {
-        $(document.body).css({
-            'cursor': 'wait'
-        });
+	$(document.body).css({
+	    'cursor': 'wait'
+	});
     }).ajaxStop(function() {
-        $(document.body).css({
-            'cursor': 'default'
-        });
+	$(document.body).css({
+	    'cursor': 'default'
+	});
     });
     // filter taglist with search field
     $("#search").keyup(function(event) {
@@ -249,15 +244,15 @@ $(function() {
     });
     // React on return button in search
     $("#search").keypress(function(event) {
-        if (event.keyCode == 13) {
-            // return in search box
-            $("#search").blur();
-            // reset class filter
-            $('#status').html("Searching...");
+	if (event.keyCode == 13) {
+	    // return in search box
+	    $("#search").blur();
+	    // reset class filter
+	    $('#status').html("Searching...");
 	    $('#result').html("<li></li>");
-            clname = "";
+	    clname = "";
 	    docscroll($('#result'));
-            // fetch_page(1);
+	    // fetch_page(1);
 	}
     });
 
@@ -268,15 +263,15 @@ $(function() {
 	var tg=$(event.target);
 	if ( tg.hasClass("tags") ){
 	    var ncl = tg.html();
-            if (ncl == clname) {
-                // reset tag
-                ncl = "";
+	    if (ncl == clname) {
+		// reset tag
+		ncl = "";
 		if (clname  == "deleted") {
 		    $(".deleted").hide();
 		}
-            }
-            $("#result").html("");
-            clname = ncl;
+	    }
+	    $("#result").html("");
+	    clname = ncl;
 	    docscroll($('#result'));
 	    console.log(">"+tg.html()+"<");
 

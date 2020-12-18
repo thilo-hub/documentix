@@ -594,7 +594,7 @@ sub load_file
 	  $dh->selectrow_array( "select idx from hash where md5=?", undef, $meta->{hash} );
 	return ($idx,undef) unless  $idx; #Error
 	$meta->{"Docname"} = basename($fn);
-	$meta->{"Content"} = "ProCcesIng";
+	$meta->{"Content"} = "ProCessIng";
 	my @fstat=stat($fn);
 	$meta->{"size"} = $fstat[7];
 	$meta->{"mtime"} = $fstat[9];
@@ -611,11 +611,15 @@ sub load_file
 	# or a message if processing should end
 	$type = $mime_handler->{$type}( $self, $totype, $meta ) while $mime_handler->{$type};
 
-	my $Class=join("/",@{$meta->{"_taglist"}});
-	$Class =~ s|^/*(.*?)/*$|$1/-failed|;
-	( $meta->{"PopFile"}, $meta->{"_Class"} ) =
-	  ( pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"},$Class ) );
-        $meta->{"Class"} = $Class;
+	unless ($meta->{Content} && $meta->{Content} =~ m/ProCessIng/) {
+		# Dont ask to classify it while its not done
+		my $Class=join("/",@{$meta->{"_taglist"}});
+		$Class =~ s|^/*(.*?)/*$|$1/-failed|;
+		( $meta->{"PopFile"}, $meta->{"_Class"} ) =
+		  ( pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"},$Class ) );
+		$meta->{"Class"} = $Class;
+	} 
+	else { print STDERR "Still processing...\n"; }
 
 	#$meta->{"keys"} = join( ' ', keys(%$meta) );
 
@@ -903,7 +907,7 @@ print STDERR "XXXXXX> $lcl_store_dir \n" if $debug > 1;
     # do the ocr conversion
     mkdir($lcl_store_dir) unless -d $lcl_store_dir;
 
-    $meta->{Content} = "ProCessIng";
+    $meta->{Content} = "ProCessIng=Ocr...";
     Documentix::Task::Processor::schedule_ocr($fn, $lcl_store .".ocr.pdf",undef,$meta);
     return undef;
 }

@@ -137,7 +137,7 @@ sub get_icon{
 	 # Create minimal DB entry such that it shows in view
 	 $add_file->execute($dgst,$ob);
 	 $add_meta->execute($dgst,"Mime",$type);
-	 $add_meta->execute($dgst,"Content","ProCessIng");
+	 $add_meta->execute($dgst,"Content","ProCessIng=Loading...");
 	 $add_meta->execute($dgst,"mtime",0);
 	 return Documentix::Task::Processor::schedule_loader($dgst,$ob,$tags);
 }
@@ -212,9 +212,9 @@ $DB::single = 1;
 	 return "Loading",{ md5 => $dgst,
 		  doc => $file,
 		  doct=> $ext,
-		  tg  => 'processing='.$id,
+		  tg  => $id,
 		  pg  => '?',
-		  tip => 'ProCessIng',
+		  tip => 'ProCessIng="Reading"',
 		  dt  => ld_r::pr_time($mtime),
 		  sz  => conv_size($asset->size),
 	  };
@@ -241,12 +241,14 @@ sub item
 		pdfinfo,
 		file doc,
 		archive,
+		mtime,
 		idx
 	from hash natural join file
 		  natural outer left join tags natural outer left join tagname
 		  natural outer left join m_content
 		  natural outer left join m_pdfinfo
 		  natural outer left join m_archive
+		  natural outer left join mtime
 	where
 		md5=?
 	limit 1
@@ -276,12 +278,15 @@ sub item
 		 #$hash_ref->{doc} = decode('UTF-8',$hash_ref->{doc});
 		 #$hash_ref->{doc} = "---".$hash_ref->{doc};
 
+		  $hash_ref->{dt}  = ld_r::pr_time($hash_ref->{mtime})
+		  	if $hash_ref->{mtime};
+		 delete $hash_ref->{mtime};
 		 $hash_ref->{dt} = ld_r::pr_time(str2time($1)) if  $hash_ref->{pdfinfo} =~ m|<td>ModDate</td><td>\s+(.*?)</td>|;
 		 $hash_ref->{pg} =$1 if  $hash_ref->{pdfinfo} =~ m|<td>Pages</td><td>\s+(.*?)</td>|;
 		 $hash_ref->{sz} =conv_size($1) if  $hash_ref->{pdfinfo} =~ m|<td>File size</td><td>\s+(\d+) bytes</td>|;
 		 delete $hash_ref->{pdfinfo};
 
-		 $hash_ref->{tg} = "processing" unless  $hash_ref->{tip} && $hash_ref->{tip} ne  "ProCessIng";
+		 $hash_ref->{tg} = ($3?$3:"Working...") if  $hash_ref->{tip} && $hash_ref->{tip} =~ s/^(ProCessIng)(=(.*))?$/$1/;
 		 push @res,$hash_ref;
 	 }
 	 return \@res;
