@@ -19,6 +19,10 @@ var check_updates = function() {
 	}, 5000);
 	    
 }
+var DoImport = function(event) {
+	event.preventDefault();
+	$.get("import", insert_item);
+}
 var monitor = function(win,loader) {
 
 	var scrollWindowHeight=win.height() * 2;
