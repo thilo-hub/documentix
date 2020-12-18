@@ -46,42 +46,33 @@
 
 <div class="page">
 	<div>
-	<div class=left id=left>
-	<ul id=navi class="navigator naviagatorBig nav nav-tabs">
-		<li class="search"><div>
-			<div class="input-group" style="width: 95%">
-				<div class="input-group-prepend">
-					<span class="input-group-text">
-						<span class="fa fa-search"></span>
-					</span>
-				</div>
-				<input id="search" class="form-control" type="text" placeholder="search string">
-			</div>
-		</li>
+		<div class=left id=left>
+			<ul id=navi class="navigator naviagatorBig nav nav-tabs">
+				<li style="width:98%">
+					<div id="zone" class="filedrop">
+						<legend class="leg1">
+							<img loading="lazy" title="Upload / complete" width="30px" src="icon/iu.png"  alt="Upload / complete">
+								</legend>
+						<input id="search" class="form-control" type="text" placeholder="search string">
+					</div>
+				<div id="droplist"></div>
+				<script type="text/javascript" src="js/upload.js"></script>
+			</li>
+			<li class="viewopt"><a class="glyphicon glyphicon-check" href="minion">minion</a></li>
 
-		<li class="viewopt filedrop">
-		<fieldset id="zone">
-		    <legend>Drop a file inside &hellip;</legend>
-		    <img loading="lazy" class="wp-image-16733 size-full hidden" title="Upload / complete" src="icon/upload.gif"  alt="Upload / complete" width="50">
-		    <div id="droplist"></div>
-		</fieldset>
-		</li>
-		<li class="viewopt"><a class="glyphicon glyphicon-check" href="minion">minion</a></li>
-		<script type="text/javascript" src="js/upload.js"></script>
-
-		<li class="viewopt"><div id="taglist" ondrop="dropTag(event)" ondragleave="dragoverend(event)" ondragover="dragovertag(event)"></div></li>
-		<li style="width:100%; max-height: 600px" class="viewopt">
-			<span id="editor" class="glyphicon glyphicon-edit"></span>Editor
-			<div id="sp" style="display: none">
-			<form id="scratch" class="_hidden">
-			    <textarea id="scratchpad" class="widgEditor "></textarea>
-			</form>
-			</div>
-			<hr>
-		</li>
-		<li class="viewopt dbg" id="fmsg">Debug Field</li>
-		<li class="viewopt dbg" id="status">Status Field</li>
-		</ul>
+				<li class="viewopt"><div id="taglist" ondrop="dropTag(event)" ondragleave="dragoverend(event)" ondragover="dragovertag(event)"></div></li>
+				<li style=" max-height: 600px" class="viewopt">
+					<span id="editor" class="glyphicon glyphicon-edit"></span>Editor
+					<div id="sp" style="display: none">
+					<form id="scratch" class="_hidden">
+					    <textarea id="scratchpad" class="widgEditor "></textarea>
+					</form>
+					</div>
+					<hr>
+				</li>
+				<li class="viewopt dbg" id="fmsg">Debug Field</li>
+				<li class="viewopt dbg" id="status">Status Field</li>
+			</ul>
 	</div>
 	</div>
 	<div class="vb" id="Oviewer"></div>
