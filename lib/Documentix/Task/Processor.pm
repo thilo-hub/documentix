@@ -25,6 +25,7 @@ sub register {
 sub  schedule_ocr
 {
         $minion->enqueue(ocr=> [@_]=>{priority=>1} );
+	return "Ocr...";
 }
 
 sub _ocr {
@@ -45,6 +46,7 @@ sub schedule_loader
 {
 	my $id = $minion->enqueue(loader=>[@_]=>{priority=>2});
         $minion->result_p($id);
+	return "Reading...";
 }
 sub _loader {
   my ($job, $dgst,$fn,$tags) = @_;
