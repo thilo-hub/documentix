@@ -13,10 +13,12 @@ RUN  apt-get install -y sqlite3 \
 	libjs-bootstrap4 libjs-popper.js libmojolicious-perl libminion-perl libmojo-sqlite-perl libminion-backend-sqlite-perl \
 	tesseract-ocr tesseract-ocr-deu  tesseract-ocr-eng
 
+RUN apt-get install -y	pandoc wkhtmltopdf
 #fix minion??
 RUN rm -f  /usr/share/javascript/popper.js
 #RUN cp /usr/share/nodejs/popper.js/dist/umd/popper.js /usr/share/javascript/popper.js
 WORKDIR /build
+RUN apt-get update --fix-missing
 RUN apt-get install -y git make gcc wget
 ADD https://raw.githubusercontent.com/thilo-hub/documentix/mojofw/build_local.sh build_local.sh
 RUN  sh build_local.sh /
