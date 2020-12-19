@@ -110,7 +110,7 @@ sub status {
 	my $rv=$dba->item( $c->param("md5") );
 	print STDERR Dumper($rv) if $Documentix::config->{debug} > 2;
         $c->res->headers->cache_control("no-cache")
-		if  $rv->[0]->{tip} eq "ProCessIng";
+		if  ($rv && $rv->[0]->{tip} eq "ProCessIng");
 	$c->render(json => {
 		   	nitems => scalar(@$rv),
 			items  => [ @$rv ],
