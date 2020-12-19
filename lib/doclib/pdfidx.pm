@@ -559,7 +559,12 @@ sub fail_file
 	return ($idx,undef) unless  $idx; #Error
 }
 # use to check if we will process the file
-our $mime_handler = {
+sub mime_handler {
+	my $typ=shift;
+	$typ =~ s|text/.*|text/*|;
+
+	my  $mime_handler = {
+	    "text/*"	     => \&xtp_ascii,
 	    "application/zip" => \&xtp_unzip,
 	    "application/x-gzip" => \&xtp_gzip,
 	    "application/x-tar" => \&xtp_tar,
@@ -569,7 +574,6 @@ our $mime_handler = {
 	    "image/png"         => \&xtp_jpg,
 	    "image/jpeg"         => \&xtp_jpg,
 	    "image/jpg"         => \&xtp_jpg,
-	    "text/plain"	     => \&xtp_ascii,
     "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 	      => \&xtp_any,
 	    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" =>
@@ -579,6 +583,9 @@ our $mime_handler = {
 	    "application/epub+zip"          => \&xtp_ebook,
 	    "application/vnd.ms-powerpoint" => \&xtp_any
 	};
+	return $mime_handler->{$typ};
+}
+
 sub load_file
 {
 	my ($self)=shift;
@@ -609,7 +616,10 @@ sub load_file
 
 	# The handler return their output type if not correct 
 	# or a message if processing should end
-	$type = $mime_handler->{$type}( $self, $totype, $meta ) while $mime_handler->{$type};
+	while (my $hdl=mime_handler($type)) {
+		$type = &$hdl( $self, $totype, $meta ) 
+	}
+	#$type = &$hdl( $self, $totype, $meta ) while (my $hdl=mime_handler($type));
 
 	unless ($meta->{Content} && $meta->{Content} =~ m/ProCessIng/) {
 		# Dont ask to classify it while its not done
@@ -697,7 +707,7 @@ sub xtp_any {
         # Output will generally be created in the local_storage (and kept)
         my $of = $pmeta->{_lcl_store};
         $pmeta->{"_file"} = $of . "/" . basename($i) . ".pdf";
-        do_ascii2pdf( $i, $pmeta->{_file} );
+        do_text2pdf( $i, $pmeta->{_file} );
         my $type = magic( $pmeta->{_file} );
         return $type;
     }
@@ -1077,6 +1087,20 @@ sub do_calibrepdf {
     print STDERR "convert: $in\n" if $debug > 1;
     qexec("ebook-convert", $in ,$out);
     die "failed: calibre: ebook-convert $in $out" unless -f $out;
+    utime ((stat($in))[8..9],$out);
+    return;
+}
+
+sub do_text2pdf {
+    my ( $in, $out ) = @_;
+    $in  = abs_path($in);
+    $out = abs_path($out);
+    print STDERR "text 2 pdf: $in\n" if $debug > 1;
+    #handle non ascii as well
+    $DB::single=1;
+    my $ttl = $in;
+    my @c = (qx{ pandoc -s --pdf-engine=wkhtmltopdf  "$in"  -o "$out"});
+    die "failed: -o $out $in" unless -f $out;
     utime ((stat($in))[8..9],$out);
     return;
 }
