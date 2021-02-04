@@ -25,7 +25,8 @@ fd.jQuery();
 	var drop_count=files.length;
         files.each(function (file) {
           // React on successful AJAX upload:
-	  $('#droplist').append("<div id=progress>Uploading...</div>");
+	  $('#droplist').append(
+ 		"<div id=progress>Uploading...("+file.name.substring(0,10)+")</div>");
           file.event(
 		'done', function (xhr) {
 		    var p=$('#progress');
@@ -51,7 +52,7 @@ fd.jQuery();
 		  'error', function (xhr,XMLHttpReques) {
 		    var p=$('#progress');
 		    $(p).remove();
-		    $('#droplist').append("ERROR: "+XMLHttpRequest.statusText+"<br>")
+		    $('#droplist').append("ERROR: "+file.name+" "+XMLHttpRequest.statusText+"<br>")
           });
 	  file.event('progress', function (sentBytes, totalBytes, XMLHttpRequest, eventObject) {
 	    var p=$('#progress');
