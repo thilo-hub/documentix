@@ -18,6 +18,7 @@ sub register {
   $minion->add_task(refreshDirectories => \&_refreshDirectories);
   $minion->add_task(refreshIndexes => \&_refreshIndexes);
   $minion->add_task(importer => \&_importer);
+  $minion->add_task(merger => \&_merger);
   #schedule_maintenance();
 }
 
@@ -115,3 +116,11 @@ sub _refreshDirectories {
     Documentix::scantree::scantree($top);
     }
 1;
+
+sub _merger {
+  my ($job) = @_;
+  my @results=@_;
+  use Documentix::Merger;
+  my $res=Documentix::Merger::merge();
+  $job->finish($res);
+}
