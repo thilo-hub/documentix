@@ -35,7 +35,9 @@ sub _ocr {
 	unless my $guard = $minion->guard('ocring',60, {limit => 3});
   my $pdfidx  = pdfidx->new(0,$Documentix::config);
   $job->on( finish => &schedule_maintenance );
-  $job->finish( $pdfidx->ocrpdf_sync(@args));
+  my $r = $pdfidx->ocrpdf_sync(@args);
+  $minion->enqueue('merger');
+  $job->finish( $r);
 }
 
 #############################
