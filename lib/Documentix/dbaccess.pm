@@ -55,8 +55,7 @@ sub new {
 sub getFilePath {
     my ( $self,$hash,$type ) = @_;
 
-    die "Bad init $$ - $jobid"
-    	unless $jobid == $$;
+    # die "Bad init $$ - $jobid" unless $jobid == $$;
 
     my $dh = $self->{"dh"};
     die "Bad input"  unless $hash =~ m/^[0-9a-f]{32}$/;
