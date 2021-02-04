@@ -128,6 +128,7 @@ sub get_icon{
  sub insert_file {
 	 my ($self,$dgst,$ob,$tags)=@_;
 	 my $type = magic($ob);
+	 require doclib::pdfidx;
 	 return undef unless pdfidx::mime_handler($type);
 	 my $dh=$self->{dh};
 	 my $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
