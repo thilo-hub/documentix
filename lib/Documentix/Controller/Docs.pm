@@ -119,6 +119,16 @@ sub status {
 		});
 
 }
+use Encode qw{encode decode};
+sub refresh_file {
+	my ($c,$file)=@_;
+	$DB::single=1;
+	my $dba = dbaccess->new();   
+	my $f=Mojo::Asset::File->new(path => decode("utf-8",$file));
+	$file =~ s|^.*/||;
+	return $c->render(json => $dba->load_asset($c,$f,$file,$f->mtime));
+}
+
 
 sub reocr {
  	my $c = shift;
@@ -128,7 +138,9 @@ sub reocr {
 
 sub refresh {
 	my $c = shift;
+	$DB::single=1;
 	my $top = $c->param("dir")  || Mojo::File->new($Documentix::config->{root_dir})->to_abs;
+	return refresh_file($c,$c->param("file")) if $c->param("file");
 	Documentix::Task::Processor::schedule_refresh($top);
        return $c->render(text => 'Refresh filesystem started '.$top, status => 200);
 }

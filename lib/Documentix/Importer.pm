@@ -33,5 +33,14 @@ sub update
 	return \@items;
 }
 
+sub refresh {
+	my $file=shift;
+	$DB::single=1;
+	my $dba = dbaccess->new();   
+   my $f=Mojo::Asset::File->new(path => $file);
+   $file =~ s|^.*/||;
+   return $dba->load_asset($c,$f,$file,$f->mtime);
+}
+
 1;
 
