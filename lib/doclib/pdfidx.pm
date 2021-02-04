@@ -199,11 +199,13 @@ sub pdf_info($$) {
     my $self = shift;
     my $fn   = shift;
     my $res  = qexec($pdfinfo ,$fn);
+    $res =~ /Pages:\s+(\d+)/;
+    my $pg = $1;
     $res =~ s/\0//g;
     $res =~ s|:\s|</td><td>|mg;
     $res =~ s|\n|</td></tr>\n<tr><td>|gs;
     $res =~ s|^(.*)$|<table><tr><td>$1</td></tr></table>|s;
-    return $res;
+    return $pg,$res;
 }
 
 sub expand_templ {
@@ -425,8 +427,9 @@ print STDERR Dumper(\$self,\@qr) if $debug > 1;
 		#$cmt .= "Q:$qr";
 		#}
 	    $fail += do_pdfstamp( $outpdf, $cmt,$inpdf );
-	    $pdfinfo =  $self->pdf_info($outpdf);
-	    $self->ins_e($self->{"idx"},"pdfinfo", $self->pdf_info($outpdf));
+	    (my $pg,$pdfinfo) =  $self->pdf_info($outpdf);
+	    $self->ins_e($self->{"idx"},"pdfinfo", $pdfinfo);
+	    $self->ins_e($self->{"idx"},"pages", $pg);
 
 	    $txt = do_pdftotext($outpdf);
 	}
@@ -828,7 +831,7 @@ sub xtp_any {
             $pmeta->{"Content"} = summary(\$t);
         }
 	my $fn=$pmeta->{"_file"};
-	$pmeta->{"pdfinfo"} = $self->pdf_info($fn)
+	($pmeta->{"pages"}, $pmeta->{"pdfinfo"}) = $self->pdf_info($fn)
 		unless $pmeta->{pdfinfo};
 
         my $l = length($t) || "-FAILURE-";
