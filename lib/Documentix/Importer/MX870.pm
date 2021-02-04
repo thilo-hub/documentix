@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 #copyright Thilo Jeremias
 package Documentix::Importer::MX870;
-$DB::single=1;
 
 use Data::Dumper;
 use strict;
