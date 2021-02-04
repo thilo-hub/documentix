@@ -1102,8 +1102,9 @@ sub do_text2pdf {
     #handle non ascii as well
     $DB::single=1;
     my $ttl = $in;
-    my @c = (qx{ pandoc -s --pdf-engine=wkhtmltopdf  "$in"  -o "$out"});
-    die "failed: -o $out $in" unless -f $out;
+    my @cmd = (qw { pandoc -s --pdf-engine=wkhtmltopdf},$in,"-o",$out);
+    my @c = (qx{ @cmd });
+    die "failed: ".join(" ",@cmd) ."\n@c\n"  unless -f $out;
     utime ((stat($in))[8..9],$out);
     return;
 }
