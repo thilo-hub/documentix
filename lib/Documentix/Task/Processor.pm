@@ -44,7 +44,8 @@ sub _ocr {
 sub _importer {
   my ($job) = @_;
   use Documentix::Importer;
-  Documentix::Importer::update();
+  my $imports =Documentix::Importer::update();
+  $job->finish( $imports);
 }
 
 sub schedule_loader
