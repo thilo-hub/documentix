@@ -46,7 +46,7 @@ sub cachedh
 	my $user   = $Documentix::config->{cache_db_user};
 	my $pass   = $Documentix::config->{cache_db_pass};
 
-	$_cachedh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass )
+	$_cachedh = DBI->connect( "dbi:$dbn:$d_name", $user, $pass,{sqlite_unicode => 1})
 	|| die "Err database connection $!";
 	$_cachedh->do(q{pragma journal_mode=wal});
 	return $_cachedh;;

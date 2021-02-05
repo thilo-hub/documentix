@@ -35,7 +35,7 @@ q{ create table if not exists cache_lst ( qidx integer primary key autoincrement
 			query text unique, nresults integer, last_used integer )}
     );
     $dh->do(
-q{ create table if not exists cache_q ( qidx integer, idx integer, snippet text, unique(qidx,idx))}
+q{ create table if not exists cache_q ( qidx integer, idx integer, cast(snippet as text) text, unique(qidx,idx))}
     );
 
     $dh->do(
@@ -101,7 +101,7 @@ sub ldres {
     }
     else {
 	# Return all
-	$get_res=qq{ select *,Content snippet  from hash natural join Content natural join ftime natural join pdfinfo};
+	$get_res=qq{ select *,cast(Content as text) snippet  from hash natural join Content natural join ftime natural join pdfinfo};
 
 
 	if ($idx0 eq 1){
@@ -127,7 +127,7 @@ sub ldres {
     # Assemble final query
     push @sargs,$ppage,int($idx0-1);
 
-    $get_res=qq{ select idx,md5,mtime dt,pdfinfo,cast(file as blob) file,tags,snippet  from ($get_res) natural left join taglist natural left join file group by idx order by dt desc };
+    $get_res=qq{ select idx,md5,mtime dt,pdfinfo,cast(file as blob) file,tags,cast(snippet as text) snippet  from ($get_res) natural left join taglist natural left join file group by idx order by dt desc };
 
     # total count
     # get number of results

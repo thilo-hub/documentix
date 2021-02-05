@@ -237,7 +237,7 @@ sub item
 	my $get=$dh->prepare_cached(qq{
 	select  md5,
 		group_concat(tagname) tg,
-		coalesce(content,'ProCessIng') tip,
+		cast (coalesce(content,'ProCessIng') as text) tip ,
 		pdfinfo,
 		file doc,
 		archive,
