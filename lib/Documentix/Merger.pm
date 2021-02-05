@@ -33,7 +33,7 @@ sub merge
 		$O =~ s/%02d/*/;
 		my @OP=glob($O);
 
-		$r->{oddqr} =~ m/(\d+):QR-Code:/;
+		$r->{oddqr} =~ s/(\d+):QR-Code://;
 		splice(@OP,$1-1,1);
 
 
@@ -43,7 +43,7 @@ sub merge
 		qx{pdfseparate '$f' '$O'};
 		$O =~ s/%02d/*/;
 		my @EP=glob($O);
-		$r->{evenqr} =~ m/(\d+):QR-Code:/;
+		$r->{evenqr} =~ s/(\d+):QR-Code://;
 		splice(@EP,$1-1,1);
 
 		my @R;
@@ -64,6 +64,7 @@ sub merge
 		$r->{ep} = \@EP;
 		$r->{rp} = \@R;
 		#print Dumper($r);
+		$dba->{dh}->do("insert into metadata (idx,tag,value) select idx,'QR',? from hash where md5=?",undef,$r->{oddqr}.$r->{evenqt},$rv->{md5});
 		pdf_class_md5($r->{md5odd},"deleted");
 		pdf_class_md5($r->{md5even},"deleted");
 		push @results,$r;
