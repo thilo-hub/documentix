@@ -58,6 +58,7 @@ if( $ARGV[0] eq "daemon" && fork() == 0){
 	   exit 0;
    }
    @ARGV=qw{minion worker};
+   sleep 5;
 }
 
 
