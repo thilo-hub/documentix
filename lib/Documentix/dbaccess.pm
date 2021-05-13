@@ -207,7 +207,6 @@ $DB::single = 1;
 		utime($mtime,$mtime,$ob);
 	}
 
-
 	 my $id = $self->insert_file($dgst,$asset->path,\@taglist);
 	 return "Loading",{ md5 => $dgst,
 		  doc => $file,
