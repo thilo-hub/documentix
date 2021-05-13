@@ -29,7 +29,7 @@ my $temp_dir = "/var/tmp";
 my $convert    = "convert";
 my $lynx       = "lynx";
 my $pdfimages  = "pdfimages";
-my $pdfinfo    = "pdfinfo";
+my $tool_pdfinfo    = "pdfinfo";
 my $pdfopt     = "pdfopt";
 my $pdftoppm   = "pdftoppm";
 my $pdftotext  = "pdftotext";
@@ -198,7 +198,7 @@ sub get_meta {
 sub pdf_info($$) {
     my $self = shift;
     my $fn   = shift;
-    my $res  = qexec($pdfinfo ,$fn);
+    my $res  = qexec($tool_pdfinfo ,$fn);
     $res =~ /Pages:\s+(\d+)/;
     my $pg = $1;
     $res =~ s/\0//g;
@@ -427,7 +427,7 @@ print STDERR Dumper(\$self,\@qr) if $debug > 1;
 		#$cmt .= "Q:$qr";
 		#}
 	    $fail += do_pdfstamp( $outpdf, $cmt,$inpdf );
-	    (my $pg,$pdfinfo) =  $self->pdf_info($outpdf);
+	    my ($pg,$pdfinfo) =  $self->pdf_info($outpdf);
 	    $self->ins_e($self->{"idx"},"pdfinfo", $pdfinfo);
 	    $self->ins_e($self->{"idx"},"pages", $pg);
 
