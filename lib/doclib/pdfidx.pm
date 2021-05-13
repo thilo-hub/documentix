@@ -617,10 +617,10 @@ sub load_file
 
 	# $type =~ s/;.*//;
 
-	# The handler return their output type if not correct 
+	# The handler return their output type if not correct
 	# or a message if processing should end
 	while (my $hdl=mime_handler($type)) {
-		$type = &$hdl( $self, $totype, $meta ) 
+		$type = &$hdl( $self, $totype, $meta )
 	}
 	#$type = &$hdl( $self, $totype, $meta ) while (my $hdl=mime_handler($type));
 
@@ -631,7 +631,7 @@ sub load_file
 		( $meta->{"PopFile"}, $meta->{"_Class"} ) =
 		  ( pdf_class_file( $fn, \$meta->{"Text"}, $meta->{"hash"},$Class ) );
 		$meta->{"Class"} = $Class;
-	} 
+	}
 	else { print STDERR "Still processing...\n"; }
 
 	#$meta->{"keys"} = join( ' ', keys(%$meta) );
@@ -644,7 +644,7 @@ sub load_file
 	}
 	# make summary for caller
 	$meta->{"Text"} = count_text($meta->{"Text"}) if $meta->{"Text"};
-	
+
 	if ($type eq "FAILED")
 	{
 	    # roll back new data
@@ -658,10 +658,10 @@ sub load_file
 ## Converter
 
 # "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-# "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+# "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 # "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-# "application/msword" 
-# "application/vnd.ms-powerpoint" 
+# "application/msword"
+# "application/vnd.ms-powerpoint"
 
 sub xtp_any {
 	my ($self,$totype,$pmeta) = @_;
@@ -714,8 +714,8 @@ sub xtp_any {
         my $type = magic( $pmeta->{_file} );
         return $type;
     }
-    
-# "application/zip" 
+
+# "application/zip"
     sub xtp_unzip {
 	my ($self,$totype,$pmeta) = @_;
         my $i = $pmeta->{"_file"};
@@ -738,7 +738,7 @@ sub xtp_any {
 		my $t0=$_;
 		$t0 =~ s/$of(\/\.\/)?\/?//;
 		my @tags=split("/+",$t0);
-		pop @tags; 
+		pop @tags;
 		# remove file unles it will be processed
 		unlink unless
 			dbaccess::insert_file($self,$hash,$_,\@tags);
@@ -766,7 +766,7 @@ sub xtp_any {
         return $type;
     }
 
-# "application/x-gzip" 
+# "application/x-gzip"
     sub xtp_tar {
 	my ($self,$totype,$pmeta) = @_;
         my $i = $pmeta->{"_file"};
@@ -792,7 +792,7 @@ sub xtp_any {
 		my $t0=$_;
 		$t0 =~ s/$of(\/\.\/)?\/*//;
 		my @tags=split("/+",$t0);
-		pop @tags; 
+		pop @tags;
 		# remove file unles it will be processed
 		unlink unless
 			dbaccess::insert_file($self,$hash,$_,\@tags);
@@ -805,7 +805,7 @@ sub xtp_any {
         return $type;
     }
 
-# "application/x-gzip" 
+# "application/x-gzip"
     sub xtp_gzip {
 	my ($self,$totype,$pmeta) = @_;
         my $i    = $pmeta->{"_file"};
