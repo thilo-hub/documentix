@@ -1026,7 +1026,8 @@ sub do_pdftocairo {
 
     my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
     symlink( $inpdf, "$tmpdir/in.pdf" );
-    my @cmd = ( qw{pdftocairo -r 300 -jpeg}, "$tmpdir/in.pdf", $pages );
+    my @cmd = ( qw{pdftocairo -jpeg}, "$tmpdir/in.pdf", $pages );
+    # my @cmd = ( qw{pdftocairo -r 300 -jpeg}, "$tmpdir/in.pdf", $pages );
     print STDERR "CMD: " . join( " ", @cmd, "\n" ) if $debug > 3;
     my $fail += ( system(@cmd) ? 1 : 0 );
     unlink("$tmpdir/in.pdf");
