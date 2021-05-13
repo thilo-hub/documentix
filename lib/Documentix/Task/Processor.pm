@@ -120,7 +120,6 @@ sub _refreshDirectories {
 	    unless my $guard = $minion->guard('load_directories', 7200);
     Documentix::scantree::scantree($top);
     }
-1;
 
 sub _merger {
   my ($job) = @_;
@@ -129,3 +128,4 @@ sub _merger {
   my $res=Documentix::Merger::merge();
   $job->finish($res);
 }
+1;
