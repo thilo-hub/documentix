@@ -2,6 +2,7 @@ package Documentix::Controller::Docs;
 use Data::Dumper;
 use IO::Scalar;
 use Date::Parse;
+use Encode qw{encode decode};
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON qw(decode_json encode_json);
@@ -119,7 +120,7 @@ sub status {
 		});
 
 }
-use Encode qw{encode decode};
+
 sub refresh_file {
 	my ($c,$file)=@_;
 	$DB::single=1;
