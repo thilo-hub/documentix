@@ -354,6 +354,98 @@ sub summary {
     $$t =~ m/^\s*(([^\n]*\n){1,24}).*/s;
     return  $1 || "";
 }
+sub refresh_pdfinfo_all {
+    my $self = shift;
+    $DB::single=1;
+    my $lp = $self ->{dh} -> prepare('select idx,file from metadata natural join hash natural join file where tag="pdfinfo" and value not like "%Pages%"  group by md5');
+    $lp->execute();
+    while ( my $r = $lp->fetchrow_hashref() ) {
+	print "I: $r->{idx} $r->{file} \n";
+	(my $pg,$pdfinfo) =  $self->pdf_info($r->{file});
+	next unless $pg > 0;
+	$self->ins_e($r->{"idx"},"pdfinfo", $pdfinfo);
+	print "   $pg Pages\n";
+    }
+}
+
+
+
+sub refresh_ocr_all {
+    my $self = shift;
+    my $fix=$self->{dh}->prepare("update metadata set value=value -1 where tag = 'rating' and idx = ?");
+    my $lp = $self->{dh}->prepare( "select idx, value rating from metadata where tag = 'rating' and value >= 0 and value < 0.05 order by 2");
+    $lp->execute();
+    while ( my $r = $lp->fetchrow_hashref() ) {
+	print "I: $r->{idx}  $r->{rating}\n";
+        $self->{idx}=$idx;
+
+	$self->refresh_ocr($r->{idx});
+	$fix->execute($r->{idx});
+
+
+
+    }
+}
+
+
+sub refresh_ocr {
+  my $self = shift;
+  my ($idx) = shift;
+  # Find input file
+  # determine ocr output location
+  # run ocr
+  # do some sanity check of results
+  # update metadata with new text
+
+
+  # Find input file
+  my $t;
+  my ($infile,$md5,$pdfinfo) =
+            $self->{dh}->selectrow_array( "select file,md5,value pdfinfo  from hash natural join file natural join metadata where idx=? and tag = 'pdfinfo'", undef, $idx );
+  $self->{idx}=$idx;
+  # determine ocr output location
+  my $outfile = $self->get_store($md5,1);
+  $outfile .= "/test.ocr.pdf";
+  my $of = $outfile."/". basename($infile);
+  $of =~ s/\.pdf/.ocr.pdf/;
+  $DB::single=1;
+  (warn "$infile\n$pdfinfo", return)
+  	unless ( $pdfinfo =~ m|Page size</td><td>\s+([\d\.]+)\s*x\s*([\.\d]+)\s+pts| && ($1*$2)>1000 );
+  my $npages = $1 if ( $pdfinfo =~ m|^<tr><td>Pages</td><td>\s*(\d+)|m);
+  # run ocr
+  die "No file: $infile" unless -r $infile;
+  $self->{dh}->do("begin exclusive transaction");
+  if ( -f $outfile) {
+      #test.ocr.pdf exists -- merge content into db
+      print STDERR "Load $outfile -> db\n";
+      warn "Exists: $of\n" if -f $of;
+      #next if -f "$outfile";
+      ($pg,$pdfinfo) =  $self->pdf_info($outfile);
+      $t = do_pdftotext($outfile);
+  } else {
+      print STDERR "OCR ($npages) $infile -> $outfile\n";
+      ($pdfinfo,$t) = $self->do_ocrpdf($infile,$outfile,undef,$md5);
+  }
+    if ($t) {
+	$t =~ s/[ \t]+/ /g;
+	$self->ins_e( $idx, "Text", $t );
+
+	# short version
+	my $c = summary(\$t);
+	$self->ins_e( $idx, "Content", $c );
+	$self->{dh}->do(qq{delete from tags where idx=? and tagid=(select tagid from tagname where tagname = 'empty') },undef,$idx);
+	my ($popfile,$class) = ( pdf_class_file( $fn, \$t, $meta->{hash},  join("/",@{$meta->{"_taglist"}})  ) );
+
+	print STDERR "Done...";
+    }
+    # die "Stored -> $outfile";
+  $self->{dh}->do("commit");
+
+  # do some sanity check of results
+  # update metadata with new text
+  #
+}
+
 # ARGS:  $inpdf, $outpdf, $ascii, $md5
 # RET:   $text
 sub do_ocrpdf {
