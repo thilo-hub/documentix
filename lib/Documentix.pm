@@ -36,7 +36,7 @@ $self->hook(before_dispatch => sub {
 
   # Router
   my $r = $self->routes;
-  $self->max_request_size(300*2**20);
+  $self->max_request_size(900*2**20);
 
   # Normal route to controller
   $r->get('/')->to(cb => sub {  my $c = shift;  $c->redirect_to($config->{index_html} )   });
