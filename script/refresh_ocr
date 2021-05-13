@@ -1,0 +1,14 @@
+#!/usr/local/bin/perl
+
+use Data::Dumper;
+# -I../lib -e '
+BEGIN{ 
+print Dumper(\%INC);
+	$Documentix::config=require "./mydoc.conf";
+}  
+use Documentix::Classifier; 
+use doclib::pdfidx;  
+$d=pdfidx->new(0,$Documentix::config); 
+$DB::single=1; 
+#$d->refresh_ocr_all(); 
+
