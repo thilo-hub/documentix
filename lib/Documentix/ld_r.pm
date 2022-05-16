@@ -14,6 +14,7 @@ use Documentix::search;
 print STDERR ">>> ld_r.pm\n" if $Documentix::config->{debug} > 2;
 
 my $entries = $Documentix::config->{results_per_page};
+my $maxtags=30;
 
 my $myhost = hostname();
 
@@ -91,9 +92,9 @@ sub ldres {
     $ndata -> execute($idx);
 
 	if ($idx0 eq 1){
-	    $classes=q{select tagname,count(*) count  from tags natural join tagname where idx in (select idx  from cache_q where qidx=?) group by tagid};
+	    $classes=q{select tagname,count(*) count  from tags natural join tagname where idx in (select idx  from cache_q where qidx=?) group by tagid order by count desc limit ?};
 	    my $sel_t=$dh->prepare_cached($classes);
-	    $sel_t->execute($idx);
+	    $sel_t->execute($idx,$maxtags);
 	    $classes = $sel_t->fetchall_arrayref({});
 	}
 	#
@@ -105,10 +106,10 @@ sub ldres {
 
 
 	if ($idx0 eq 1){
-	    $classes = qq{ select tagname,count(*) count from $subsel tags natural join tagname group by tagid};
+	    $classes = qq{ select tagname,count(*) count from $subsel tags natural join tagname group by tagid order by 2 desc limit ?};
 	    print STDERR "Classes:  $classes\n";
 	    my $sel_t=$dh->prepare_cached($classes);
-	    $sel_t->execute();
+	    $sel_t->execute($maxtags);
 	    $classes = $sel_t->fetchall_arrayref({});
 	}
 	$ndata = qq{ select count(*) from $subsel hash };
