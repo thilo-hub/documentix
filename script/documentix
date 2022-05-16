@@ -11,7 +11,9 @@ use Mojolicious::Commands;
 use Mojolicious::Plugin::Config;
 use File::Path qw(make_path );
 
-die "Please copy documentix.conf.tmpl to ./documentix.conf and check settings"  unless -f  ( $ENV{"PWD"}.'/documentix.conf');
+my $ec=$ENV{"PWD"}.'/documentix.conf';
+
+die "Please copy documentix.conf.tmpl to $ec and check settings"  unless -r  ( $ec );
 
 my $lib=curfile->dirname->sibling('lib')->to_string;
 my $config = Mojolicious::Plugin::Config->load ( $ENV{"PWD"}.'/documentix.conf');
