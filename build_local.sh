@@ -4,11 +4,14 @@
 
 DEST="$1";
 test -d $DEST || mkdir $DEST
-perl -MCPAN  -e 'get "I/IS/ISHIGAKI/DBD-SQLite-1.66.tar.gz"' && 
-	tar xf /root/.cpan/sources/authors/id/I/IS/ISHIGAKI/DBD-SQLite-1.66.tar.gz && 
-	cd DBD-SQLite-1.66/ &&
-	wget https://www.sqlite.org/2020/sqlite-amalgamation-3330000.zip &&  
-	unzip -j -o  sqlite-amalgamation-3330000.zip &&
+SQLSRC="https://www.sqlite.org/2022/sqlite-amalgamation-3390000.zip"
+
+cpan -g DBD::SQLite 
+test -r DBD-SQLite-*.tar.gz &&
+	tar xvfz DBD-SQLite*.tar.gz && rm -f DBD-SQLite*.tar.gz &&
+	cd DBD-SQLite* &&
+	wget "$SQLSRC"  &&  
+	unzip -j -o  "$(basename "$SQLSRC")" &&
 	perl Makefile.PL  && 
 	make && 
 	make DESTDIR=$DEST  install &&
