@@ -7,13 +7,29 @@ use File::Temp qw/tempfile tmpnam tempdir/;
 use Documentix::Classifier qw{pdf_class_md5};
 
 use Data::Dumper;
+# Merge contents of two scans (from-pages & back-pages) into a singular correctly ordered one.
+# A page only containing a special QR code is identified and used to determine how to assembel the pack.
+# the special page is removed from the pack and the final pack getts information what source documents where used to merge
+#
+# Since the QR-page is identified when OCR'ing the page, the sqlite-magic below tries to identify the packs
+# same page number, qr-page on same location, time of scan closed to each other
 sub merge
 {
 
-	my $dba = dbaccess->new();   
+	my $dba = dbaccess->new();
 	my @results;
 	$DB::single=1;
 	my @items;
+	$dba->{dh}->do(qq{
+		CREATE VIEW if not exists joindocs as
+			with mee(idx,pages,mtime,qr)
+				as (select idx,p.value pages,m.value mtime,q.value qr
+					from metadata p join metadata m using(idx) join metadata q using(idx)
+					where p.tag='pages' and m.tag='mtime' and q.tag='QR'
+					and idx not in (select idx from tags where tagid = (select tagid from tagname where tagname = 'deleted')  ))
+				select fr.idx odd,bk.idx even, fr.qr oddqr,bk.qr evenqr, max(fr.mtime,bk.mtime) mtime
+				from mee fr,mee bk where fr.pages=bk.pages and fr.qr like '%Front Page%' and bk.qr like '%Back Page%' and fr.mtime-bk.mtime between -1000 and 1000
+		});
 	my $getdocs = $dba->{dh}->prepare("select *,eh.md5 md5even,oh.md5 md5odd  from joindocs join hash eh on(even=eh.idx) join hash oh on (odd=oh.idx) ");
 	$getdocs->execute;
 	my @merge_list=();
