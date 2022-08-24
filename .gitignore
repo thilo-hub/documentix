@@ -1,3 +1,4 @@
 *.swp
 tags
 *.swo
+*.DS_Store
