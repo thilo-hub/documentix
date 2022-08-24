@@ -59,7 +59,7 @@ if( $ARGV[0] eq "daemon" && fork() == 0){
 	   system("perl $ENV{POPFILE_ROOT}/popfile.pl");
 	   exit 0;
    }
-   @ARGV=qw{minion worker};
+   @ARGV=qw{minion worker -j 20};
    sleep 5;
 }
 

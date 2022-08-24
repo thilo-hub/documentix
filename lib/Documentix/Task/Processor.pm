@@ -64,7 +64,6 @@ sub _loader {
   # sleep 1;
   my $txt;
   eval { 
-$DB::single=1;
 	$txt = $pdfidx->load_file(  "application/pdf",{file=>$fn,hash=>$dgst,_taglist=>$tags});
   };
   if ( $@ ) {
@@ -87,9 +86,7 @@ sub schedule_maintenance
 	
 	$jobs = $minion->jobs({tasks => ['refreshIndexes']});
 	while (my $info = $jobs->next) {
-		print STDERR "Here\n";
 		$minion->broadcast('retry',[$info->{id}]) if $info->{state} eq "finished";
-		print STDERR "restart\n";
 		return
 	}
         $minion->enqueue(refreshIndexes=> [@_]=>{priority=>0, delay=>5} );
@@ -117,7 +114,7 @@ sub schedule_refresh
 sub _refreshDirectories {
     my ($job,$top) = @_;
     return $job->finish('Previous job is still active')
-	    unless my $guard = $minion->guard('load_directories', 7200);
+	    unless my $guard = $minion->guard('load_directories', 72);
     Documentix::scantree::scantree($top);
     }
 

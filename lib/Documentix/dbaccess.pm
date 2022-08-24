@@ -232,7 +232,6 @@ sub item
 {
 	my ($self,$md5)=@_;
 	my $dh = $self->{"dh"};
-	warn "MD5: $md5";
 	my $get=$dh->prepare_cached(qq{
 	select  md5,
 		group_concat(tagname) tg,
