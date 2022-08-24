@@ -170,11 +170,17 @@ dbg_msg = function(msg) {
 do_tags = function(classes) {
 	var tg=$("#taglist").html("");
 	//classes.sort((a, b) => a.value - b.value);
+	var maxcnt=0;
 	classes.sort((a,b)=>b.count-a.count).forEach(function (e) {
+		if ( maxcnt <= e.count) {
+			maxcnt = e.count;
+		} else {
+		var fontsz=Math.floor(20*e.count/maxcnt) + 10;
 		var v = "cl_"+e.tagname + " tags";
 	      if ( e.tagname == clname )
 		v += " tagfilter ";
-	      tg.append('<div class="tgbbox"><a class="'+v+'" >'+e.tagname+'</a></div>');
+	      tg.append('<div style="font-size: '+fontsz+'px" class="tgbbox"><a class="'+v+'" >'+e.tagname+'</a></div>');
+		}
 	})
 }
 
@@ -193,7 +199,7 @@ $(function() {
 	    var p=$('#pdfview');
 
 	    if ( u !== undefined ){
-		    u=viewer_url.replace("%doc",u);
+		    u=viewer_url.replace("%doc",u.toUri());
 	    }
 	    if ( p.length ) {
 		    // Frame on this page

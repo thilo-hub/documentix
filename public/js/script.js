@@ -190,4 +190,16 @@ $(function(){
 	$("#left").on("dragenter",drag_showEdit);
 
 });
+if (typeof String.prototype.upper !== "function") {
+	String.prototype.toUri = function() {
+		console.log(this);
+
+		var a=this.replace(/\//g,"%2F")
+			.replace(/\%/g,"%25")
+		//      .replace(/\%/g,"%25")
+		;
+
+		return a;
+        };
+};
 

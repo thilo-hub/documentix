@@ -14,7 +14,8 @@ use Documentix::search;
 print STDERR ">>> ld_r.pm\n" if $Documentix::config->{debug} > 2;
 
 my $entries = $Documentix::config->{results_per_page};
-my $maxtags=30;
+#How many tags are shown 
+my $maxtags=60;
 
 my $myhost = hostname();
 
@@ -138,11 +139,11 @@ sub ldres {
 
     #  Add selection of slice wanted
 
-    #print STDERR "$get_res\n";
     $get_res = $dh->prepare_cached($get_res);
     $get_res->execute(@sargs);
 
     my $out = $get_res->fetchall_arrayref({});
+    # Loop over query results and create hash to be returned
     foreach ( @$out ) {
 	if ( my $mpdf = $_->{"pdfinfo"} ){
 		$_->{sz}= conv_size($1) if $mpdf =~ /File size\s*<\/td><td>\s*(\d+)/;
@@ -152,12 +153,14 @@ sub ldres {
 	}
 	$_->{dt} = pr_time($_->{dt});
 	my $f=$_->{file}; delete $_->{file};
+	next unless $f;
 	$f =~ s|^.*/||;
 	$f =~ s|\.([^\.]*)$||;
 	$_->{doct} = $1;
 	utf8::decode($f);
 	$_->{doc}  = $f;
 	$_->{doc}  =~ s/%20/ /g;
+	$_->{doc}  =~ s/%2F/\//g; #Not sure if best. The filename uses %xx and the doc-name is then problematic?
 
 	$_->{tip} = $_->{snippet}; delete $_->{"snippet"};
 	$_->{tip} =~ s/["']/&quot;/g;

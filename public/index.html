@@ -23,7 +23,7 @@
 <script type="text/javascript" src="js/tagmgmt.js"></script>
 <script type="text/javascript" src="js/clipboard.min.js"></script>
 <script type="text/javascript" src="js/docidx3.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+<script type="text/javascript" src="js/popper.min.js"></script>
 
 
 <script src="lib/bootstrap.min.js"></script>
@@ -76,7 +76,7 @@
 				<li class="viewopt dbg" id="status">Status Field</li>
 			</ul>
 	</div>
-	<div class="left" id="importing" style="display: none"> 
+	<div class="left" id="importing" style="display: none">
 		<p>Loading from Scanner...</p>
 	</div>
 	</div>
@@ -97,20 +97,19 @@
 				{{if tip && tip.match("ProCessIng")}}  updateneeded  processing {{/if}}
 				{{if tg && tg.match("failed")}} failed {{/if}}
 			"
-		    id="{{:md5}}" docname="{{:doc}}"
+		    id="{{:md5}}" docname="{{:doc.toUri()}}"
 		    oncontextmenu="DoContext(event)"
 		    onclick="DoViewer(event)"
 		     >
 
 		      <div class="rcell" >
-			  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" ontouchcancel="UnTip()" onmouseover="itemTip(event)">
-
-			    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc}}{{if tip == "ProCessIng"}}.tmp{{/if}}.ico" />
+			  <a class="thumb" href='docs/raw/{{:md5}}/{{:doc.toUri()}}.{{:doct}}' ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" onmouseout="UnTip()" ontouchcancel="UnTip()" onmouseover="itemTip(event)">
+			    <img class="thumb  img-responsive" src="docs/ico/{{:md5}}/{{:doc.toUri()}}{{if tip == "ProCessIng"}}.tmp{{/if}}.ico" />
 			  </a>
 			<div class="itemtip">{{html:tip}}</div>
 			<div class="descr">
 			  <div class="doclink" onclick="event.stopPropagation()">
-			    <a tabindex=-1 class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc}}.{{:doct}}" download> {{:doc}}{{if doct && !doct.match("pdf")}}.{{:doct}}{{/if}}</a>
+			    <a tabindex=-1 class="doclink glyphicon glyphicon-download" href="docs/raw/{{:md5}}/{{:doc.toUri()}}.{{:doct}}" download> {{:doc}}{{if doct && !doct.match("pdf")}}.{{:doct}}{{/if}}</a>
 			  </div>
 			  <a tabindex=-1 class="dtags">
 			    <p class="tagfield" >
