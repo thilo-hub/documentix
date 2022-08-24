@@ -35,7 +35,7 @@ my $pdftoppm   = "pdftoppm";
 my $pdftotext  = "pdftotext";
 my $pdftocairo = "pdftocairo";
 my $zbarimg    = "zbarimg";
-my @tessopts=qw{-l deu+eng --psm 1 --oem 1 pdf};
+my @tessopts=qw{--dpi 150 -l deu+eng --psm 1 --oem 1 pdf};
 
 # use threads;
 # use threads::shared;
@@ -292,11 +292,26 @@ sub ocrpdf_async {
 	return Ocr::push_job($self->{"idx"},@_);
 }
 
+sub getmd5($$) {
+	my $self=shift;
+    	my $op =$self->{dh}->prepare_cached("select md5 from hash where idx=?");
+       my ($md5) =
+            $self->{dh}->selectrow_array( $op, undef, shift );
+	return $md5;
+}
+sub getidx($$) {
+
+	my $self=shift;
+    	my $op =$self->{dh}->prepare_cached("select idx from hash where md5=?");
+       my ($idx) =
+            $self->{dh}->selectrow_array( $op, undef, shift );
+	return $idx;
+}
+
 sub ocrpdf_sync {
 	my $self=shift;
 	my ( $inpdf, $outpdf, $ascii, $meta) = @_;
-       my ($idx) =
-            $self->{dh}->selectrow_array( "select idx from hash where md5=?", undef, $meta->{hash} );
+	my $idx = $self->getidx($meta->{hash});
 	$self->{"idx"} = $idx;
 	print STDERR "ocrpdf_sync: ".Dumper(\@_);
 	# Otherwise the directory would be deleted
@@ -405,9 +420,8 @@ sub refresh_ocr {
   $self->{idx}=$idx;
   # determine ocr output location
   my $outfile = $self->get_store($md5,1);
-  $outfile .= "/test.ocr.pdf";
-  my $of = $outfile."/". basename($infile);
-  $of =~ s/\.pdf/.ocr.pdf/;
+  $outfile .="/". basename($infile);
+  $outfile  =~ s/\.pdf/.ocr.pdf/;
   $DB::single=1;
   (warn "$infile\n$pdfinfo", return)
   	unless ( $pdfinfo =~ m|Page size</td><td>\s+([\d\.]+)\s*x\s*([\.\d]+)\s+pts| && ($1*$2)>1000 );
@@ -418,7 +432,7 @@ sub refresh_ocr {
   if ( -f $outfile) {
       #test.ocr.pdf exists -- merge content into db
       print STDERR "Load $outfile -> db\n";
-      warn "Exists: $of\n" if -f $of;
+      warn "Exists: $outfile\n" if -f $outfile;
       #next if -f "$outfile";
       ($pg,$pdfinfo) =  $self->pdf_info($outfile);
       $t = do_pdftotext($outfile);
@@ -453,6 +467,7 @@ sub do_ocrpdf {
     my ( $inpdf, $outpdf, $ascii, $md5 ) = @_;
     my $pdfinfo= undef;
     my $maxcpu = $self->{config}->{number_ocr_threads};
+    $maxcpu = 1 if $ENV{PERLDB_PIDS}; # No multithread if debugging
     my @outpages;
     print STDERR "ocrpdf $inpdf $outpdf\n" if $debug > 1;
     $inpdf  = abs_path($inpdf);
@@ -468,7 +483,7 @@ sub do_ocrpdf {
     print STDERR "Convert ".scalar(@inpages)." pages\n" if $debug > 1;
     my @qr;
     foreach $in (@inpages) {
-        my $outim   = $in . ".jpg";
+        my $outim   = $in . ".png";
 
         my $inx=$in.".png";
         qexec("convert",$in,"-resize","800",$inx);
@@ -646,8 +661,7 @@ sub fail_file
 	my ($hint,$meta)=@_;
 	my $dh=$self->{dh};
 	print STDERR "Failed file: $hint ($meta->{hash})\n";
-	my ($idx) =
-	$dh->selectrow_array( "select idx from hash where md5=?", undef, $meta->{hash} );
+	my $idx = $self->getidx($meta->{hash});
 	pdf_class_file(undef,undef,$meta->{hash},"failed");
         $self->ins_e( $idx, "Content", "Failed=$hint" );
 	$self->ins_e( $idx, "pdfinfo", "unknown" );
@@ -692,8 +706,7 @@ sub load_file
 	$meta->{_file}=$fn;
 	$meta->{hash} = file_md5_hex($fn) unless $meta->{hash};
 	# If we dont know the file already, we can just return
-	my ($idx) =
-	  $dh->selectrow_array( "select idx from hash where md5=?", undef, $meta->{hash} );
+	my $idx = $self->getidx($meta->{hash});
 	return ($idx,undef) unless  $idx; #Error
 	$meta->{"Docname"} = basename($fn);
 	$meta->{"Content"} = "ProCessIng";
@@ -967,7 +980,7 @@ sub pdf_filename {
 
     my $lcl_store_dir = $self->get_store( $md5,1);
     my $lcl_store = $lcl_store_dir . "/$f_base";
-    die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
+    # die "No read: $fn" unless ( -r $fn || -r $ocrpdf );
     my @locs=( $lcl_store.".ocr.pdf", $f_path .$f_base.".ocr.pdf", $fn );
     foreach (@locs) {
         $fn=$_;
@@ -1088,7 +1101,11 @@ sub qexec
 sub do_tesseract {
     my ( $image, $outpage ) = @_;
     my $msg;
-    my @ckori = ( $tesseract, qw{ --psm 0},$image,"-" );
+    # Don't ask, tesseract does not like the "default" input format
+    # piping through convert seems to fix the issue
+    #
+    # my @ckori = ( $tesseract, qw{ --psm 0},$image,"-" );
+    my @ckori = ( $convert,$image,"-","|",$tesseract, qw{ --psm 0},"-","-" );
 
     my $r=qx{@ckori};
 
@@ -1141,8 +1158,8 @@ sub do_pdfstamp {
     push @tg,"-Producer=$creator";
     push @tg,"-Keywords=$cmt" if $cmt;
     push @tg,"-overwrite_original_in_place";
-    qexec("exiftool",@tg,$outpdf);
     qexec("qpdf","--linearize",$outpdf,$outpdf1);
+    qexec("exiftool",@tg,$outpdf1);
 
     $fail++ unless  -r $outpdf1;
     utime ((stat($orig))[8..9],$outpdf1) if $orig && !$fail;
