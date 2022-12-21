@@ -22,6 +22,9 @@ sub getFiles {
 
 	my @new;
 	mkdir $dst unless -d $dst;
+	local %ENV;
+	$ENV{LD_LIBRARY_PATH} ="/usr/local/samba/lib";
+	$ENV{PATH} = "/usr/local/samba/bin";
 
 
 	my @onserver = qx{smbclient -N $$srv[0] -D $dir  -c  dir 2>/dev/null };
