@@ -268,6 +268,8 @@ function webViewerLoad() {
   }
 
   pdfjsWebApp.PDFViewerApplication.run(config);
+  document.getElementById("viewBookmark").addEventListener("dragstart", dodrag);
+  document.getElementById("secondaryViewBookmark").addEventListener("dragstart", dodrag);
 }
 
 if (document.readyState === "interactive" || document.readyState === "complete") {

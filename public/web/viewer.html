@@ -391,7 +391,8 @@ See https://github.com/adobe-type-tools/cmap-resources
     <div id="printContainer"></div>
 <script>
 var lb=document.getElementById("viewBookmark");
-lb.addEventListener("dragstart", function(e) {
+lb.addEventListener("dragstart", dodrag);
+function dodrag(e) {
 	console.log("Starting...");
 	var o= e.dataTransfer.getData("text/html");
 	if ( ! o ) {
@@ -403,9 +404,9 @@ lb.addEventListener("dragstart", function(e) {
 	dname = dname.replace(/%20/g," ");
 	e.target.outerHTML=e.target.outerHTML.replace(/Current view/gi,dname);
 	o=o.replace(/Current View/ig,dname);
-	e.dataTransfer.setData("text/html",o)
-	e.dataTransfer.setData("text",o)
-}, false);
+	e.dataTransfer.setData("text/html",dname[0])
+	e.dataTransfer.setData("text",dname[0])
+}
 </script>
   </body>
 </html>

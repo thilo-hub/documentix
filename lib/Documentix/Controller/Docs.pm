@@ -127,7 +127,8 @@ sub refresh_file {
 	my $dba = dbaccess->new();   
 	my $f=Mojo::Asset::File->new(path => decode("utf-8",$file));
 	$file =~ s|^.*/||;
-	return $c->render(json => $dba->load_asset($c,$f,$file,$f->mtime));
+	my ($status,$rv)=$dba->load_asset($c,$f,$file,$f->mtime);
+	return $c->render(json => {status => $status, rv => $rv});;
 }
 
 

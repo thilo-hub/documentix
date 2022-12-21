@@ -58,7 +58,7 @@ function DoViewer(event) {
 	   Hidepdf(event);
    } else {
 	   var id=$(rb).attr("id")
-	   var doc=$(rb).attr("docname")
+	   var doc=$(rb).attr("docname").toUri();
 	    // Remove active viewing red frames
 	   $(".rbox.viewing").removeClass("viewing",500);
 	   rb.addClass("viewing",500);
@@ -192,12 +192,14 @@ $(function(){
 });
 if (typeof String.prototype.upper !== "function") {
 	String.prototype.toUri = function() {
-		console.log(this);
-
-		var a=this.replace(/\//g,"%2F")
+		console.log("URI: "+this);
+		var a=this
+			.replace(/\//g,"%2F")
 			.replace(/\%/g,"%25")
+			// .replace("%252F","/")
 		//      .replace(/\%/g,"%25")
 		;
+		console.log(" TO: "+a);
 
 		return a;
         };

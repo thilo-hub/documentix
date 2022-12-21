@@ -199,7 +199,7 @@ $(function() {
 	    var p=$('#pdfview');
 
 	    if ( u !== undefined ){
-		    u=viewer_url.replace("%doc",u.toUri());
+		    u=viewer_url.replace("%doc",u);
 	    }
 	    if ( p.length ) {
 		    // Frame on this page
