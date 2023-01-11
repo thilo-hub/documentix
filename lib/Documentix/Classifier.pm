@@ -80,7 +80,7 @@ sub get_popfile_r {
 
     # and a temporary file, with the full path specified
     my ( $fh, $tmp_doc ) = tempfile(
-        'popfileinXXXXXXX',
+        '/tmp/popfileinXXXXXXX',
         SUFFIX => ".msg",
         UNLINK => 1,
         DIR    => $temp_dir
@@ -170,7 +170,7 @@ sub pdf_class_file {
     else {
         # ask for class
         my ( $fh_out, $tmp_out ) = tempfile(
-            'popfileinXXXXXXX',
+            '/tmp/popfileinXXXXXXX',
             SUFFIX => ".out",
             UNLINK => 1,
             DIR    => $temp_dir
@@ -227,7 +227,7 @@ q{select idx,count(*) cnt, group_concat(tagname) lst,value    from tags natural 
     $all_s->execute;
     while ( my $r = $all_s->fetchrow_hashref() ) {
         my ( $fh, $tmp_doc ) = tempfile(
-            'popfileinXXXXXXX',
+            '/tmp/popfileinXXXXXXX',
             SUFFIX => ".msg",
             UNLINK => 1,
             DIR    => $temp_dir
@@ -269,7 +269,7 @@ sub set_class_content {
     $rv = pop_call( 'create_bucket', $b ) if $b;
     print STDERR "TG: $tg -> $rv\n" if $debug > 1;
     my ( $fh, $tmp_doc ) = tempfile(
-        'popfileinXXXXXXX',
+        '/tmp/popfileinXXXXXXX',
         SUFFIX => ".msg",
         UNLINK => 1,
         DIR    => $temp_dir

@@ -210,7 +210,7 @@ sub conv_size
 # print formated short time string depending on how long ago
 sub pr_time {
 	my $t   = shift;
-	$t=0 unless $t =~ /^\d+$/;
+	$t=0 unless defined($t) && $t =~ /^\d+$/;
 	my $dt = time() - $t;
 	my @str = ( "%a %H:%M",  "last %a",         "%b-%d",             "%b %Y" );
 	my @off = ( 24 * 60 * 60, 7 * 24 * 60 * 60, 180 * 24 * 60 * 60 );

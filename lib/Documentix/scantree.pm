@@ -73,7 +73,7 @@ sub scantree {
     $check->execute( $Documentix::config->{local_storage}."%",$Documentix::config->{root_dir}."%" );
     while ( my $r = $check->fetchrow_hashref) 
     {
-	print STDERR Dumper ($r);
+	# print STDERR Dumper ($r);
 	$r->{file}=Mojo::File->new($r->{file})->to_abs ;
 	$remove_file->($r) unless -r $r->{file};
 	my $asset = Mojo::Asset::File->new(path => $r->{file});

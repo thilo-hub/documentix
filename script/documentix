@@ -59,7 +59,8 @@ if( $ARGV[0] eq "daemon" && fork() == 0){
 	   system("perl $ENV{POPFILE_ROOT}/popfile.pl");
 	   exit 0;
    }
-   @ARGV=qw{minion worker -j 20};
+   @ARGV=qw{minion worker -j};
+   push @ARGV, $config->{number_server_threads};
    sleep 5;
 }
 
