@@ -733,6 +733,50 @@ sub load_file
 		$type = &$hdl( $self, $totype, $meta )
 	}
 	#$type = &$hdl( $self, $totype, $meta ) while (my $hdl=mime_handler($type));
+	# Capture QR references to us
+	$DB::single=1;
+	push @{$meta->{_taglist}},"scanned"
+		if SplitPdf::isTagged($meta->{pdfinfo});
+	if ($meta->{pdfinfo}  =~ m|^.*Keywords</td><td>(.*?)</td>| ) {
+		my $res = $1;
+		my @res =split(/,SCAN:/,$res); 
+		$res = join("\n",grep{ /:QR-Code:/ } @res);
+		$meta->{QR} = $res if @res;
+	}
+	if ( $meta->{QR} =~ m/(\d+):QR-Code:(Front|Back) Page/ ) {
+		# Submit merge job instead of qr processing...
+		# But hiher djin is doing it...
+		# Just add QR infos into meta
+		$meta->{"_runmerger"}=1;
+	} elsif ( $meta->{"pdfinfo"} ) {
+	    my @qrrefs = SplitPdf::get_qridx($meta->{"pdfinfo"});
+	    if (@qrrefs) {
+		if ( 1 && scalar(@qrrefs) > 0 ) {
+			# Try splitting 
+			my $tmpdir = $meta->{_lcl_store};
+			#Merger::loadSplits($fn,$tmpdir);
+
+			my @splits = SplitPdf::split_pdf($fn,$tmpdir);
+			$DB::single=1;
+			my $dba = dbaccess->new();
+			foreach( @splits ) {
+				my $new =Mojo::Asset::File->new(path => $$_->{name});
+				my ($status,$nrv)=$dba->load_asset(undef,$new,basename($$_->{name}),$meta->{mtime});
+				push @{$meta->{_splits}}, $nrv;
+			}
+			#disable access to cmbined document
+			$DB::single=1;
+			push @{$meta->{_taglist}},"deleted"
+				if @splits;
+		}
+		my $addqr = $self->{"dh"}->prepare_cached( qq{insert or replace into doclabel (idx,doclabel) values(?,?)});
+		foreach(map{@$_} @qrrefs) {
+			printf STDERR "Add QR: $_ -> $idx\n";
+		    $addqr->execute($idx,$_);
+		}
+	    }
+	}
+
 
 	unless ($meta->{Content} && $meta->{Content} =~ m/ProCessIng/) {
 		# Dont ask to classify it while its not done

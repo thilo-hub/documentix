@@ -65,7 +65,10 @@ sub _loader {
   # sleep 1;
   my $txt;
   eval { 
+	  # ask to make a pdf from input and install in database
 	$txt = $pdfidx->load_file(  "application/pdf",{file=>$fn,hash=>$dgst,_taglist=>$tags});
+        $minion->enqueue('merger')
+		if (defined($txt->{_runmerger}));
   };
   if ( $@ ) {
 	# $Documentix::db::dh->disconnect();
