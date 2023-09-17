@@ -42,9 +42,10 @@ shown in the main window and their content is searched for.
 
 ## Usefull links
 
--   [MX870 Scanner](//import)
--   [Minion manager](//minion)
--   [Fix Database - simple](//fixsearchdb)
+-   [MX870 Scanner]($HOST/import)
+-   [Minion manager]($HOST/minion)
+-   [Fix Database - simple]($HOST/fixsearchdb)
+-   [Refresh local files]($HOST/refresh)
 
 `<a href="//minion" target="_blank">`{=html}Learn
 Markdown!`</a>`{=html}
@@ -78,16 +79,43 @@ Essentially the below mime-types are able to be converted.
 
 ## Installation
 
+
 ### Docker
 
 Docker is the simplest way.
 
 This will create a docker-internal persistent volume named "database" and use a folder "Documents" in you current directory
 
+* Run
 `docker run  -ti -p 8080:80 --name documentix --volume $PWD/Documents:/volumes/Docs -v database:/volumes/db   --rm thiloj/documentix`
 
-
 The database is usually not that interesting, but recreating would be anoying. All tagging and predictive data is kept as well as the search indexes...
+This installation, now shares the Folders
+`Documents/.... `
+and uses 
+`Documents/uploads` to safe uploaded files. Be aware the structure is machine-readable... You are not going to like it...
+
+If you have an existing tree underneath Documents, all folder will be labels to you documents
+
+(if you don't like to see the output of the tool, just remove `-ti` and use `-d` to have it in the background:
+
+`docker run  -d -p 8080:80 --name documentix --volume $PWD/Documents:/volumes/Docs -v database:/volumes/db   --rm thiloj/documentix`
+
+Stop documentix:
+
+`docker stop documentix`
+
+
+* Documentation can be loaded into documentix using:
+
+`docker exec -ti documentix /documentix/script/install_manual.sh 'http://localhost:8080'`
+
+
+Some internal notes and other (maybe outdated) will be installed using:
+
+`docker exec -ti documentix /documentix/script/install_documentation`
+
+
 
 ### Local filesystem
 
@@ -180,6 +208,9 @@ Typical debugging sessions I use are:
 - Check what jobs are qued
 
 `perl ../../documentix.mojofw/script/documentix minion job`
+
+
+
 
 
 
