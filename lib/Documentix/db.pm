@@ -1,5 +1,5 @@
 package Documentix::db;
-use Exporter 'import'; 
+use Exporter 'import';
 our @EXPORT_OK = qw{dh dbmaintenance};
 
 use DBI qw(:sql_types);
@@ -34,7 +34,7 @@ sub dh
 	$_dh->do(q{pragma journal_mode=wal});
 	return $_dh;
 }
-my $cpid=undef; 
+my $cpid=undef;
 my $_cachedh;
 sub cachedh
 {
@@ -63,17 +63,17 @@ sub dbmaintenance
 			 where docid>(select value from config where var='max_idx') });
 	dh->do(q{
 		create temporary table cache_q1 as
-			select qidx,text_tmp.docid idx,snippet(text_tmp,1,"<b>","</b>","...",4) snippet 
+			select qidx,text_tmp.docid idx,snippet(text_tmp,1,"<b>","</b>","...",4) snippet
 			       from cache_lst a,text_tmp(a.query);
 		});
 	dh->do(q{
 		insert or replace into cache_q(qidx,idx,snippet) select qidx,idx,snippet from cache_q1;
 		});
 	dh->do(q{
-		update cache_lst set 
-			last_used=datetime('now'), 
-			nresults=count(*) from cache_q 
-		       where cache_lst.qidx in (select distinct(qidx) from cache_q1) and 
+		update cache_lst set
+			last_used=datetime('now'),
+			nresults=count(*) from cache_q
+		       where cache_lst.qidx in (select distinct(qidx) from cache_q1) and
 			     cache_q.qidx=cache_lst.qidx;
 		});
 	dh->do(q{
