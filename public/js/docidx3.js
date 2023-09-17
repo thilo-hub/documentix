@@ -36,9 +36,21 @@ var monitor = function(win,loader) {
 	var lastElement=win;
 	var waiting = 0;
 
+	var countDown = 1;
+
 	var watcher = function() {
 	  if ( waiting  ) {
 		  return 0;
+	  }
+	  if ( countDown > 0 ) {
+		  countDown--;
+		  if ( countDown == 0 ) {
+			var ldoc = getCookie("autoshow");
+			if ( ldoc ) {
+				Showpdf(ldoc + "/test.pdf");
+				eraseCookie("autoshow");
+			}
+		  }
 	  }
 	  var bottom = lastElement.offset().top +
 		       lastElement.height()  - scrollWindow.offset().top;
@@ -309,6 +321,21 @@ $(function() {
 		});
 
 });
+function getCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0;i < ca.length;i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
+}
+function eraseCookie(name) {
+    document.cookie = name +'=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+}
+
+
 
 $.views.settings.allowCode(true);
 var itemTip=function(e){

@@ -192,14 +192,14 @@ $(function(){
 });
 if (typeof String.prototype.upper !== "function") {
 	String.prototype.toUri = function() {
-		console.log("URI: "+this);
+		// console.log("URI: "+this);
 		var a=this
 			.replace(/\//g,"%2F")
 			.replace(/\%/g,"%25")
 			// .replace("%252F","/")
 		//      .replace(/\%/g,"%25")
 		;
-		console.log(" TO: "+a);
+		// console.log(" TO: "+a);
 
 		return a;
         };

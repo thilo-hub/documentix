@@ -49,6 +49,8 @@ $self->hook(before_dispatch => sub {
   $r->get('/refresh')->to('docs#refresh');
   $r->get('/import')->to('docs#importer');
   $r->get('/export/<:tag>.zip')->to('docs#exportfiles');
+  $r->get('/lkup')->to('docs#lkup');
+  $r->get('/lkup/*DXID')->to('docs#lkup');
   $r->get('/fixsearchdb')->to('docs#fixsearchdb');
  
 

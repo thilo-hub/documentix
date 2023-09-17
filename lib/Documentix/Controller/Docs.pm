@@ -152,6 +152,25 @@ sub exportfiles {
 	my $r = $dba->export_files($tag);
 	return $c->reply->asset($r);
 }
+sub lkup {
+	my $c = shift;
+	$DB::single = 1;
+	my $id = $c->param("DXID");
+
+	my $doc = $dba->lkup($id);
+	if ( $doc ) {
+		if(0) {
+			$c->cookie(autoshow => $doc,{path => '/'});
+			$c->redirect_to("/index.html");
+		} else {
+			$c->redirect_to("/docs/pdf/$doc/doc_$id.pdf");
+		}
+	} else {
+		$c->render(text => 'Not for you', status => 451);
+	}
+
+	# $c->render(text => 'Comming soon for document doc_'.$c->param("DXID").' ...');
+}
 
 sub fixsearchdb {
 	#  Make small fixes to enable searches again

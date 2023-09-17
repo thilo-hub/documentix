@@ -373,6 +373,13 @@ print STDERR $r->{file}."\n";
     }
 }
 
+sub addqr {
+}
+sub lkup {
+	my ($self,$id) = @_;
+	my $res="";
+	return $res;
+}
 sub dbmaintenance1 {
 	my ($self) = @_;
 	my $snowball=1;
