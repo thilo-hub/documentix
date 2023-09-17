@@ -418,6 +418,8 @@ sub dbmaintenance1 {
 	   ),
 		qq{ insert into text(rowid,content) select * from vtext where content is not NULL},
 		qq{ delete from cache_lst},
+		qq{ CREATE TABLE IF NOT EXISTS doclabel (idx INT, doclabel primary key unique)},
+		qq{ drop view joindocs },
 
 		   qq{commit}
 	   );
