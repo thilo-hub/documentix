@@ -57,27 +57,27 @@ CREATE TRIGGER file_del2 after delete on file begin
 delete from hash where hash.md5 = old.md5 and refcnt = 0;
 end;
 CREATE TRIGGER metadata_au AFTER UPDATE ON metadata when old.tag = "Text" BEGIN
-	INSERT INTO "text"("text", rowid, docid,  content) VALUES('delete', old.rowid,old.idx,old.value);
-	INSERT INTO "text"(rowid,docid,content) values(new.rowid,new.idx,new.value);
-END;
+			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value);
+			INSERT INTO "text"(rowid,content) values(new.idx,new.value);
+		END;
 CREATE TRIGGER metadata_ad AFTER DELETE ON metadata when old.tag = "Text" BEGIN
-	INSERT INTO "text"("text", rowid, docid,  content) VALUES('delete', old.rowid,old.idx,old.value); 
-end;
+			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value);
+		end;
 CREATE TRIGGER metadata_ai AFTER INSERT ON metadata when new.tag = "Text" BEGIN
-	INSERT INTO "text"(rowid,docid,content) values(new.rowid,new.idx,new.value);
-end;
-CREATE TRIGGER mtime_del after delete on metadata when old.tag = "mtime" begin 
+			INSERT INTO "text"(rowid,content) values(new.idx,new.value);
+		end;
+CREATE TRIGGER mtime_del after delete on metadata when old.tag = "mtime" begin
 	delete from mtime where mtime.idx=old.idx;
     end;
-CREATE TRIGGER mtime_ins after insert on metadata when new.tag = "mtime" begin 
-	insert into mtime (idx,mtime) values (new.idx,new.value); 
+CREATE TRIGGER mtime_ins after insert on metadata when new.tag = "mtime" begin
+	insert into mtime (idx,mtime) values (new.idx,new.value);
     end;
-CREATE VIRTUAL TABLE text using fts5(docid UNINDEXED,content,  content='vtext', content_rowid='rowid', tokenize = 'porter');
+CREATE VIRTUAL TABLE text using fts5(docid,content,  content='vtext', content_rowid='docid', tokenize = 'porter');
 CREATE TABLE IF NOT EXISTS 'text_data'(id INTEGER PRIMARY KEY, block BLOB);
 CREATE TABLE IF NOT EXISTS 'text_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
 CREATE TABLE IF NOT EXISTS 'text_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
 CREATE TABLE IF NOT EXISTS 'text_config'(k PRIMARY KEY, v) WITHOUT ROWID;
-CREATE VIEW 'vtext' as select rowid,idx docid,value content from metadata where tag = 'Text'
+CREATE VIEW 'vtext'(docid,content)  as select idx ,value from metadata where tag = 'Text'
 /* vtext(rowid,docid,content) */;
 CREATE VIEW vtags as select idx,group_concat(tagname,",") tags from tags natural join tagname
 /* vtags(idx,tags) */;

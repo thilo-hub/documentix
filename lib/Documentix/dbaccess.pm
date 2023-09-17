@@ -373,5 +373,44 @@ print STDERR $r->{file}."\n";
     }
 }
 
+sub dbmaintenance1 {
+	my ($self) = @_;
+	my $snowball=1;
+	my @ops = (
+		qq{begin exclusive transaction},
+		qq{ drop table text},
+		qq{ drop view vtext},
+		qq{ drop TRIGGER metadata_au},
+		qq{ drop TRIGGER metadata_ad},
+		qq{ drop TRIGGER metadata_ai},
+		qq{ CREATE TRIGGER metadata_au AFTER UPDATE ON metadata when old.tag = "Text" BEGIN
+			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value); 
+			INSERT INTO "text"(rowid,content) values(new.idx,new.value); 
+		END},
+		qq{
+		CREATE TRIGGER metadata_ad AFTER DELETE ON metadata when old.tag = "Text" BEGIN
+			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value);  
+		end},
+		qq{
+		CREATE TRIGGER metadata_ai AFTER INSERT ON metadata when new.tag = "Text" BEGIN
+			INSERT INTO "text"(rowid,content) values(new.idx,new.value); 
+		end},
+		qq{ CREATE VIEW 'vtext'(docid,content)  as select idx ,value from metadata where tag = 'Text'},
+	   ($snowball ?
+		   qq{ CREATE VIRTUAL TABLE text using fts5(docid,content,  content='vtext', content_rowid='docid', tokenize = 'snowball german english')}
+	   :
+		   qq{ CREATE VIRTUAL TABLE text using fts5(docid,content,  content='vtext', content_rowid='docid', tokenize = 'porter')}
+	   ),
+		qq{ insert into text(rowid,content) select * from vtext where content is not NULL},
+		qq{ delete from cache_lst},
+
+		   qq{commit}
+	   );
+	foreach(@ops) {
+		print STDERR "EX: $_\n";
+		 $self->{dh}->do($_);
+	}
+}
+
 
 1;

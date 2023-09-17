@@ -19,6 +19,7 @@ sub register {
   $minion->add_task(refreshIndexes => \&_refreshIndexes);
   $minion->add_task(importer => \&_importer);
   $minion->add_task(merger => \&_merger);
+  $minion->add_task(dbmaintenance => \&_dbmaintenance);
   #schedule_maintenance();
 }
 
@@ -125,4 +126,19 @@ sub _merger {
   my $res=Documentix::Merger::merge();
   $job->finish($res);
 }
+
+#############################
+sub schedule_dbfix
+{
+	$minion->enqueue('dbmaintenance');
+	return "Fixing db..."
+}
+sub _dbmaintenance 
+{
+  my ($job) = @_;
+	my $dba=dbaccess::new();
+	my $res= dbaccess::dbmaintenance1($dba);
+        $job->finish($res);
+}
+
 1;

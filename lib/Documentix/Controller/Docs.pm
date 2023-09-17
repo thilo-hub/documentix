@@ -153,5 +153,14 @@ sub exportfiles {
 	return $c->reply->asset($r);
 }
 
+sub fixsearchdb {
+	#  Make small fixes to enable searches again
+	#  not sure why the sqlite driver bugs this up
+	#
+	my $c = shift;
+	Documentix::Task::Processor::schedule_dbfix();
+	$c->render(text => 'Database maintenance scheduled');
+	return $c->redirect_to("/minion/jobs?state=active");
+}
 
 1;
