@@ -75,16 +75,15 @@ sub ldres {
 
 
     my ( $classes, $ndata, $get_res );
-    my @sargs=();
+    my $param={};
     if ($idx) {
 	# its a search result
 	#
 	#TODO: remove "deleted" tags
 	#Maybe: an entry w/o tag would not show w/o the left join
 	# TODO: check if order by date is better than order by rank
-	# $get_res=qq{ select fileinfo.*,snippet  from cache_q natural join fileinfo where qidx=? order by cast(mtime as int) desc limit ? offset ? };
-	$get_res=qq{ select *  from cache_q natural join hash natural join ftime natural join pdfinfo where qidx=? };
-        push @sargs,$idx;
+	$get_res=qq{ select *  from cache_q natural join hash natural join ftime natural join pdfinfo where qidx=:qidx };
+	$param->{":qidx"}=$idx;
 
 	# TODO: only if idx=0 first page
 	# get tags in result set
@@ -120,14 +119,15 @@ sub ldres {
     $get_res .= " order by cast(mtime as int) desc";
     # class list
     if ( $class ) {
-       $get_res =~ s/from/from (select idx  from tagname natural join tags where tagname = ? limit ? offset ?) natural join/;
-       unshift @sargs,$class;
+       $get_res =~ s/from/from (select idx  from tagname natural join tags where tagname = :tgn limit :lim offset :off) natural join/;
+       $param->{":tgn"}=$class;
     } else {
-	$get_res .= " limit ? offset ?";
+	$get_res .= " limit :lim offset :off";
     }
 
     # Assemble final query
-    push @sargs,$ppage,int($idx0-1);
+    $param->{":lim"} = $ppage;
+    $param->{":off"} = int($idx0-1);
 
     $get_res=qq{ select idx,md5,mtime dt,pdfinfo,cast(file as blob) file,tags,cast(snippet as text) snippet  from ($get_res) natural left join taglist natural left join file group by idx order by dt desc };
 
@@ -140,7 +140,10 @@ sub ldres {
     #  Add selection of slice wanted
 
     $get_res = $dh->prepare_cached($get_res);
-    $get_res->execute(@sargs);
+    foreach (keys %$param) {
+	    $get_res->bind_param($_,$param->{$_});
+    }
+    $get_res->execute();
 
     my $out = $get_res->fetchall_arrayref({});
     # Loop over query results and create hash to be returned
