@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS 'text_tmp_idx'(segid, term, pgno, PRIMARY KEY(segid, 
 CREATE TABLE IF NOT EXISTS 'text_tmp_content'(id INTEGER PRIMARY KEY, c0, c1);
 CREATE TABLE IF NOT EXISTS 'text_tmp_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
 CREATE TABLE IF NOT EXISTS 'text_tmp_config'(k PRIMARY KEY, v) WITHOUT ROWID;
+CREATE TABLE IF NOT EXISTS doclabel (idx INT, doclabel primary key unique);
 CREATE VIEW m_archive as select idx,value archive from metadata where tag='archive'
 /* m_archive(idx,archive) */;
 CREATE TRIGGER hash_del after delete on hash begin

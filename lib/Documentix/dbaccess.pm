@@ -374,10 +374,18 @@ print STDERR $r->{file}."\n";
 }
 
 sub addqr {
+	my ($self,$id,$md5) = @_;
+	my $sel = $self->{dh}->prepare_cached(qq{ insert or replace into doclabel (doclabel,idx) select ?,idx from hash where md5=?});
+	$sel->execute($id,$md5);
 }
 sub lkup {
 	my ($self,$id) = @_;
+	my $sel = $self->{dh}->prepare_cached(qq{ select md5 from docid where doclabel=cast( ? as text) limit 1});
+        $sel->execute($id);
 	my $res="";
+        while( my $ra = $sel->fetchrow_hashref ) {
+		$res = $ra->{md5};
+	}
 	return $res;
 }
 sub dbmaintenance1 {
