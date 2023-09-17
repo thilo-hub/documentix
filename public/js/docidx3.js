@@ -85,16 +85,31 @@ var docscroll = function(element) {
 		}
 		var sv = $("#search").val();
 		if (nsrch != sv) {
+		// something in the serch has changed
+		// start from top
+		    var lbl = sv.match(/^(.*?)\s*tag:(\S+)\s*(.*)/);
+		    if ( lbl ) {
+			    // fixup search field and set label name
+			    clname = lbl[2];
+			    sv = lbl[1]+lbl[3];
+			    $("#search").val(sv);
+		    }
+		}
+		if (nsrch != sv) {
+		    console.log("Search ("+clname+"):"+sv);
 		    nsrch = sv;
 		    idx=1;
 		    element.html("");
 		}
+		// search value 
 		if ( sv )
 			params += "&search=" + sv;
 
+		// class names
 		if (clname) {
 		    params += "&class=" + clname;
 		}
+		
 	    	params += "&format=new";
 
 		// tag_edit(0);
