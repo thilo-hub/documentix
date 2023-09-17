@@ -26,6 +26,11 @@ RUN apt-get install -y git make gcc wget
 ##2RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb && apt-get install -y ./*.deb
 RUN apt-get install -y wkhtmltopdf
 #ADD https://raw.githubusercontent.com/thilo-hub/documentix/mojofw/build_local.sh build_local.sh
+RUN apt install -y libpdf-api2-perl sqlite3
+RUN  cpan DBD::SQLite
+RUN  cpan Minion::Backend::SQLite
+
+
 ADD ./build_local.sh build_local.sh
 RUN  sh build_local.sh /new
 #RUN rm -r /build
@@ -41,14 +46,11 @@ WORKDIR /documentix
 ADD . /documentix
 #RUN git clone --depth 1 -b mojofw https://github.com/thilo-hub/documentix /documentix
 #RUN apt-get remove  -y git make gcc wget
-RUN apt install -y libpdf-api2-perl sqlite3
 LABEL version="0.93"
 LABEL description="documentix provides a document management system\
  connect the port 80 of this docker to any port you want \
  Add persistent volume for the database and the documents, optionally the upload folder can be mounted elsewhere"
 
-RUN  cpan DBD::SQLite
-RUN  cpan Minion::Backend::SQLite
 
 
 WORKDIR /volumes
