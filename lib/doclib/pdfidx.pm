@@ -310,7 +310,7 @@ sub getidx($$) {
 
 sub ocrpdf_sync {
 	my $self=shift;
-	my ( $inpdf, $outpdf, $ascii, $meta) = @_;
+	my ( $inpdf, $outpdf, $ascii, $hash, $meta) = @_;
 	my $idx = $self->getidx($meta->{hash});
 	$self->{"idx"} = $idx;
 	print STDERR "ocrpdf_sync: ".Dumper(\@_);
@@ -330,7 +330,8 @@ sub ocrpdf_offline
 {
 	my $self=shift;
 	my $idx = shift;
-	my ( $inpdf, $outpdf, $ascii, $meta ) = @_;
+	my ( $inpdf, $outpdf, $ascii,$hash, $meta ) = @_;
+	$idx = $self->getidx($meta->{hash}) unless $idx>0;
 	$self->{"idx"}=$idx;
 	$DB::single=1;
         my ($pdfinfo,$t) = $self->do_ocrpdf(@_);
@@ -486,12 +487,15 @@ sub do_ocrpdf {
         my $outim   = $in . ".png";
 
         my $inx=$in.".png";
-        qexec("convert",$in,"-resize","800",$inx);
-        my $qrc=qexec($zbarimg,"-q", $inx);
+        # qexec("convert",$in,"-resize","800",$inx);
+	qexec("convert",$in,qw{+repage -threshold 50% -morphology open square:1},$inx);
+        my $qrc=qexec($zbarimg,"-q",$inx);
 	if ( $qrc ) {
-		print STDERR "$pg:$qrc" if $debug>0;
 		chomp($qrc);
+		my %duplicates;
 		foreach (split(/\n/,$qrc)) {
+			next if $duplicates{$_}++;
+			print STDERR "$pg:$qrc" if $debug>0;
 			push @qr,"$pg:$_";
 		}
         }
@@ -632,15 +636,6 @@ sub join_pdf
     print STDERR "Joining ".(scalar(@o)-scalar(@l))." front pages and ".scalar(@l)." back pages to $doc->{out}\n" if $debug > 1;
     my @out;
     splice(@o,($doc->{"odd_skip"}-1)*2,2);
-    if (0 ) {
-    foreach my $tf (@o) {
-	    my $qb=qexec("zbarimg","-q",$tf);
-	    push (@out,$tf )unless $qb =~ /QR-Code:(Front|Back) Page/;
-	    print "$tf: $qb";
-	    # undef $tf;
-	    # unshift @out;
-    }
-    }
     qexec("pdfunite",@out,$doc->{"out"});
     unlink @o or die "failed remove @o";
 }
@@ -1026,7 +1021,7 @@ print STDERR "XXXXXX> $lcl_store_dir \n" if $debug > 1;
     mkdir($lcl_store_dir) unless -d $lcl_store_dir;
 
     $meta->{Content} = "ProCessIng=Ocr...";
-    Documentix::Task::Processor::schedule_ocr($fn, $lcl_store .".ocr.pdf",undef,$meta);
+    Documentix::Task::Processor::schedule_ocr($fn, $lcl_store .".ocr.pdf",undef,$meta->{hash},$meta);
     return undef;
 }
 
@@ -1135,7 +1130,7 @@ sub do_pdftocairo {
 
     my $tmpdir = File::Temp->newdir("/var/tmp/ocrpdf__XXXXXX");
     symlink( $inpdf, "$tmpdir/in.pdf" );
-    my @cmd = ( qw{pdftocairo -jpeg}, "$tmpdir/in.pdf", $pages );
+    my @cmd = ( qw{pdftocairo -r 300 -jpeg -jpegopt quality=100}, "$tmpdir/in.pdf", $pages );
     # my @cmd = ( qw{pdftocairo -r 300 -jpeg}, "$tmpdir/in.pdf", $pages );
     print STDERR "CMD: " . join( " ", @cmd, "\n" ) if $debug > 3;
     my $fail += ( system(@cmd) ? 1 : 0 );
@@ -1154,7 +1149,7 @@ sub do_pdfstamp {
     close($ver);
     print STDERR "Stamp: $cmt\n" if  $debug > 3;
     my @tg;
-    push @tg,"-tagsFromFile=$orig" if -r $orig;
+    push @tg,"-tagsFromFile=$orig","-x","keywords"  if -r $orig;
     push @tg,"-Producer=$creator";
     push @tg,"-Keywords=$cmt" if $cmt;
     push @tg,"-overwrite_original_in_place";
@@ -1189,7 +1184,7 @@ sub do_pdftotext {
     @cmd = ( $pdftotext,qw{-enc UTF-8 -layout}, $pdfin, "-" );
 
     my $txt = qexec( @cmd );
-    unlink $tmp;
+    #unlink $tmp;
     return decode('UTF-8',$txt);
 }
 
