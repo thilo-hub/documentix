@@ -1,6 +1,6 @@
 {
   secrets => ['0c9d2af271b6544c11758f3a2e207cf5c19429a5'],
-  "QR_base_urls" => [ "url_1_with_(\S+)_as_the id", "url_2... and more" ],
+  "QR_base_urls" => [ qr{.*/q/(\S+)} ],
   "auth_disable" => 1,
   "browser_start" => 0,
   "cache_db" => "db/doc_cache.db",

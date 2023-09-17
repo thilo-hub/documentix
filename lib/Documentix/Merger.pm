@@ -26,7 +26,7 @@ sub merge
 	$dba->{dh}->do(qq{
 		CREATE VIEW if not exists joindocs as
 			with candidates(idx,pages,mtime,qr)
-				as (select idx,p.value pages,m.value mtime,q.value qr
+				as (select idx,p.value pages,m.value mtime,trim(q.value) qr
 					from metadata p join metadata m using(idx) join metadata q using(idx)
 					where p.tag='pages' and m.tag='mtime' and q.tag='QR'
 					and idx not in (select idx from tags where tagid = (select tagid from tagname where tagname = 'deleted')  ))

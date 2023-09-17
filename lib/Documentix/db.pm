@@ -58,8 +58,8 @@ sub dbmaintenance
 	my $self=shift;
 	printf STDERR  "dbmaintenance\n";
 	dh->do("begin exclusive transaction");
-	dh->do(qq{insert into text_tmp(rowid,docid,content) 
-			 select rowid,docid,content from vtext 
+	dh->do(qq{insert into text_tmp(docid,content)
+			 select docid,content from vtext
 			 where docid>(select value from config where var='max_idx') });
 	dh->do(q{
 		create temporary table cache_q1 as
