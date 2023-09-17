@@ -508,7 +508,7 @@ sub do_ocrpdf {
             exit($fail) if $maxcpu>1;
             $errs += $fail;
         }
-        $childs{$pid}++;
+        $childs{$pid}++ unless $maxcpu <=1;
         $errs += w_load($maxcpu);
         $outpage .= ".pdf";
         push @outpages, $outpage;
@@ -698,6 +698,16 @@ sub load_file
 
 	my $fn = $meta->{file} or die "Bad call";
 	delete $meta->{file};
+	# .ocr.pdf smarts
+	# if it is a .ocr.pdf file (next to the original), just the md5 of the original but everything else from ocr. 
+	# if the file has a .ocr.pdf next to the .pdf, remember this, so some tools might pick the ocr one
+	if ($fn =~ m|^(.*)\.ocr.pdf$| && -r "$1.pdf" ) {
+		$meta->{_ocrfile} = $fn;
+		$meta->{hash} = file_md5_hex("$1.pdf");
+		$fn = "$1.pdf";
+	} elsif ($fn =~ m|^(.*)\.pdf$| && -r "$1.ocr.pdf" ) {
+		$meta->{_ocrfile} = "$1.ocr.pdf";
+	}
 	$meta->{_file}=$fn;
 	$meta->{hash} = file_md5_hex($fn) unless $meta->{hash};
 	# If we dont know the file already, we can just return
@@ -922,7 +932,8 @@ sub xtp_any {
 # "application/pdf"
     sub xtp_pdf {
 	my ($self,$totype,$pmeta) = @_;
-        my $t    = $self->pdf_text( $pmeta->{"_file"}, $pmeta  );
+	my $src = $pmeta->{_ocrfile} || $pmeta->{_file};
+        my $t    = $self->pdf_text( $src, $pmeta  );
         if ($t) {
 	    print STDERR "Found text ".length($t)." bytes\n";
             $t =~ s/[ \t]+/ /g;
@@ -930,8 +941,9 @@ sub xtp_any {
             $pmeta->{"Text"}    = $t;
             $pmeta->{"Content"} = summary(\$t);
         }
-	my $fn=$pmeta->{"_file"};
-	($pmeta->{"pages"}, $pmeta->{"pdfinfo"}) = $self->pdf_info($fn)
+	# my $fn=$pmeta->{"_file"};
+	# my $src = $pmeta->{_ocrfile} || $pmeta->{_file};
+	($pmeta->{"pages"}, $pmeta->{"pdfinfo"}) = $self->pdf_info($src)
 		unless $pmeta->{pdfinfo};
 
         my $l = length($t) || "-FAILURE-";
@@ -954,7 +966,7 @@ sub ins_e {
         "insert or replace into metadata (idx,tag,value)
 			 values (?,?,?)"
 	);
-    die "WOha ?  @_   " unless $idx > 0;
+    die "WOha idx:($idx)?  @_   " unless $idx > 0;
     $ins_sql->bind_param( 1, $idx, SQL_INTEGER );
     $ins_sql->bind_param( 2, $t );
     $ins_sql->bind_param( 3, encode("UTF-8",$c),   $bin );
@@ -995,6 +1007,7 @@ sub pdf_totext {
     my $meta   = shift;
     print STDERR " pdf_totext $fn\n" if $debug > 1;
     my $f_path = dirname(abs_path($fn))."/";
+    # this sheebang stuff might be redundant now
     my $f_base = basename($fn,(".pdf",".ocr.pdf"));
 
     my $lcl_store_dir = $self->get_store( $meta->{hash},1);
