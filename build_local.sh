@@ -4,7 +4,8 @@
 
 DEST="$1";
 test -d $DEST || mkdir $DEST
-SQLSRC="https://www.sqlite.org/2022/sqlite-amalgamation-3390000.zip"
+SQLSRC="https://www.sqlite.org/2023/sqlite-amalgamation-3430100.zip"
+
 
 cpan -g DBD::SQLite 
 test -r DBD-SQLite-*.tar.gz &&
@@ -15,9 +16,8 @@ test -r DBD-SQLite-*.tar.gz &&
 	perl Makefile.PL  && 
 	make && 
 	make DESTDIR=$DEST  install &&
-	git clone --depth 1 https://github.com/abiliojr/fts5-snowball.git &&
+	git clone --recursive --depth 1 https://github.com/abiliojr/fts5-snowball.git &&
 	cd fts5-snowball/ &&  
-	(cd snowball/ &&  git clone --depth 1 https://github.com/snowballstem/snowball.git .) && 
 	make SQLITE_FLAGS="-I$PWD/.." && 
 	mkdir -p $DEST/usr/lib  && 
 	cp fts5stemmer.so $DEST/usr/lib/.
