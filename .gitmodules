@@ -1,0 +1,3 @@
+[submodule "fts5-snowball"]
+	path = fts5-snowball
+	url = https://github.com/abiliojr/fts5-snowball.git
