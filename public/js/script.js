@@ -162,6 +162,10 @@ function Dropit(md5,doc)
 	 // data-downloadurl="application/pdf:{{:doc}}:docs/raw/{{:md5}}/{{:doc}}"
 }
 $(function(){
+	var dpos = localStorage["vsplit"];
+	if ( dpos ) {
+		$("#left").width(dpos);
+	}
 	$("#editor").on("click",function(e){
 		$("#sp").toggle("fast")
 	     }
@@ -186,7 +190,9 @@ $(function(){
 		}
 	}
 	$("#Oviewer").on("mouseenter",drag_hideEdit);
-	// $("#Oviewer").on("dragstart",function(e) { console.log("Starting"); } );
+	$("#Oviewer").on("dragstop",function(e,ui) { 
+		localStorage["vsplit"] = ui.offset.left;
+	})
 	$("#left").on("dragenter",drag_showEdit);
 
 });

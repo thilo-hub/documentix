@@ -46,10 +46,15 @@ var monitor = function(win,loader) {
 		  countDown--;
 		  if ( countDown == 0 ) {
 			var ldoc = getCookie("autoshow");
-			if ( ldoc ) {
-				Showpdf(ldoc + "/test.pdf");
+			if(ldoc) {
 				eraseCookie("autoshow");
 			}
+			if ( !ldoc ) {
+				ldoc = localStorage["autoshow"];
+			}
+			if ( ldoc ) {
+				Showpdf(ldoc);
+			} 
 		  }
 	  }
 	  var bottom = lastElement.offset().top +
@@ -220,11 +225,14 @@ $(function() {
 	e.currentTarget.scrollIntoViewIfNeeded();
 	$(".navigator").addClass("navigatorBig");
         $(".viewopt").show();
+	
+	localStorage.removeItem("autoshow")
     }
     Showpdf = function(u,e) {
 	    // bring up viewer and load it with url
 	    var p=$('#pdfview');
 
+	    localStorage["autoshow"] = u;
 	    if ( u !== undefined ){
 		    u=viewer_url.replace("%doc",u);
 	    }
