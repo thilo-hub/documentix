@@ -73,10 +73,6 @@ CREATE TRIGGER mtime_ins after insert on metadata when new.tag = "mtime" begin
 	insert into mtime (idx,mtime) values (new.idx,new.value);
     end;
 CREATE VIRTUAL TABLE text using fts5(docid,content,  content='vtext', content_rowid='docid', tokenize = 'snowball german english');
-CREATE TABLE IF NOT EXISTS 'text_data'(id INTEGER PRIMARY KEY, block BLOB);
-CREATE TABLE IF NOT EXISTS 'text_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS 'text_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
-CREATE TABLE IF NOT EXISTS 'text_config'(k PRIMARY KEY, v) WITHOUT ROWID;
 CREATE VIEW 'vtext'(docid,content)  as select idx ,value from metadata where tag = 'Text';
 CREATE VIEW vtags as select idx,group_concat(tagname,",") tags from tags natural join tagname
 /* vtags(idx,tags) */;
@@ -88,11 +84,6 @@ CREATE VIEW m_pdfinfo as select idx, value pdfinfo from metadata where tag = 'pd
 CREATE VIEW m_content  as select idx, value content from metadata where tag = 'Content'
 /* m_content(idx,content) */;
 CREATE VIRTUAL TABLE text_tmp using fts5(docid UNINDEXED,content, tokenize = 'snowball german english');
-CREATE TABLE IF NOT EXISTS 'text_tmp_data'(id INTEGER PRIMARY KEY, block BLOB);
-CREATE TABLE IF NOT EXISTS 'text_tmp_idx'(segid, term, pgno, PRIMARY KEY(segid, term)) WITHOUT ROWID;
-CREATE TABLE IF NOT EXISTS 'text_tmp_content'(id INTEGER PRIMARY KEY, c0, c1);
-CREATE TABLE IF NOT EXISTS 'text_tmp_docsize'(id INTEGER PRIMARY KEY, sz BLOB);
-CREATE TABLE IF NOT EXISTS 'text_tmp_config'(k PRIMARY KEY, v) WITHOUT ROWID;
 CREATE VIEW m_archive as select idx,value archive from metadata where tag='archive'
 CREATE TABLE IF NOT EXISTS doclabel (idx INT, doclabel primary key unique);
 /* m_archive(idx,archive) */;
