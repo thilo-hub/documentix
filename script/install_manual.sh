@@ -1,15 +1,20 @@
 #!/bin/sh
-cd /documentix/Documentation
-NEWHOST="$1"
-sed "s|\$HOST|$NEWHOST|g" Documentation.md >Documentix.md
+DOCEX=$(dirname "$0")/..
+test -r documentix.conf || (echo "Must be run from Document folder" >&2;false) ||  exit 99
+ln -s $DOCEX/Documentation Documentix
 
-tar cf /volumes/doc.tar Documentix.md assets/image-1.png 
-cd /volumes
-/documentix/script/documentix get -M POST /upload < doc.tar 
-rm doc.tar
-cd /documentix/Documentation
-# hide assets
-for F in assets/* ;do
-	OLD=$(md5sum < $F)
-	get -M POST   -f json_string='{"op":"add","md5":"'$OLD'","tag":"deleted"}'  /tags
+NEWHOST="$1"
+sed "s|\$HOST|$NEWHOST|g" Documentix/Documentation.md >Documentix/Manual.md
+
+tar cf doc.tar Documentix/Manual.md Documentix/assets
+
+$DOCEX/script/documentix get -M POST /upload < doc.tar 
+MD5="md5sum"
+MD5="md5 -r"
+
+for F in Documentix/assets/* ;do
+	set $($MD5 "$F") --
+	$DOCEX/script/documentix get -M POST   -f json_string='{"op":"add","md5":"'$1'","tag":"deleted"}'  /tags
 done
+rm doc.tar
+rm Documentix

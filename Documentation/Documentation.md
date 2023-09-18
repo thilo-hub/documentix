@@ -7,7 +7,8 @@ Documentix is a smart document management tool
 
 ## Source
 
-    available from [github](https://github.com/thilo-hub/documentix/tree/mojofw)
+    available from 
+* [github](https://github.com/thilo-hub/documentix/tree/mojofw) 
 
 ## Usage
 
