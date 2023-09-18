@@ -38,7 +38,7 @@ sub merge
 						fr.mtime-bk.mtime between -5000 and 5000
 					order by abs(fr.idx - bk.idx)
 		});
-	my $getdocs = $dba->{dh}->prepare("select *,eh.md5 md5even,oh.md5 md5odd  from joindocs join hash eh on(even=eh.idx) join hash oh on (odd=oh.idx) limit 1 ");
+	my $getdocs = $dba->{dh}->prepare("select *,eh.md5 md5even,oh.md5 md5odd  from joindocs join hash eh on(even=eh.idx) join hash oh on (odd=oh.idx) order by mtime desc limit 1 ");
 	$getdocs->execute;
 	my @merge_list=();
 	while( $r=$getdocs->fetchrow_hashref ) {
