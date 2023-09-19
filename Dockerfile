@@ -31,9 +31,6 @@ RUN  cpan DBD::SQLite
 RUN  cpan Minion::Backend::SQLite
 
 
-ADD ./build_local.sh build_local.sh
-RUN  sh build_local.sh /new
-#RUN rm -r /build
 
 ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/mojofw /version.json
 # WORKDIR /build.minion
@@ -45,6 +42,8 @@ ADD https://api.github.com/repos/thilo-hub/documentix/git/refs/heads/mojofw /ver
 WORKDIR /documentix
 ADD . /documentix
 #RUN git clone --depth 1 -b mojofw https://github.com/thilo-hub/documentix /documentix
+RUN  sh build_local.sh /
+RUN cp /usr/local/lib/fts5stemmer.so /usr/lib
 #RUN apt-get remove  -y git make gcc wget
 LABEL version="0.93"
 LABEL description="documentix provides a document management system\
@@ -55,14 +54,15 @@ LABEL description="documentix provides a document management system\
 
 WORKDIR /volumes
 RUN cp /documentix/documentix.conf.tmpl documentix.conf
-RUN cp /new/usr/lib/fts5stemmer.so /usr/lib
+RUN chown 1000:1000 /.
 VOLUME Database:/volumes/db
 VOLUME Documents:/volumes/Docs
 #EXPOSE 18080
 # Main GUI interface
 EXPOSE 80
+ENV HOME=/volumes/Docs
 ##TJ ENTRYPOINT /documentix/documentix.sh
 ##TJ 
-ENTRYPOINT test -r Docs/documentix.conf && cp Docs/documentix.conf . ; perl /documentix/script/documentix daemon -l http://*:80
+ENTRYPOINT test -r Docs/documentix.conf && cp Docs/documentix.conf . ; perl /documentix/script/documentix daemon -l http://*:18080
 
 
