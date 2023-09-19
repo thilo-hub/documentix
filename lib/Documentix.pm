@@ -11,6 +11,7 @@ sub startup {
 $self->hook(before_dispatch => sub {
   my $c=shift;
   $c->req->url->base->path('/documentix/') if
+   defined($ENV{HACK}) &&
    $c->req->headers->header('X-Forwarded-Host');
 });
 
