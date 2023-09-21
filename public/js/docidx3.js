@@ -51,6 +51,7 @@ var monitor = function(win,loader) {
 			}
 			if ( !ldoc ) {
 				ldoc = localStorage["autoshow"];
+				localStorage.removeItem("autoshow")
 			}
 			if ( ldoc ) {
 				Showpdf(ldoc);
@@ -232,7 +233,6 @@ $(function() {
 	    // bring up viewer and load it with url
 	    var p=$('#pdfview');
 
-	    localStorage["autoshow"] = u;
 	    if ( u !== undefined ){
 		    u=viewer_url.replace("%doc",u);
 	    }

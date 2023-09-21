@@ -62,6 +62,7 @@ function DoViewer(event) {
 	    // Remove active viewing red frames
 	   $(".rbox.viewing").removeClass("viewing",500);
 	   rb.addClass("viewing",500);
+	   localStorage["autoshow"] = id+'/'+doc+'.pdf';
 	   Showpdf(id+'/'+doc+'.pdf',event);
 	   // rb.off("click");
 	   // rb.on("click",(DoViewer));
