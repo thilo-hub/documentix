@@ -178,6 +178,7 @@ var docscroll = function(element) {
 			    if ( data.query )
 				    viewer_url=viewer_url_srch.replace("%qu",data.query);
 			}
+			data.items.forEach(function(a){if(!a.doc){a.doc="??"}console.log(a.doc)})
 			var itm = template.render(data);
 			idx = data.idx+data.nitems;
 			    var msg = data.msg;
