@@ -2,9 +2,10 @@ FROM ubuntu:latest
 MAINTAINER thilo-hub@nispuk.com
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update --fix-missing
+RUN apt-get update --fix-missing
 RUN  apt-get install -y \
 	 libhtml-template-perl  libdigest-md5-file-perl \
-	 imagemagick unoconv poppler-utils \
+	 imagemagick poppler-utils \
 	 libxmlrpc-lite-perl\
 	calibre-bin \
 	a2ps libjson-perl \
@@ -13,8 +14,14 @@ RUN  apt-get install -y \
 	libjs-bootstrap4 libjs-popper.js libmojolicious-perl libminion-perl libmojo-sqlite-perl libminion-backend-sqlite-perl \
 	tesseract-ocr tesseract-ocr-deu  tesseract-ocr-eng
 
+RUN apt-get install -y  pip
+
+
 
 RUN apt-get install -y	pandoc 
+RUN pip3 install unoserver
+RUN apt install -y ure-java libreoffice-nogui
+
 #fix minion??
 # RUN rm -f  /usr/share/javascript/popper.js
 WORKDIR /build
