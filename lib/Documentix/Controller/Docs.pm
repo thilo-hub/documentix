@@ -85,15 +85,12 @@ sub importer {
    my $c = shift;
    # Check file size
    $DB::single=1;
-   my $items = Documentix::Importer::update();
+   # my $items = Documentix::Importer::update();
+   Documentix::Task::Processor::schedule_importer();
+
    my $status = "Importing";
 
-   $c->render(json => {
-		   	nitems => scalar(@$items),
-			items  => $items,
-			nresults => 9999,
-			msg => $status
-		});
+   return $c->render(text => 'Refresh filesystem started ', status => 200);
 
 };
 

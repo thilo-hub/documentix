@@ -42,6 +42,12 @@ sub _ocr {
 }
 
 #############################
+sub schedule_importer
+{
+	$minion->enqueue('importer');
+	return "Scheduling import";
+}
+
 sub _importer {
   my ($job) = @_;
   use Documentix::Importer;
@@ -143,5 +149,7 @@ sub _dbmaintenance
 	my $res= dbaccess::dbmaintenance1($dba);
         $job->finish($res);
 }
+
+
 
 1;
