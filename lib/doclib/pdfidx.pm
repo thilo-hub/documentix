@@ -1251,7 +1251,11 @@ sub do_unopdf {
     $in  = abs_path($in);
     $out = abs_path($out);
     #print STDERR "convert: $in\n" if $debug > 1;
-    qexec(qw{unoconv -o}, $out,$in);
+    $DB::single=1;
+    my $outdir=dirname($out);
+    qexec(qw{libreoffice --headless --convert-to pdf --outdir }, $outdir, $in);
+    my $outf=glob("$outdir/*.pdf");
+    rename $outf,$out if -r $outf && $outf ne $out;
     die "failed: -o $out $in" unless -f $out;
     utime ((stat($in))[8..9],$out);
     return;
