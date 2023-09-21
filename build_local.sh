@@ -18,7 +18,7 @@ MAKE=gmake
 MAKE=make
 
 INC="/usr/local/include"
-test -d /root/.cpan/build/DBD-SQLite-1.72-0/ && INC=/root/.cpan/build/DBD-SQLite-1.72-0
+test -d /root/.cpan/build/DBD-SQLite-1.74-0/ && INC=/root/.cpan/build/DBD-SQLite-1.74-0
 DEST="$1";
 test -d $DEST || mkdir $DEST
 SQLSRC="https://www.sqlite.org/2023/sqlite-amalgamation-3430100.zip"
