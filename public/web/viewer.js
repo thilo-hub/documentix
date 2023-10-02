@@ -14085,6 +14085,8 @@ function webViewerLoad() {
     document.dispatchEvent(event);
   }
   _app.PDFViewerApplication.run(config);
+  document.getElementById("viewBookmark").addEventListener("dragstart", dodrag);
+  document.getElementById("secondaryViewBookmark").addEventListener("dragstart", dodrag);
 }
 document.blockUnblockOnload?.(true);
 if (document.readyState === "interactive" || document.readyState === "complete") {

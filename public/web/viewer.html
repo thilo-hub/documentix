@@ -482,5 +482,24 @@ See https://github.com/adobe-type-tools/cmap-resources
     <div id="printContainer"></div>
 
     <input type="file" id="fileInput" class="hidden">
+<script>
+var lb=document.getElementById("viewBookmark");
+lb.addEventListener("dragstart", dodrag);
+function dodrag(e) {
+        console.log("Starting...");
+        var o= e.dataTransfer.getData("text/html");
+        if ( ! o ) {
+                o="<a href='"+ e.dataTransfer.getData("url") + "'>Current view</a>";
+        ;}
+
+        var dname = o.match('href=.*/([^#"]*)#page=([0-9]*)');
+        dname = dname[1] + " ("+dname[2]+")";
+        dname = dname.replace(/%20/g," ");
+        e.target.outerHTML=e.target.outerHTML.replace(/Current view/gi,dname);
+        o=o.replace(/Current View/ig,dname);
+        e.dataTransfer.setData("text/html",dname[0])
+        e.dataTransfer.setData("text",dname[0])
+}
+</script>
   </body>
 </html>
