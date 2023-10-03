@@ -27,7 +27,7 @@ $self->hook(before_dispatch => sub {
   #   $ script/linkcheck minion worker
   #
   $self->plugin(Minion => {SQLite => $config->{cache_db}});
-  $self->plugin('Minion::Admin' =>  {return_to => '../index.html'});
+  $self->plugin('Minion::Admin' =>  {return_to => '/'});
   $self->plugin('Documentix::Task::Processor');
 
   #my $worker = Minion::Command::minion::worker->new;
