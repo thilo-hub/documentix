@@ -29,6 +29,7 @@ RUN apt-get install -y wkhtmltopdf
 RUN apt install -y libpdf-api2-perl sqlite3
 RUN  cpan DBD::SQLite
 RUN  cpan Minion::Backend::SQLite
+RUN  cpan Archive::Libarchive::Extract
 
 
 

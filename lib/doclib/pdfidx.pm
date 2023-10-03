@@ -12,6 +12,7 @@ use Data::Dumper;
 use DBI qw(:sql_types);
 use doclib::datelib;
 use Encode qw{encode decode};
+use Archive::Libarchive::Extract;
 # $File::Temp::KEEP_ALL = 1;
 my $debug=5;
 
@@ -869,33 +870,28 @@ sub xtp_any {
         return $type;
     }
 
-# "application/zip"
-    sub xtp_unzip {
+    sub xtp_unarchive {
 	my ($self,$totype,$pmeta) = @_;
         my $i = $pmeta->{"_file"};
+$DB::single=1;
 	$pmeta->{__file}=$i;
 
         my $of = $pmeta->{_lcl_store};
+	my $extract = Archive::Libarchive::Extract->new( filename => $i);
+	$extract->extract(to => $of);
+	my @archive = $extract->entry_list;
 
-	my @archive=();
-	my $err="";
-	foreach( qx{echo A | unzip -d "$of" "$i"} ) {
-		$err .= $_;
-		next unless /(?:inflating|extracting):\s+(.*?)\s*$/;
-		die "$err\nunzip problem? >$1<" unless -r $1;
-		print STDERR "Do: $1\n" if $debug > 1;
-		push @archive,$1;
-	}
 	my @md5_archive=();
 	foreach ( @archive ) {
-		my $hash = file_md5_hex($_);
-		my $t0=$_;
-		$t0 =~ s/$of(\/\.\/)?\/?//;
-		my @tags=split("/+",$t0);
-		pop @tags;
+		my $f="$of/".decode('utf-8', $_);
+		print STDERR "Do: $_\n" if $debug > 1;
+		die "File not exists?  >$f<" unless -r $f;
+		next if -d $f;
+		my $hash = file_md5_hex($f);
+		my @tags=split("/+",decode("utf-8",$_));
 		# remove file unles it will be processed
 		unlink unless
-			dbaccess::insert_file($self,$hash,$_,\@tags);
+			dbaccess::insert_file($self,$hash,$f,\@tags);
 		push @md5_archive,$hash;
 	}
 	$pmeta->{"archive"}=join(",",@md5_archive);
@@ -903,6 +899,10 @@ sub xtp_any {
 	$type = "Unizped (".scalar(@md5_archive).") files";
 
         return $type;
+    }
+# "application/zip"
+    sub xtp_unzip {
+	return xtp_unarchive(@_);
     }
 
 
@@ -922,55 +922,12 @@ sub xtp_any {
 
 # "application/x-gzip"
     sub xtp_tar {
-	my ($self,$totype,$pmeta) = @_;
-        my $i = $pmeta->{"_file"};
-	#$pmeta->{__file}=$i;
-
-        my $of = $pmeta->{_lcl_store};
-
-	my @archive=();
-	foreach( qx{tar xvf  '$i' -C '$of' 2>&1} ) {
-		next unless /^(x\s+)?(.*)\/?\s*\n$/;
-		my $f=$of."/".$2;
-		next if -d $f;
-		die "untar problem? >$2<" unless -r $f;
-		print STDERR "Do: $f\n" if $debug > 1;
-		push @archive,$f;
-	}
-	delete $pmeta->{_file};
-	# unlink $i if $pmeta->{_tempremove}; delete $pmeta->{_tempremove};
-
-	my @md5_archive=();
-	foreach ( @archive ) {
-		my $hash = file_md5_hex($_);
-		my $t0=$_;
-		$t0 =~ s/$of(\/\.\/)?\/*//;
-		my @tags=split("/+",$t0);
-		pop @tags;
-		# remove file unles it will be processed
-		unlink unless
-			dbaccess::insert_file($self,$hash,$_,\@tags);
-		push @md5_archive,$hash;
-	}
-	$pmeta->{"archive"}=join(",",@md5_archive);
-	$type = "Unizped (".scalar(@md5_archive).") files";
-	push @{$pmeta->{_taglist}},"deleted";
-
-        return $type;
+	return xtp_unarchive(@_);
     }
 
 # "application/x-gzip"
     sub xtp_gzip {
-	my ($self,$totype,$pmeta) = @_;
-        my $i    = $pmeta->{"_file"};
-        $self->{"_fh"} = File::Temp->new( SUFFIX => '.unzipped' );
-        $pmeta->{"_file"} = $self->{"_fh"}->filename;
-        do_ungzip( $i, $pmeta->{_file} );
-	# $pmeta->{_tempremove}=1;  # Flag that this can be removed after usage
-
-	push @{$pmeta->{_taglist}},"deleted";
-        my $type = magic( $pmeta->{_file} );
-        return $type;
+	return xtp_unarchive(@_);
     }
 
 # "application/pdf"
