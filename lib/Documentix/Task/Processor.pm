@@ -40,17 +40,17 @@ sub _ocr {
   $minion->enqueue('merger');
   $job->finish( $r);
 }
-
-#############################
-sub schedule_importer
-{
-	$minion->enqueue('importer');
-	return "Scheduling import";
+sub schedule_importer {
+	my $id = $minion->enqueue(importer=>[@_]=>{priority=>2});
+        $minion->result_p($id);
+	return "Reading...";
 }
 
 sub _importer {
   my ($job) = @_;
   use Documentix::Importer;
+  return $job->finish('Previous job is still active')
+    unless my $guard = $minion->guard('Scanner Import', 7200);
   my $imports =Documentix::Importer::update();
   $job->finish( $imports);
 }
