@@ -914,12 +914,13 @@ $DB::single=1;
 
 	my @md5_archive=();
 	foreach ( @archive ) {
-		my $f="$of/".decode('utf-8', $_);
+	        my $_a = decode("utf-8",$_);
+		my $f="$of/$_a";
 		print STDERR "Do: $_\n" if $debug > 1;
 		die "File not exists?  >$f<" unless -r $f;
 		next if -d $f;
 		my $hash = file_md5_hex($f);
-		my @tags=split("/+",decode("utf-8",$_));
+		my @tags=split("/+",$_a);
 		# remove file unles it will be processed
 		unlink unless
 			dbaccess::insert_file($self,$hash,$f,\@tags);
