@@ -131,7 +131,7 @@ sub get_icon{
 	 require doclib::pdfidx;
 	 return undef unless pdfidx::mime_handler($type);
 	 my $dh=$self->{dh};
-	 my $add_file = $dh->prepare_cached(q{insert into file (md5,file,host) values(?,?,"ts2new")});
+	 my $add_file = $dh->prepare_cached(q{insert or ignore into file (md5,file,host) values(?,?,"ts2new")});
 	 my $add_meta = $dh->prepare_cached(q{insert or ignore into metadata(idx,tag,value) values((select idx from hash where md5=?),?,?)});
 
 	 # Create minimal DB entry such that it shows in view
@@ -173,6 +173,7 @@ sub load_asset {
 	 $dgst = $md5->add($asset->slurp)->hexdigest;
 
 	 # Check db if content exist
+	 $dh->do("begin transaction");
 	 my $add_hash = $dh->prepare_cached(q{insert or ignore into hash (md5) values(?)});
 	 my $rv = $add_hash->execute($dgst);
 
@@ -186,6 +187,7 @@ $DB::single = 1;
 		 $rv->[0]->{newtags} = \@taglist
 		 	if @taglist;
 
+		 $dh->do("commit");
 		 return "Known", @$rv ;
 	 }
 	 $name =~ m|([^/]*)(\.[^\.]*)$|;
@@ -202,12 +204,14 @@ $DB::single = 1;
 	 $ob .= "/$name";
 	
 	 # If file is in doc-area - do not copy it over
-	 unless (abs_path($asset->path) =~ /^$root_dir/) {
+	 unless (abs_path($asset->path) =~ /^$root_dir/ ||
+	         abs_path($asset->path) eq abs_path($ob)) {
 		$asset->move_to($ob);
 		utime($mtime,$mtime,$ob);
 	}
 
 	 my $id = $self->insert_file($dgst,$asset->path,\@taglist);
+	 $dh->do("commit");
 	 return "Loading",{ md5 => $dgst,
 		  doc => $file,
 		  doct=> $ext,
