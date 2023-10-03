@@ -38,6 +38,7 @@ use POPFile::API;
 use strict;
 use warnings;
 use locale;
+use feature 'say';
 
 use IO::Socket;
 use IO::Select;
@@ -197,9 +198,12 @@ sub service
             # Check that this is a connection from the local machine, if it's not then we drop it immediately
             # without any further processing.  We don't want to allow remote users to admin POPFile
 
-            my ( $remote_port, $remote_host ) = sockaddr_in( $client->peername() );
+            my $remote_host = $client->peerhost();
+            my $remote_port = $client->peerport();
 
-            if ( ( $self->config_( 'local' ) == 0 ) ||              # PROFILE BLOCK START
+say "Connection from $remote_host:$remote_port";
+
+            if ( 1 || ( $self->config_( 'local' ) == 0 ) ||              # PROFILE BLOCK START
                  ( $remote_host eq inet_aton( "127.0.0.1" ) ) ) {   # PROFILE BLOCK STOP
                 my $request = $client->get_request();
 
