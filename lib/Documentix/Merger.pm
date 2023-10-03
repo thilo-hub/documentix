@@ -4,24 +4,46 @@ use File::Basename;
 use Mojo::Asset::File;
 use Documentix::dbaccess;
 use File::Temp qw/tempfile tmpnam tempdir/;
-use Documentix::Classifier qw{pdf_class_md5};
+use Documentix::Classifier qw{pdf_class_md5 delete_md5};
 
 use Data::Dumper;
 use doclib::SplitPdf;
+
+# import LOCK_* and SEEK_END constants
+use Fcntl qw(:flock SEEK_END);
+
+sub lock {
+   my ($fh) = @_;
+   flock($fh, LOCK_EX) or die "Cannot lock mailbox - $!\n";
+   # and, in case we're running on a very old UNIX
+   # variant without the modern O_APPEND semantics...
+   seek($fh, 0, SEEK_END) or die "Cannot seek - $!\n";
+}
+
+sub unlock {
+   my ($fh) = @_;
+   flock($fh, LOCK_UN) or die "Cannot unlock mailbox - $!\n";
+}
+
+
 # Merge contents of two scans (from-pages & back-pages) into a singular correctly ordered one.
 # A page only containing a special QR code is identified and used to determine how to assembel the pack.
 # the special page is removed from the pack and the final pack getts information what source documents where used to merge
 #
 # Since the QR-page is identified when OCR'ing the page, the sqlite-magic below tries to identify the packs
 # same page number, qr-page on same location, time of scan closed to each other
+
+
 sub merge
 {
 
 	my $dba = dbaccess->new();
 	my @results;
-	$DB::single=1;
 	my @items;
-	$dba->{dh}->do("begin exclusive transaction");
+
+        open(my $mbox, ">>", "/var/tmp/merger.active")
+	   or die "Can't open mailbox: $!";
+
 
 	$dba->{dh}->do(qq{
 		CREATE VIEW if not exists joindocs as
@@ -38,12 +60,21 @@ sub merge
 						fr.mtime-bk.mtime between -5000 and 5000
 					order by abs(fr.idx - bk.idx)
 		});
-	my $getdocs = $dba->{dh}->prepare("select *,eh.md5 md5even,oh.md5 md5odd  from joindocs join hash eh on(even=eh.idx) join hash oh on (odd=oh.idx) order by mtime desc limit 1 ");
+	my $getdocs = $dba->{dh}->prepare(qq{ 
+	    select *,eh.md5 md5even,oh.md5 md5odd  from joindocs join hash eh on(even=eh.idx) join hash oh on (odd=oh.idx) order by mtime desc limit 1
+	    });
+
+	$dba->{dh}->do("begin exclusive transaction");
 	$getdocs->execute;
 	my @merge_list=();
 	while( $r=$getdocs->fetchrow_hashref ) {
+		$DB::single=1;
 		push @merge_list,$r;
+		delete_md5($r->{md5odd});
+		delete_md5($r->{md5even});
 	}
+	$dba->{dh}->do("commit");
+	
 	foreach $r (@merge_list) {
 		my $odd=$dba->getFilePath($r->{md5odd},"pdf");
 		my $of=$odd->path;
@@ -60,7 +91,7 @@ sub merge
 		my @OP=glob($O);
 
 		my @oddqr=();
-		map{ s/^(\d+)://; $oddqr[$1-1].="\n$_"}  split(/\n/,$r->{oddqr});
+		map{ $oddqr[$1-1].="\n$_" if s/^(\d+)://;  }  split(/\n/,$r->{oddqr});
 
 		$r->{oddqr} =~ s/^(\d+):QR-Code:Front Page$//mg;
 		splice(@OP,$1-1,1);
@@ -75,7 +106,7 @@ sub merge
 		$O =~ s/%02d/*/;
 		my @EP=glob($O);
 		my @evnqr=();
-		map{ s/^(\d+)://; $evnqr[$1-1].="\n$_"}  split(/\n/,$r->{evenqr});
+		map{ $evnqr[$1-1].="\n$_" if s/^(\d+)://; }  split(/\n/,$r->{evenqr});
 		$r->{evenqr} =~ s/^(\d+):QR-Code:Back Page$//mg;
 		splice(@EP,$1-1,1);
 		splice(@evnqr,$1-1,1);
@@ -83,7 +114,6 @@ sub merge
 
 		my @R;
 		my @newqr;
-		$DB::single=1;
 		foreach(@OP) {
 			push @R,$_,pop(@EP);
 			push @newqr,shift(@oddqr),pop(@evnqr);
@@ -118,12 +148,9 @@ sub merge
 		#print Dumper($r);
 		$dba->{dh}->do("insert into metadata (idx,tag,value) select idx,'QR',? from hash where md5=?",undef,$qrcmt,$rv->{md5});
 		#disable access to source documents
-		pdf_class_md5($r->{md5odd},"deleted");
-		pdf_class_md5($r->{md5even},"deleted");
 		push @results,$r;
-		}
+	}
 	# odd|even|oddqr|evenqr
-	$dba->{dh}->do("commit");
 	return \@results;
 }
 

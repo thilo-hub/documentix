@@ -1,7 +1,7 @@
 package Documentix::Classifier;
 
 use Exporter 'import';
-our @EXPORT = qw(pdf_class_file pdf_class_md5);
+our @EXPORT = qw(pdf_class_file pdf_class_md5 delete_md5 undelete_md5);
 
 use XMLRPC::Lite;
 use File::Temp qw{tempfile };
@@ -19,6 +19,20 @@ my $pop_xml="http://localhost:".$Documentix::config->{popfile_xmlrpc_port}."/RPC
 
 my $pop_cnt = 0;
 
+dh->do("insert or ignore into tagname(tagname) values('$deleted')");
+
+sub undelete_md5 {
+	my $md5 = shift;
+	my $set_delete = dh->prepare_cached(qq{delete from tags(idx,tagid) where 
+			idx = (select idx from hash where md5=?) and
+			tagig = (select tagid  from tagname where tagname = ?)});
+	$set_delete->execute($md5,$deleted);
+}
+sub delete_md5 {
+	my $md5 = shift;
+	my $set_delete = dh->prepare_cached(qq{insert or ignore into tags(idx,tagid) select idx,tagid  from hash,tagname where md5 = ? and tagname = ?});
+	$set_delete->execute($md5,$deleted);
+}
 
 sub pdf_class_md5 {
     my $md5   = shift;
