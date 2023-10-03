@@ -3184,7 +3184,7 @@ const defaultOptions = {
     kind: OptionKind.WORKER
   },
   workerSrc: {
-    value: "../build/pdf.worker.js",
+    value: "pdf.worker.js",
     kind: OptionKind.WORKER
   }
 };
@@ -3202,7 +3202,7 @@ const defaultOptions = {
     kind: OptionKind.VIEWER
   };
   defaultOptions.sandboxBundleSrc = {
-    value: "../build/pdf.sandbox.js",
+    value: "pdf.sandbox.js",
     kind: OptionKind.VIEWER
   };
 }
