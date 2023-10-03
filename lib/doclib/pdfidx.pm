@@ -921,6 +921,7 @@ $DB::single=1;
 		next if -d $f;
 		my $hash = file_md5_hex($f);
 		my @tags=split("/+",$_a);
+		pop @tags;
 		# remove file unles it will be processed
 		unlink unless
 			dbaccess::insert_file($self,$hash,$f,\@tags);
