@@ -33,7 +33,7 @@ sub  schedule_ocr
 sub _ocr {
   my ($job, @args)=@_;
   return $job->retry({delay => 30})
-	unless my $guard = $minion->guard('ocring',60, {limit => 3});
+	unless my $guard = $minion->guard('ocring',60, {limit => 1});
   my $pdfidx  = pdfidx->new(0,$Documentix::config);
   $job->on( finish => &schedule_maintenance );
   my $r = $pdfidx->ocrpdf_sync(@args);
