@@ -353,6 +353,21 @@ sub ocrpdf_offline
         }
 	return count_text($t);
 }
+
+sub fix_imagefilename
+{
+    my ( $self,$r) = @_;
+	die "Shouldnt" unless -r $r->{file}.".ocr.pdf";
+
+	my $fixdb = $self->{dh}->prepare_cached(qq{update file set file=? where file=?});
+
+        unlink $r->{newfile} if -r $r->{newfile}; # allow to re-execute this
+	link($r->{file},$r->{newfile}) or die "Cannot rename";
+	rename($r->{file}.".ocr.pdf",$r->{newfile}.".ocr.pdf") or die "Cannot rename";
+	$fixdb->execute($r->{newfile},$r->{file});
+	print STDERR "Changed $r->{file} --> $r->{newfile}\n";
+}
+
 # Return text sizes
 sub count_text {
 	my $t = shift;
@@ -736,6 +751,22 @@ sub load_file
 	#$type = &$hdl( $self, $totype, $meta ) while (my $hdl=mime_handler($type));
 	# Capture QR references to us
 	$DB::single=1;
+	if ( $meta->{Docname} eq "image.png" ) {
+		# Try to giv it a better name..
+
+		my $nm = $meta->{__file};
+		my $of = $nm;
+		my $c  = $meta->{Content};
+		$c =~ s/\n.*//gs;
+		$c =~ s/[\h\.]/ /ag;
+		$c =~ s/\s+/ /g;
+		$c =~ s/^\s+//g;
+		$c =~ s/\s+$//g;
+		$of =~ s|image(?=\.png)|$c|;
+		my $r = { file=> $meta->{__file}, newfile=> $of };
+		$self->fix_imagefilename($r) if  length($c) > 5;
+	}
+
 	push @{$meta->{_taglist}},"scanned"
 		if SplitPdf::isTagged($meta->{pdfinfo});
 	if ($meta->{pdfinfo}  =~ m|^.*Keywords</td><td>(.*?)</td>| ) {
