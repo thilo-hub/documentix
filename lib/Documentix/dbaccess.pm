@@ -32,7 +32,7 @@ sub new {
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
 
     $cache = Documentix::Cache->new();;
-    my $q = "select cast(file as blob) file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
+    my $q = "select cast(file as text) file,value Mime from (select * from hash natural join metadata  where md5=? and tag='Mime') natural join file";
     $ph=$dh->prepare_cached($q);
     $lcl=$Documentix::config->{local_storage};
     # Check db version and run maintenance if (major) version is too small
