@@ -2,6 +2,7 @@ package Documentix;
 use Mojo::Base 'Mojolicious';
 use Minion::Command::minion::worker;
 
+
 $Documentix::config=undef;
 
 # This method will run once at server start
@@ -10,9 +11,11 @@ sub startup {
 
 $self->hook(before_dispatch => sub {
   my $c=shift;
-  $c->req->url->base->path('/documentix/') if
-   defined($ENV{HACK}) &&
-   $c->req->headers->header('X-Forwarded-Host');
+ return unless $c->req->headers->header('X-Forwarded-Host');
+ # root-dir on proxy i.e. '/documentix/'
+ my $base = $ENV{PROXY_ROOT};
+ return unless $base;
+ $c->req->url->base->path($base);
 });
 
   # Load configuration from hash returned by config file
