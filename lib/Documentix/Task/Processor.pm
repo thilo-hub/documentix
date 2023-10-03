@@ -26,8 +26,8 @@ sub register {
 #############################
 sub  schedule_ocr
 {
-        $minion->enqueue(ocr=> [@_]=>{priority=>1} );
-	return "Ocr...";
+        my $job = $minion->enqueue(ocr=> [@_]=>{priority=>1} );
+	return "Ocr($job)...";
 }
 
 sub _ocr {

@@ -1064,10 +1064,13 @@ sub pdf_totext {
 
 print STDERR "XXXXXX> $lcl_store_dir \n" if $debug > 1;
     # do the ocr conversion
+    my $out = $lcl_store . ".ocr.pdf";
     mkdir($lcl_store_dir) unless -d $lcl_store_dir;
-
+    open (FH,">$out.wip");
     $meta->{Content} = "ProCessIng=Ocr...";
-    Documentix::Task::Processor::schedule_ocr($fn, $lcl_store .".ocr.pdf",undef,$meta->{hash},$meta);
+    my $job = Documentix::Task::Processor::schedule_ocr($fn, $out,undef,$meta->{hash},$meta);
+    print FH "$job\n";
+    close(FH);
     return undef;
 }
 
