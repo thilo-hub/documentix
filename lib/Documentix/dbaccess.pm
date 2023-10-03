@@ -397,21 +397,21 @@ sub dbmaintenance1 {
 	my $snowball=1;
 	my @ops = (
 		qq{begin exclusive transaction},
-		qq{ drop table text},
-		qq{ drop view vtext},
-		qq{ drop TRIGGER metadata_au},
-		qq{ drop TRIGGER metadata_ad},
-		qq{ drop TRIGGER metadata_ai},
-		qq{ CREATE TRIGGER metadata_au AFTER UPDATE ON metadata when old.tag = "Text" BEGIN
+		qq{ drop table if exists text},
+		qq{ drop view if exists vtext},
+		qq{ drop TRIGGER if exists metadata_au},
+		qq{ drop TRIGGER if exists metadata_ad},
+		qq{ drop TRIGGER if exists metadata_ai},
+		qq{ CREATE TRIGGER metadata_au AFTER UPDATE ON metadata when old.tag = 'Text' BEGIN
 			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value); 
 			INSERT INTO "text"(rowid,content) values(new.idx,new.value); 
 		END},
 		qq{
-		CREATE TRIGGER metadata_ad AFTER DELETE ON metadata when old.tag = "Text" BEGIN
+		CREATE TRIGGER metadata_ad AFTER DELETE ON metadata when old.tag = 'Text' BEGIN
 			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value);  
 		end},
 		qq{
-		CREATE TRIGGER metadata_ai AFTER INSERT ON metadata when new.tag = "Text" BEGIN
+		CREATE TRIGGER metadata_ai AFTER INSERT ON metadata when new.tag = 'Text' BEGIN
 			INSERT INTO "text"(rowid,content) values(new.idx,new.value); 
 		end},
 		qq{ CREATE VIEW 'vtext'(docid,content)  as select idx ,value from metadata where tag = 'Text'},
@@ -423,7 +423,7 @@ sub dbmaintenance1 {
 		qq{ insert into text(rowid,content) select * from vtext where content is not NULL},
 		qq{ delete from cache_lst},
 		qq{ CREATE TABLE IF NOT EXISTS doclabel (idx INT, doclabel primary key unique)},
-		qq{ drop view joindocs },
+		qq{ drop view if exists joindocs },
 
 		   qq{commit}
 	   );
