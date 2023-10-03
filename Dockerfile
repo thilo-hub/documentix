@@ -69,6 +69,8 @@ VOLUME Documents:/volumes/Docs
 # Main GUI interface
 EXPOSE 80
 ENV HOME=/volumes/Docs
+# libarchive needs it
+ENV LC_CTYPE=C.UTF-8
 ##TJ ENTRYPOINT /documentix/documentix.sh
 ##TJ 
 ENTRYPOINT test -r Docs/documentix.conf && cp Docs/documentix.conf . ; perl /documentix/script/documentix daemon -l http://*:18080
