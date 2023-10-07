@@ -64,6 +64,7 @@ sub schedule_loader
 sub _loader {
   my ($job, $dgst,$fn,$tags) = @_;
   my $class = undef;
+  $DB::single=1;
 
   my $pdfidx  = pdfidx->new(0,$Documentix::config);
   my @results=@_;
@@ -81,7 +82,7 @@ sub _loader {
 	$pdfidx->fail_file($job->id,{hash=>$dgst});
 	die $@;
   }
-  say 'done';
+  #say 'done';
   $results[5] = {summary=>$txt,url=>"/docs/pdf/$dgst/result.pdf"};
   $job->finish(\@results);
   schedule_maintenance();

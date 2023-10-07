@@ -37,7 +37,7 @@ sub delete_md5 {
 sub pdf_class_md5 {
     my $md5   = shift;
     my $class = shift;    # undef returns class else set class
-    my $gt_info = dh->prepare_cached( q{ select file,substr(value,1,10000) txt from hash natural join file natural join metadata where md5=? and tag="Text"});
+    my $gt_info = dh->prepare_cached( q{ select file,cast(substr(value,1,10000) as blob) txt from hash natural join file natural join metadata where md5=? and tag="Text"});
 
     my $r = dh->selectrow_hashref( $gt_info, undef, $md5 );
     return pdf_class_file( $r->{"file"}, \$r->{"txt"}, $md5, $class );
