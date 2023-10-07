@@ -133,7 +133,7 @@
 
 #taglist {
   color: blue;
-  border: inset thin red;
+  #border: thin red;
   display: flex;
   flex-flow: row wrap;
 }

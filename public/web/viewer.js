@@ -14086,7 +14086,7 @@ function webViewerLoad() {
   }
   _app.PDFViewerApplication.run(config);
   document.getElementById("viewBookmark").addEventListener("dragstart", dodrag);
-  document.getElementById("secondaryViewBookmark").addEventListener("dragstart", dodrag);
+  //document.getElementById("secondaryViewBookmark").addEventListener("dragstart", dodrag);
 }
 document.blockUnblockOnload?.(true);
 if (document.readyState === "interactive" || document.readyState === "complete") {
@@ -14099,3 +14099,4 @@ if (document.readyState === "interactive" || document.readyState === "complete")
 /******/ })()
 ;
 //# sourceMappingURL=viewer.js.map
+//

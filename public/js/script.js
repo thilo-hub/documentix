@@ -167,11 +167,6 @@ $(function(){
 	if ( dpos ) {
 		$("#left").width(dpos);
 	}
-	$("#editor").on("click",function(e){
-		$("#sp").toggle("fast")
-	     }
-	);
-
 	var activated=0;
 	drag_showEdit = function(event) {
 		var n=document.getElementById("navi");
