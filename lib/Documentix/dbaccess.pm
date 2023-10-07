@@ -19,6 +19,8 @@ my $dbversion = "1";
 my $jobid=$$;
 my $debug = 2;
 my $ph;
+use Sys::Hostname;
+my $thisHost = hostname();
 
 my $cache;
 my $error_file= Mojo::Asset::File->new(path => "../public/icon/Keys-icon.png") ;
@@ -27,6 +29,7 @@ my $lcl;
 sub new {
     my $class  = shift;
     my $dh = Documentix::db::dh();
+    $thisHost = hostname();
 
     print STDERR "New pdf conn: $dh\n" if $debug > 0;
     my $self = bless { dh => $dh, dbname => $d_name }, $class;
@@ -131,11 +134,11 @@ sub get_icon{
 	 require doclib::pdfidx;
 	 return undef unless pdfidx::mime_handler($type);
 	 my $dh=$self->{dh};
-	 my $add_file = $dh->prepare_cached(q{insert or ignore into file (md5,file,host) values(?,?,"ts2new")});
+	 my $add_file = $dh->prepare_cached(q{insert or ignore into file (md5,file,host) values(?,?,?)});
 	 my $add_meta = $dh->prepare_cached(q{insert or ignore into metadata(idx,tag,value) values((select idx from hash where md5=?),?,?)});
 
 	 # Create minimal DB entry such that it shows in view
-	 $add_file->execute($dgst,$ob);
+	 $add_file->execute($dgst,$ob,$thisHost);
 	 $add_meta->execute($dgst,"Mime",$type);
 	 $add_meta->execute($dgst,"Content","ProCessIng=Loading...");
 	 $add_meta->execute($dgst,"mtime",0);
