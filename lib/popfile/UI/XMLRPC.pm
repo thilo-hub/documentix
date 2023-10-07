@@ -201,7 +201,7 @@ sub service
             my $remote_host = $client->peerhost();
             my $remote_port = $client->peerport();
 
-say "Connection from $remote_host:$remote_port";
+# say "Connection from $remote_host:$remote_port";
 
             if ( 1 || ( $self->config_( 'local' ) == 0 ) ||              # PROFILE BLOCK START
                  ( $remote_host eq inet_aton( "127.0.0.1" ) ) ) {   # PROFILE BLOCK STOP
