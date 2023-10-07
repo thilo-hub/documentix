@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/local/bin/perl
 
 # Run this to convert all image.png (screen-copy & paste)  into more meaningfull names...
 use lib "/documentix/lib";
@@ -25,6 +25,8 @@ use File::Path qw(make_path);
 
 $dh = dbaccess->new();
 
+$dh->{dh}->do(qq{CREATE VIEW if not exists idxfile(idx,md5,file) as select idx,md5,file from hash natural join file});
+
 $dh->{dh}->do(qq{
 	CREATE VIEW if not exists taglist as
 	with tglist as (
@@ -41,6 +43,10 @@ while ( my $r = $q->fetchrow_hashref() ) {
     my $dst = join("/",$destroot,$r->{tags},basename($r->{file}));
     make_path(join("/",$destroot,$r->{tags}));
     symlink($r->{file},$dst);
+    my $ocr = "Docs/uploads/$1/$r->{md5}/".basename($r->{file},".pdf").".ocr.pdf"
+    	if $r->{md5} =~ m/^(..)/;
+    symlink($ocr,$dst.".ocr.pdf")
+    	if -r $ocr;
 
 }
 
