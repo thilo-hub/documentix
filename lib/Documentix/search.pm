@@ -27,6 +27,7 @@ my $search_date_txt = $cached_search;
 my $search_date = "insert or ignore into cache_q (qidx, idx, snippet) select ?,idx,mtext
 			from dates where date between ? and ?";
 
+my $date_match = qr{date[:\s*](\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d)(\s*|$)};
 
 
 sub search {
@@ -38,7 +39,6 @@ sub search {
     # the fts search should have a ':' in only quoted....
     # here we simply reject such queries
     # Check if we could escape it...
-    return undef if $search =~ m/:/; 
     dh->do("begin transaction");
     my $n = dh->do( $cache_setup, undef, $search );
     my $idx = dh->selectrow_array( $cache_lookup, undef, $search );
@@ -48,10 +48,10 @@ sub search {
 	    # Arguments for search query
 	    my @sargs = ( $idx, $search );
 	    my $srch = dh->prepare_cached($cached_search);
+    $DB::single=1;
 
 	    # if a date-range is mentioned, fix the search sql to select the time range only
-	    my $date_match = '\s*(\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d)(\s*|$)';
-	    if ( $search && $search =~ s/date$date_match//i ) {
+	    if ( $search && $search =~ s/$date_match//i ) {
 		print STDERR "Datesearch:  $1 -- $2\n";
 		# daterange specified...
 		# remove range from search string and process normally
@@ -59,6 +59,7 @@ sub search {
 		@sargs = ( $idx, $1, $2 );
 		$srch = dh->prepare_cached($search_date);
 		unless ( $search =~ /^\s*$/ ) {
+		    $search =~ s/:/ /gs; # fts sees arguments ... unhappy
 		    # date with text match
 		    push @sargs, $search;
 		    $srch = dh->prepare_cached($search_date_txt);
