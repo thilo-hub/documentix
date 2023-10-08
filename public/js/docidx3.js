@@ -227,6 +227,7 @@ $(function() {
 	e.currentTarget.scrollIntoViewIfNeeded();
 	$(".navigator").addClass("navigatorBig");
         $(".viewopt").show();
+	$('#sub-tabs').tabs({active: 0});
 	
 	localStorage.removeItem("autoshow")
     }
@@ -234,7 +235,7 @@ $(function() {
 	    // bring up viewer and load it with url
 	    var p=$('#pdfview');
 
-	    if ( u !== undefined ){
+	    if ( u !== undefined && ! u.match(/^http/) ){
 		    u=viewer_url.replace("%doc",u);
 	    }
 	    if ( p.length ) {
@@ -243,6 +244,7 @@ $(function() {
 			    // rework windows to show viewer
 			    $(".navigator").removeClass("navigatorBig");
 			    $(".viewopt").hide();
+		            $('#sub-tabs').tabs({active: false});
 			    $("#resview").appendTo("#left");
 			    p.show();
 		    }

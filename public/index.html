@@ -1,6 +1,4 @@
-<!DOCTYPE html
-        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-         "lib/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 <html xmlns="lib/xhtml" lang="en-US" xml:lang="en-US">
     <head>
 	<title>Documentix Document Manager</title>
@@ -76,7 +74,15 @@
 .tooltip2:hover .tooltiptext2 {
   visibility: visible;
 }
+body, html {height:100%;margin:0}
+div.page {height:100%; overflow:hidden;}
 </style>
+
+<script>
+$( function() {
+    $( "#sub-tabs" ).tabs({ collapsible : true}).tooltip();
+  } );
+</script>
 
 
 	<script type="text/javascript" src="widgEditor/scripts/widgEditor.js"></script>
@@ -98,49 +104,40 @@
 			<div id="droplist"></div>
 			<script type="text/javascript" src="js/upload.js"></script>
 		    </li>
-		    <script>
-			$( function() {
-			    $( "#sub-tabs" ).tabs({ collapsible : true}).tooltip()
-			  } );
-		    </script>
-
 		    <div id="sub-tabs" style="width: -webkit-fill-available;" >
 			<ul>
 			    <li><a href="#tabs-label"  class="glyphicon glyphicon-tag"           title="Show document labels"></a></li>
 			    <li><a href="#tabs-help"   class="glyphicon glyphicon-question-sign" title="Some small help"></a></li>
 			    <li><a href="#tabs-import" class="glyphicon glyphicon-print"         title="Import from external devices"></a></li>
 			    <li><a href="#tabs-minion" class="glyphicon glyphicon-cog"           title="Minion job manager"></a></li>
-			    <li><a href="#myeditor"    class="glyphicon glyphicon-edit"          title="Scratch pad editor"></a></li>
+			    <li><a href="#tabs-editor"    class="glyphicon glyphicon-edit"          title="Scratch pad editor"></a></li>
 			</ul>
 
-			<div id="tabs-import" class="viewopt" >
+			<div id="tabs-import" >
 			    <a class="glyphicon glyphicon-print" href="import"  onclick="DoImport(event)">Import </a>
 			     from MX870 scanner 
 			</div>
 
-		        <div id="tabs-minion" class="viewopt" >
+		        <div id="tabs-minion" >
 			    <a class="glyphicon glyphicon-play" href="minion">View minion Jobs</a>
 			</div>
 
-			<div id="tabs-help" class="viewopt" >
-
+			<div id="tabs-help" >
 			    <p>Available short cuts:</p>
 			    <p><em>tag:&lt;tagname&gt;</em> To only act on selected tag name</p>
 			    <p><em>date:&lt;yyyy-mm-dd...yyyy-mm-dd&gt;</em> To only find documents having a date in the range</p>
 			    <p>AND OR etc shoudl work like described in fts5 - sqlite manual</p>
 			</div>
 
-			<div id="myeditor"  class="viewopt" style=" max-height: 600px" >
-				<div>
+			<div id="tabs-editor"  style=" max-height: 600px" >
 			    <div>
 				    <form id="scratch" class="_nothidden">
 					<textarea id="scratchpad" class="widgEditor "></textarea>
 				    </form>
 			    </div>
-			    </div>
 			</div>
 
-			<div id="tabs-label" class="viewopt" >
+			<div id="tabs-label" >
 			    <li style="width: -webkit-fill-available;" >
 				<div id="taglist" ondrop="dropTag(event)" 
 						  ondragleave="dragoverend(event)" 
@@ -206,14 +203,14 @@
 		</div>
 		<iframe id="pdfview" class="pdfviewer " name="pdfviewer" src="" ></iframe>
 	    </div>
-	</div>
 
 
 	<ul class="custom-menu">
-	<li data-action="open" class="tas fa-share" alt="open URL">Open URL</li>
-	<li data-action="copy" class="tas fa-copy" alt="copy URL">Copy URL</li>
-	<li data-action="log" class="tas fa-thilo" alt="Add to clipboard">Add in edit</li>
-    </ul>
+	    <li data-action="open" class="tas fa-share" alt="open URL">Open URL</li>
+	    <li data-action="copy" class="tas fa-copy" alt="copy URL">Copy URL</li>
+	    <li data-action="log" class="tas fa-thilo" alt="Add to clipboard">Add in edit</li>
+	</ul>
+	</div>
 </body>
 </html>
 

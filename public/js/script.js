@@ -186,9 +186,24 @@ $(function(){
 		}
 	}
 	$("#Oviewer").on("mouseenter",drag_hideEdit);
+	$("#Oviewer").on("drag",function(e,ui) { 
+		return;
+		console.log("drag");
+		var aa=document.styleSheets;
+		var rbx;
+		for( var v=aa.length-1;v>=0;v--) {
+			var st = aa[v].cssRules;
+			for( var r = st.length-1; r>=0;r--) {
+				if ( st[r].selectorText == ".rbox" ) {
+					rbx = st[r];
+				}
+			}
+		}
+		console.log(rbx);
+	});
 	$("#Oviewer").on("dragstop",function(e,ui) { 
 		localStorage["vsplit"] = ui.offset.left;
-	})
+	});
 	$("#left").on("dragenter",drag_showEdit);
 
 });

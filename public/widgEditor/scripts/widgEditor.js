@@ -596,6 +596,7 @@ widgEditor.prototype.detectDrop = function(e)
   var data = theEvent.dataTransfer.getData("text/html");
   var n=document.createElement("DIV")
   if ( !data ) {
+	  // TODO: is this really still used?
 	var o="<a href='"+ theEvent.dataTransfer.getData("url") + "'>Current view</a>";
 		
 	var dname = o.match('href=.*/([^#"]*)#page=([0-9]*)');
@@ -606,6 +607,11 @@ widgEditor.prototype.detectDrop = function(e)
 	data = o;
   }
   n.innerHTML="<hr>"+data+"<hr>";
+  n.addEventListener("dblclick", function(e,ui) { 
+	  // Double click to show dropped element
+	Showpdf(e.srcElement.href,e);
+				  } );
+
 
   // check if it is a viewer-url, with bad test - massage it then
   var viewer_url_base="web/viewer.html?file=../docs/pdf/%doc";
@@ -951,6 +957,7 @@ widgEditor.prototype.writeDocument = function(documentContent)
 {
 	/* HTML template into which the HTML Editor content is inserted */
 	var documentTemplate = '\
+	<!DOCTYPE html>\
 		<html>\
 			<head>\
 				INSERT:STYLESHEET:END\

@@ -185,6 +185,7 @@
 .rbox {
     border: inset #CCC;
     width: 240px;
+    /* width: 25%; */
     height: 120px;
     float: left;
     list-style-type: none;
