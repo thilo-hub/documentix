@@ -28,7 +28,7 @@ sub fixup_dates
 	    print ">> $r[1]\n";
 	    my $t = encode('UTF-8', $r[0] )|| "";
 	    $idx = $r[1];
-	    my @pot = grep( /\D(19|20)\d\d\D/, split( /\n/, $t ) );
+	    my @pot = grep( /\D(19|20)\d\d(\D|$)/, split( /\n/, $t ) );
 	    my %log;
 	    foreach $t (@pot) {
 		do {
