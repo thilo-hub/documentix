@@ -131,7 +131,7 @@ var docscroll = function(element) {
 	    	params += "&format=new";
 
 		// tag_edit(0);
-		console.log(idx);
+		//console.log(idx);
 		if ( ! template ) {
 		    template = $.templates("template_result", {
 			markup: "#template_result",
@@ -178,18 +178,22 @@ var docscroll = function(element) {
 			    if ( data.query )
 				    viewer_url=viewer_url_srch.replace("%qu",data.query);
 			}
-			data.items.forEach(function(a){if(!a.doc){a.doc="??"}console.log(a.doc)})
+			data.items.forEach(function(a){if(!a.doc){a.doc="??";console.log("Bad Doc:"+a.doc)}})
 			var itm = template.render(data);
 			idx = data.idx+data.nitems;
-			    var msg = data.msg;
-			    //dbg_msg(msg);
-			    $("#status").html("Got: "+ idx + "<br>" + msg);
-			    if ( data.items.length == 0 ||  data.nresults < data.idx ){
-				element.off("scroll");
-				itm= undefined;
-				dbg_msg("End");
+			var msg = data.msg;
+			//dbg_msg(msg);
+			$("#status").html("Got: "+ idx + "<br>" + msg);
+			if ( data.items.length == 0 ||  data.nresults < data.idx ){
+			    element.off("scroll");
+			    itm= undefined;
+			    dbg_msg("End");
+			    if ( data.idx == 1 && data.nresults == 0 ) {
+				itm = `<li class="rbox "> 
+						<img class="thumb img-responsive" src="icon/no-result.png"" /> 
+				    </li>`;
+			    }
 			}
-
 			cb(itm);
 		    }
 		});
@@ -208,13 +212,12 @@ do_tags = function(classes) {
 	classes.sort((a,b)=>b.count-a.count).forEach(function (e) {
 		if ( maxcnt <= e.count) {
 			maxcnt = e.count;
-		} else {
+		} 
 		var fontsz=Math.floor(20*e.count/maxcnt) + 10;
 		var v = "cl_"+e.tagname + " tags";
 	      if ( e.tagname == clname )
 		v += " tagfilter ";
 	      tg.append('<div style="font-size: '+fontsz+'px" class="tgbbox"><a class="'+v+'" >'+e.tagname+'</a></div>');
-		}
 	})
 }
 
@@ -278,8 +281,10 @@ $(function() {
     // filter taglist with search field
     $("#search").keyup(function(event) {
 	var ms=$("input#search").val();
-	$('#taglist').find("input").each(function(){
-	    if (ms.length == 0 || this.value.match(ms)) {
+	ms = ms.toLowerCase().replace(/^tag:/,"");
+	   
+	$('#taglist').find(".tgbbox").each(function(){
+	    if (ms.length == 0 || this.textContent.toLowerCase().match(ms)) {
 		$(this).show();
 	    } else {
 		$(this).hide();
