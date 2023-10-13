@@ -184,7 +184,13 @@ $( function() {
 				    <div class="doclink" onclick="event.stopPropagation()">
 					<a tabindex=-1 class="doclink glyphicon glyphicon-download" 
 						href="docs/raw/{{:md5}}/{{:doc.toUri()}}.{{:doct}}" 
-						download> {{:doc}}{{if doct && !doct.match("pdf")}}.{{:doct}}{{/if}}</a>
+						download></a>
+						<a 
+							href="docs/pdf/{{:md5}}/{{:doc.toUri()}}.{{:doct}}" 
+							onclick="DoViewer(event)"
+						>
+						{{:doc}}{{if doct && !doct.match("pdf")}}.{{:doct}}{{/if}}
+						</a>
 				    </div>
 				    <a tabindex=-1 class="dtags">
 					<p class="tagfield" >
