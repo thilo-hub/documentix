@@ -18,7 +18,7 @@ my $cache_setup  = q{insert or ignore into cache_lst (query) values(?)};
 
 my $cached_search = q{insert or ignore into cache_q ( qidx,idx,snippet ) 
                                 select ?,docid,snippet(text,1,"<b>","</b>","...",10) 
-					from text  join hash on (docid=idx) where text match ? order by rank  };
+					from text  join hash on (docid=idx) where text match ? order by rank limit 500  };
 # Extend search to include date range
 my $search_date_txt = $cached_search;
    $search_date_txt =~ s/where/natural join dates where date between ? and ? and/;
