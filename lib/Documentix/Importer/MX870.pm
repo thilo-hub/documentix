@@ -28,15 +28,25 @@ sub getFiles {
 
 
 	my @onserver = qx{smbclient -N $$srv[0] -D $dir  -c  dir 2>/dev/null };
+	my $time_prev =0;
 	foreach ( @onserver )
 	{
 	    print STDERR  "$_" if $debug ||/error/i;
 	# file....      DH        0  Thu Dec 17 13:11:48 2020
 	    next unless /^\s*(.*?)\s+(\S+)\s+(\d+)\s+((\S+)\s+(\S+)\s+(\d+)\s+([0-9:]+)\s+(\d+))$/;
-	    next if $2 eq "D" or $1 eq "DH";
+	    next if $2 eq "D" or $2 eq "DA";
 	    my $f="$dst/$1";
 	    my $s= $3;
 	    my $t = str2time($4);
+	    # If item is older than previous, its an error
+	    # fake last document + some minute
+	    my $fixtime = 1;
+	    if ( $fixtime && $t < $time_prev ){
+		warn "Time adjusted for $f\n";
+	    	$t = $time_prev + 60;
+	    }
+	    $time_prev = $t;
+
 	    my ( $sf, $tf ) ;
 
 	    my $o=undef;
