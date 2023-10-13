@@ -171,8 +171,9 @@ sub ldres {
 	$_->{doc}  =~ s/%20/ /g;
 	$_->{doc}  =~ s/%2F/\//g; #Not sure if best. The filename uses %xx and the doc-name is then problematic?
 
-	$_->{tip} = $_->{snippet}; delete $_->{"snippet"};
-	$_->{tip} =~ s/["']/&quot;/g;
+	$_->{tip} = encode('UTF-8',$_->{snippet}); delete $_->{"snippet"};
+	$_->{tip} =~ s/["']/\&quot;/g;
+	$_->{tip} =~ s/\n\s*\n/\n/gs;
 	$_->{tip} =~ s/\n/<br>/g;
 	$_->{tg} = $_->{tags}|| ""; delete $_->{"tags"};
     }
