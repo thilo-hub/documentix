@@ -203,9 +203,12 @@ sub pdf_info($$) {
     $res =~ /Pages:\s+(\d+)/;
     my $pg = $1;
     $res =~ s/\0//g;
-    $res =~ s|:\s|</td><td>|mg;
-    $res =~ s|\n|</td></tr>\n<tr><td>|gs;
-    $res =~ s|^(.*)$|<table><tr><td>$1</td></tr></table>|s;
+    $res =~ s|(^\|\n)([A-Z][A-Za-z ]+):\s|</td></tr>\n<tr><td>$2</td><td>|gs;
+    $res =~ s|^</td></tr>\n|<table>|s;
+    $res =~ s|\s*$|</td></tr></table>\n|s;
+    # $res =~ s|:\s|</td><td>|mg;
+    #$res =~ s|\n|</td></tr>\n<tr><td>|gs;
+    #$res =~ s|^(.*)$|<table><tr><td>$1</td></tr></table>|s;
     return $pg,$res;
 }
 
@@ -538,6 +541,7 @@ print STDERR Dumper(\$self,\@qr) if $debug > 1;
     }
 
     my $txt = undef;
+    my $pdfinfo=undef;
     if (@outpages) {
 
 	my @cpages;
@@ -554,7 +558,7 @@ print STDERR Dumper(\$self,\@qr) if $debug > 1;
 		#$cmt .= "Q:$qr";
 		#}
 	    $fail += do_pdfstamp( $outpdf, $cmt,$inpdf );
-	    my ($pg,$pdfinfo) =  $self->pdf_info($outpdf);
+	    ($pg,$pdfinfo) =  $self->pdf_info($outpdf);
 	    $self->ins_e($self->{"idx"},"pdfinfo", $pdfinfo);
 	    $self->ins_e($self->{"idx"},"pages", $pg);
 
