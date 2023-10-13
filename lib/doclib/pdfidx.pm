@@ -337,12 +337,21 @@ sub ocrpdf_offline
 	my ( $inpdf, $outpdf, $ascii,$hash, $meta ) = @_;
 	$idx = $self->getidx($meta->{hash}) unless $idx>0;
 	$self->{"idx"}=$idx;
-	$DB::single=1;
         my ($pdfinfo,$t) = $self->do_ocrpdf(@_);
+	$meta->{_ocrfile} = $outpdf;
 
 	# new pdfinfo only if non existant before
-	$self->ins_e( $idx, "pdfinfo", $pdfinfo )
-	    if (defined($pdfinfo) &&  !defined($meta->{pdfinfo}));
+	if (defined($pdfinfo) &&  !defined($meta->{pdfinfo})){
+	    $meta->{_lcl_store} = $self->get_store( $meta->{"hash"},1)
+		    unless $meta->{_lcl_store};
+	    $meta->{pdfinfo} = $pdfinfo;
+	    $self->handle_QR($meta);
+	    # Save (updated) meta info for file
+	    foreach ( keys %$meta ) {
+		next if /^_/;
+		$self->ins_e( $idx, $_, $meta->{$_} );
+	    }
+	}
 
         if ($t) {
             $t =~ s/[ \t]+/ /g;
@@ -709,6 +718,62 @@ sub mime_handler {
 	};
 	return $mime_handler->{$typ};
 }
+# Check pdfinfo for recognized QR codes and
+# call split or merge depending
+# Capture QR in meta
+sub handle_QR {
+    my ($self,$meta) = @_;
+    my $addqr = $self->{"dh"}->prepare_cached( qq{insert or replace into doclabel (idx,doclabel) values((select idx from hash where md5 = ?),?)});
+    $DB::single=1;
+    my $fn = $meta->{_ocrfile} || $meta->{_file} || $meta->{file} ;
+    if ($meta->{pdfinfo}  =~ m|^.*Keywords</td><td>(.*?)</td>|s ) {
+	    my $res = $1;
+	    my @res =split(/(?:,SCAN:|\n)/,$res);
+	    $res = join("\n",grep{ /:QR-Code:/ } @res);
+	    $meta->{QR} = $res if @res;
+    }
+    if ( $meta->{QR} =~ m/(\d+):QR-Code:(Front|Back) Page/ ) {
+	    # Submit merge job instead of qr processing...
+	    # But hiher djin is doing it...
+	    # Just add QR infos into meta
+	    $meta->{"_runmerger"}=1;
+    } elsif ( $meta->{"pdfinfo"} ) {
+	my @qrrefs = SplitPdf::get_qridx($meta->{"pdfinfo"});
+	if (@qrrefs) {
+	    foreach( @qrrefs ) {
+		printf STDERR "Add QR: $meta->{hash} -> $_->[0]\n";
+		$addqr->execute($meta->{hash},$_->[0]);
+	    }
+	    # Try splitting
+	    my $tmpdir = $meta->{_lcl_store};
+	    #Merger::loadSplits($fn,$tmpdir);
+
+	    my @splits = SplitPdf::split_pdf($fn,$tmpdir);
+	    $DB::single=1;
+	    if ( @splits ) {
+		# new files created drop source file
+		my $dba = dbaccess->new();
+		foreach( @splits ) {
+			my $new =Mojo::Asset::File->new(path => $$_->{name});
+			my ($status,$nrv)=$dba->load_asset(undef,$new,basename($$_->{name}),$meta->{mtime});
+			$nrv->{qr_ref} = $$_;
+			push @{$meta->{_splits}}, $nrv;
+		}
+		#disable access to cmbined document
+		delete_md5($meta->{hash});
+	    }
+	    if(0){
+	    # Capture links for referencing them later
+$DB::single=1;
+	    foreach( @{$meta->{_splits}} ) {
+		my $v = $_->{qr_ref};
+		$addqr->execute($_->{md5},$v->{id});
+	    }
+	}
+	}
+    }
+}
+
 
 sub load_file
 {
@@ -719,7 +784,7 @@ sub load_file
 	my $fn = $meta->{file} or die "Bad call";
 	delete $meta->{file};
 	# .ocr.pdf smarts
-	# if it is a .ocr.pdf file (next to the original), just the md5 of the original but everything else from ocr. 
+	# if it is a .ocr.pdf file (next to the original), just the md5 of the original but everything else from ocr.
 	# if the file has a .ocr.pdf next to the .pdf, remember this, so some tools might pick the ocr one
 	if ($fn =~ m|^(.*)\.ocr.pdf$| && -r "$1.pdf" ) {
 		$meta->{_ocrfile} = $fn;
@@ -773,46 +838,8 @@ sub load_file
 
 	push @{$meta->{_taglist}},"scanned"
 		if SplitPdf::isTagged($meta->{pdfinfo});
-	if ($meta->{pdfinfo}  =~ m|^.*Keywords</td><td>(.*?)</td>| ) {
-		my $res = $1;
-		my @res =split(/,SCAN:/,$res); 
-		$res = join("\n",grep{ /:QR-Code:/ } @res);
-		$meta->{QR} = $res if @res;
-	}
-	if ( $meta->{QR} =~ m/(\d+):QR-Code:(Front|Back) Page/ ) {
-		# Submit merge job instead of qr processing...
-		# But hiher djin is doing it...
-		# Just add QR infos into meta
-		$meta->{"_runmerger"}=1;
-	} elsif ( $meta->{"pdfinfo"} ) {
-	    my @qrrefs = SplitPdf::get_qridx($meta->{"pdfinfo"});
-	    if (@qrrefs) {
-		if ( 1 && scalar(@qrrefs) > 0 ) {
-			# Try splitting 
-			my $tmpdir = $meta->{_lcl_store};
-			#Merger::loadSplits($fn,$tmpdir);
 
-			my @splits = SplitPdf::split_pdf($fn,$tmpdir);
-			$DB::single=1;
-			my $dba = dbaccess->new();
-			foreach( @splits ) {
-				my $new =Mojo::Asset::File->new(path => $$_->{name});
-				my ($status,$nrv)=$dba->load_asset(undef,$new,basename($$_->{name}),$meta->{mtime});
-				push @{$meta->{_splits}}, $nrv;
-			}
-			#disable access to cmbined document
-			$DB::single=1;
-			push @{$meta->{_taglist}},"deleted"
-				if @splits;
-		}
-		my $addqr = $self->{"dh"}->prepare_cached( qq{insert or replace into doclabel (idx,doclabel) values(?,?)});
-		foreach(map{@$_} @qrrefs) {
-			printf STDERR "Add QR: $_ -> $idx\n";
-		    $addqr->execute($idx,$_);
-		}
-	    }
-	}
-
+	$self->handle_QR( $meta );
 
 	unless ($meta->{Content} && $meta->{Content} =~ m/ProCessIng/) {
 		# Dont ask to classify it while its not done
@@ -1262,8 +1289,8 @@ sub do_text2pdf {
     $DB::single=1;
     my $ttl = $in;
     my $dir = dirname($in);
-    my @cmd = ("cd", $dir, qw { && pandoc -s --pdf-engine=wkhtmltopdf 
-    				--pdf-engine-opt=--disable-local-file-access 
+    my @cmd = ("cd", $dir, qw { && pandoc -s --pdf-engine=wkhtmltopdf
+    				--pdf-engine-opt=--disable-local-file-access
 				--pdf-engine-opt=--allow --pdf-engine-opt="." } ,$in,"-o",$out);
     my @c = (qx{ @cmd });
     die "failed: ".join(" ",@cmd) ."\n@c\n"  unless -f $out;
