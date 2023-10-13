@@ -25,9 +25,9 @@ var rem_tag = function(foc_el,md5,tg) {
     }
 $(function() {
     // react on filter tags
-    $('#taglist').click(function(e) {
-        if ($(e.target).hasClass("tagbox")) {
-            var ncl = $(e.target).val();
+    $('#taglist_disabled').click(function(e) {
+        if ($(e.target).hasClass("tags")) {
+            var ncl = $(e.target).text();
             if (ncl == clname) {
                 // reset tag
                 ncl = "";
@@ -35,10 +35,11 @@ $(function() {
 		    $(".deleted").hide();
 		}
             }
-	    $("input#search").val("");
-            $("#result").html("");
             clname = ncl;
-            fetch_page(1);
+	    $("input#search").val("");
+	     // reset & reload view by having an empty #result
+            $("#result").html("");
+            //fetch_page(1);
         }
     });
     var foc_el = 0;

@@ -1,5 +1,6 @@
 var clname = "";
 var nsrch = "";
+var startSearch=0;
 var viewer_url_base="web/viewer.html?file=../docs/pdf/%doc";
 var viewer_url=viewer_url_base;
 var viewer_url_srch=viewer_url_base+'#&search="%qu"';
@@ -102,31 +103,30 @@ var docscroll = function(element) {
 		    params += "idx=" + idx;
 		}
 		var sv = $("#search").val();
-		if (nsrch != sv) {
-		// something in the serch has changed
-		// start from top
-		    var lbl = sv.match(/^(.*?)\s*tag:(\S+)\s*(.*)/);
-		    if ( lbl ) {
-			    // fixup search field and set label name
-			    clname = lbl[2];
-			    sv = lbl[1]+lbl[3];
-			    $("#search").val(sv);
-		    }
-		}
-		if (nsrch != sv) {
-		    console.log("Search ("+clname+"):"+sv);
+		if (startSearch == 1 && nsrch != sv) {
 		    nsrch = sv;
+		    startSearch=0;
+		    // something in the search has changed
+		    // start from top
+		    console.log("Search ("+clname+"):"+sv);
 		    idx=1;
 		    element.html("");
+		}
+		// class names
+		var lbl = sv.match(/^(.*?\s*)tag:(\S+)(\s*.*)/);
+		if ( lbl ) {
+			// fixup search field and set label name
+			clname = lbl[2];
+			sv = lbl[1]+lbl[3];
+			//$("#search").val(sv);
+		}
+		if (clname) {
+		    params += "&class=" + clname;
 		}
 		// search value 
 		if ( sv )
 			params += "&search=" + sv;
 
-		// class names
-		if (clname) {
-		    params += "&class=" + clname;
-		}
 		
 	    	params += "&format=new";
 
@@ -173,11 +173,13 @@ var docscroll = function(element) {
 		    data: params,
 		    success: function(data) {
 			if ( idx == 1 ) {
-			    do_tags(data.classes);
+			    if ( data.classes )
+				    do_tags(data.classes);
 			    viewer_url=viewer_url_base;
 			    if ( data.query )
 				    viewer_url=viewer_url_srch.replace("%qu",data.query);
 			}
+			console.log("idx: "+idx);
 			data.items.forEach(function(a){if(!a.doc){a.doc="??";console.log("Bad Doc:"+a.doc)}})
 			var itm = template.render(data);
 			idx = data.idx+data.nitems;
@@ -298,20 +300,23 @@ $(function() {
 	    $("#search").blur();
 	    // reset class filter
 	    $('#status').html("Searching...");
-	    $('#result').html("<li></li>");
 	    clname = "";
-	    docscroll($('#result'));
+            load_pages();
 	    // fetch_page(1);
 	}
     });
 
-
+    var load_pages = function() {
+	    startSearch=1;
+	    $('#result').html("<li></li>");
+	    docscroll($('#result'));
+    }
     docscroll($('#result'));
 
     $("#taglist").click(function (event) {
 	var tg=$(event.target);
 	if ( tg.hasClass("tags") ){
-	    var ncl = tg.html();
+	    var ncl = tg.text();
 	    if (ncl == clname) {
 		// reset tag
 		ncl = "";
@@ -319,9 +324,9 @@ $(function() {
 		    $(".deleted").hide();
 		}
 	    }
-	    $("#result").html("");
 	    clname = ncl;
-	    docscroll($('#result'));
+	    $("input#search").val("");
+	    load_pages();
 	    console.log(">"+tg.html()+"<");
 
 	//console.log(event);
