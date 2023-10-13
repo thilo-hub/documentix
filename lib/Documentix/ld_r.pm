@@ -14,7 +14,7 @@ use Documentix::search;
 print STDERR ">>> ld_r.pm\n" if $Documentix::config->{debug} > 2;
 
 my $entries = $Documentix::config->{results_per_page};
-#How many tags are shown 
+#How many tags are shown
 my $maxtags=60;
 
 my $myhost = hostname();
@@ -64,81 +64,87 @@ sub ldres {
     $idx0  = 1        unless $idx0;
     $ppage = $entries unless $ppage;
 
-    $class =~ s/:\d+$// if $class;
+    # ?? $class =~ s/:\d+$// if $class;
     undef $class if defined($class) && $class eq $ANY;
 
-    # search results are in cache_q(idx)
+    # either do a new search or get the cached queryid anyhow results are in cache_q(idx) date-range is part of the cache
+    # TODO:  does it make sense to make date-range a filter?
+    #    (hint: I would loose the snippet part in the date-range)
     my $idx = search( $search );
 
-    #Filter tags & dates
-    my $subsel = "";
+    my $full_s   = qq{ select idx,mtime,cast(Content as text) snippet from mtime};;
+    my $cached_s = qq{ select idx,mtime,snippet                       from mtime natural join (select idx,snippet from cache_q where qidx=:qidx)};
+
+    my ( $classes, $ndata );
+
+   my $selclass = "";
+   my $param = {};
+   $ndata = qq{ select count(*) from mtime };
+   if ( $class ) {
+      $selclass = qq{ natural join ( select idx from tags natural join tagname where tagname = :tgn )} ;
+      $ndata = qq{select nresults from cache_lst $selclass};
+      $param->{':tgn'} = $class;
+   }
+
+   $search = qq{$full_s $selclass natural join content order by mtime desc};
 
 
-    my ( $classes, $ndata, $get_res );
-    my $param={};
-    if ($idx) {
-	# its a search result
-	#
-	#TODO: remove "deleted" tags
-	#Maybe: an entry w/o tag would not show w/o the left join
-	# TODO: check if order by date is better than order by rank
-	$get_res=qq{ select *  from cache_q natural join hash natural join ftime natural join pdfinfo where qidx=:qidx };
-	$param->{":qidx"}=$idx;
-
-	# TODO: only if idx=0 first page
-	# get tags in result set
-	$ndata = qq{select nresults from cache_lst where qidx=?};
+   if ( my $qidx=$idx ) {
+       $search = qq{$cached_s $selclass};
+       $param->{':qidx'} = $qidx;
+       $ndata = qq{select nresults from cache_lst $selclass where qidx=:qidx};
+   }
+    # total count get number of results
+    print STDERR "ndata: $ndata\n";
     $ndata   = $dh->prepare_cached($ndata);
-    $ndata -> execute($idx);
-
-	if ($idx0 eq 1){
-	    $classes=q{select tagname,count(*) count  from tags natural join tagname where idx in (select idx  from cache_q where qidx=?) group by tagid order by count desc limit ?};
-	    my $sel_t=$dh->prepare_cached($classes);
-	    $sel_t->execute($idx,$maxtags);
-	    $classes = $sel_t->fetchall_arrayref({});
-	}
-	#
-	# get display list
+    foreach ( keys %$param ){
+	$ndata->bind_param($_,$param->{$_})
     }
-    else {
-	# Return all
-	$get_res=qq{ select *,cast(Content as text) snippet  from hash natural join Content natural join ftime natural join pdfinfo};
-
-
-	if ($idx0 eq 1){
-	    $classes = qq{ select tagname,count(*) count from $subsel tags natural join tagname group by tagid order by 2 desc limit ?};
-	    print STDERR "Classes:  $classes\n";
-	    my $sel_t=$dh->prepare_cached($classes);
-	    $sel_t->execute($maxtags);
-	    $classes = $sel_t->fetchall_arrayref({});
-	}
-	$ndata = qq{ select count(*) from $subsel hash };
-    $ndata   = $dh->prepare_cached($ndata);
     $ndata -> execute();
-    }
-    $get_res .= " order by cast(mtime as int) desc";
-    # class list
-    if ( $class ) {
-       $get_res =~ s/from/from (select idx  from tagname natural join tags where tagname = :tgn limit :lim offset :off) natural join/;
-       $param->{":tgn"}=$class;
-    } else {
-	$get_res .= " limit :lim offset :off";
+    my $nres   = $ndata->fetchrow_array();
+    $ndata->finish;
+    $ndata = $nres;
+
+    if ($idx0 eq 1){
+        # get a collection of tagnames for first result
+	$param->{":lim"} = $maxtags;
+	$classes=qq{ with search as ($search)
+			select tagname,count(*) count
+				from search
+				natural join tags
+				natural join tagname
+				group by tagid
+				order by count
+				desc limit :lim
+			};
+	print STDERR "Classes:  $classes\n";
+	my $sel_t=$dh->prepare_cached($classes);
+	foreach (keys %$param) {
+	    $sel_t->bind_param($_,$param->{$_});
+	}
+	$sel_t->execute();
+	$classes = $sel_t->fetchall_arrayref({});
     }
 
     # Assemble final query
+    # Now make it into a full result
+    $search .= qq{ limit :lim offset :off};
     $param->{":lim"} = $ppage;
     $param->{":off"} = int($idx0-1);
 
-    $get_res=qq{ select idx,md5,mtime dt,pdfinfo,cast(file as blob) file,tags,cast(snippet as text) snippet  from ($get_res) natural left join taglist natural left join file group by idx order by dt desc };
+    my $get_res=qq{
+        with results as ($search)
+    	select idx,md5,mtime dt,pdfinfo,cast(file as blob) file,tags,cast(snippet as text) snippet
+		from results
+			natural left join hash
+			join pdfinfo using (idx)
+			natural left join taglist
+			natural left join file
+			group by idx order by dt desc
+    };
 
-    # total count
-    # get number of results
-    my $hh=$ndata;
-    $ndata   = $hh->fetchrow_array();
-    $hh->finish;
-
-    #  Add selection of slice wanted
-
+    # do the result query
+    print STDERR "Search: $get_res\n";
     $get_res = $dh->prepare_cached($get_res);
     foreach (keys %$param) {
 	    $get_res->bind_param($_,$param->{$_});
