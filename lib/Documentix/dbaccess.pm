@@ -447,4 +447,22 @@ sub dbmaintenance1 {
 }
 
 
+
+sub dbmaintenance
+{
+	my $self=shift;
+	printf STDERR  "dbmaintenance\n";
+	dh->do("begin exclusive transaction");
+	dh->do(qq{insert into text(text) values('rebuild')});
+	dh->do(qq{drop table if exists text_tmp});
+	dh->do(q{delete from cache_lst});
+	dh->do(q{delete from cache_q});
+	dh->do(q{
+		update config set value=max(idx) from hash where var="max_idx";
+		});
+	dh->do(q{commit });
+	return "Done";
+}
+
+
 1;
