@@ -147,7 +147,9 @@ sub _dbmaintenance
 {
   my ($job) = @_;
 	my $dba=dbaccess::new();
+	$dba->{dh}->do("begin exclusive transaction");
 	my $res= dbaccess::dbmaintenance1($dba);
+	$dba->{dh}->do("commit");
         $job->finish($res);
 }
 
