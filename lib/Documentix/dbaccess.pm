@@ -43,8 +43,7 @@ sub new {
     $dh->do(q{begin exclusive transaction});
     my $dbver = $dh->selectrow_hashref(q{select value from config where var = 'dbversion'});
     unless (defined($dbver->{value}) && $dbver->{value} >= $dbversion) {
-	    dbupgrade($dh);
-	    $dh->do(q{insert or replace into config (var,value) values("dbversion",?)},undef,$dbversion);
+	    $self->dbupgrade($dh,$dbver->{value});
     }
     $dh->do(q{commit});
 
@@ -352,34 +351,6 @@ sub export_files {
     return $asset;
     }
 }
-sub dbupgrade
-{
-    my $dh=shift;
-    require doclib::pdfidx;
-    # First the pdftotext had a UTF-* bug
-    # Re-do all pdftotext conversions
-    $DB::single=1;
-    my $ins =  $dh->prepare(q{update metadata set value=?3 where tag = ?2 and idx = cast(?1 as integer)});
-
-    my $getf = $dh->prepare(q{select idx,md5 hash,cast( file as blob) file   from hash natural join file
-	order  by md5});
-    $getf->execute();
-    print STDERR "Re convert pdftotext\n";
-    my $pmd="";;
-    while(($r=$getf->fetchrow_hashref) ){
-	next if $r->{hash} eq $pmd;
-	next unless -r $r->{file};
-	$pmd=$r->{hash};
-print STDERR $r->{file}."\n";
-	my $pdf=find_pdf($r);
-	next unless $pdf =~ /\.pdf$/;
-	my $txt = pdfidx::do_pdftotext($pdf);
-	my $c   = pdfidx::summary(\$txt);
-	$ins->execute($r->{idx}+0,"Text",encode("UTF-8",$txt));
-	$ins->execute($r->{idx}+0,"Content",encode("UTF-8",$c));
-    }
-}
-
 sub addqr {
 	my ($self,$id,$md5) = @_;
 	my $sel = $self->{dh}->prepare_cached(qq{ insert or replace into doclabel (doclabel,idx) select ?,idx from hash where md5=?});
@@ -395,6 +366,45 @@ sub lkup {
 	}
 	return $res;
 }
+
+####################################
+
+sub dbupgrade
+{
+    my $self = shift;
+    my $dh=shift;
+    my $oldversion = shift;
+    require doclib::pdfidx;
+    # First the pdftotext had a UTF-* bug
+    # Re-do all pdftotext conversions
+    print STDERR "Begin database migration...";
+    $DB::single=1;
+
+    
+    if ( $oldversion < 2) {
+	    my $ins =  $dh->prepare(q{update metadata set value=?3 where tag = ?2 and idx = cast(?1 as integer)});
+	    my $getf = $dh->prepare(q{select idx,md5 hash,cast( file as blob) file   from hash natural join file
+		order  by md5 });
+	    $getf->execute();
+	    print STDERR "Re convert pdftotext\n";
+	    my $pmd="";;
+	    while(($r=$getf->fetchrow_hashref) ){
+		next if $r->{hash} eq $pmd;
+		next unless -r $r->{file};
+		$pmd=$r->{hash};
+	print STDERR $r->{file}."\n";
+		my $pdf=find_pdf($r);
+		next unless $pdf =~ /\.pdf$/;
+		my $txt = pdfidx::do_pdftotext($pdf);
+		my $c   = pdfidx::summary(\$txt);
+		$ins->execute($r->{idx}+0,"Text",encode("UTF-8",$txt));
+		$ins->execute($r->{idx}+0,"Content",encode("UTF-8",$c));
+	    }
+    }
+    $self->dbmaintenance1();
+    $dh->do(q{insert or replace into config (var,value) values("dbversion",?)},undef,$dbversion);
+}
+
 sub dbmaintenance1 {
 	my ($self) = @_;
 	my $snowball=1;
