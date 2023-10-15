@@ -409,36 +409,39 @@ sub dbmaintenance1 {
 	my ($self) = @_;
 	my $snowball=1;
 	my @ops = (
-		qq{begin exclusive transaction},
-		qq{ drop table if exists text},
-		qq{ drop view if exists vtext},
-		qq{ drop TRIGGER if exists metadata_au},
-		qq{ drop TRIGGER if exists metadata_ad},
-		qq{ drop TRIGGER if exists metadata_ai},
+		#  Callers response... qq{begin exclusive transaction},
+
+		qq{ DROP TABLE if exists text},
+		qq{ DROP VIEW if exists vtext},
+		qq{ DROP VIEW if exists m_text},
+		qq{ DROP VIEW if exists joindocs },
+		qq{ DROP TRIGGER if exists metadata_au},
+		qq{ DROP TRIGGER if exists metadata_ad},
+		qq{ DROP TRIGGER if exists metadata_ai},
+
 		qq{ CREATE TRIGGER metadata_au AFTER UPDATE ON metadata when old.tag = 'Text' BEGIN
 			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value); 
 			INSERT INTO "text"(rowid,content) values(new.idx,new.value); 
-		END},
-		qq{
-		CREATE TRIGGER metadata_ad AFTER DELETE ON metadata when old.tag = 'Text' BEGIN
+			END},
+		qq{ CREATE TRIGGER metadata_ad AFTER DELETE ON metadata when old.tag = 'Text' BEGIN
 			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value);  
-		end},
-		qq{
-		CREATE TRIGGER metadata_ai AFTER INSERT ON metadata when new.tag = 'Text' BEGIN
+			end},
+		qq{ CREATE TRIGGER metadata_ai AFTER INSERT ON metadata when new.tag = 'Text' BEGIN
 			INSERT INTO "text"(rowid,content) values(new.idx,new.value); 
-		end},
-		qq{ CREATE VIEW 'vtext'(docid,content)  as select idx ,value from metadata where tag = 'Text'},
-	   ($snowball ?
-		   qq{ CREATE VIRTUAL TABLE text using fts5(docid,content,  content='vtext', content_rowid='docid', tokenize = 'snowball german english')}
-	   :
-		   qq{ CREATE VIRTUAL TABLE text using fts5(docid,content,  content='vtext', content_rowid='docid', tokenize = 'porter')}
-	   ),
-		qq{ insert into text(rowid,content) select * from vtext where content is not NULL},
-		qq{ delete from cache_lst},
-		qq{ CREATE TABLE IF NOT EXISTS doclabel (idx INT, doclabel primary key unique)},
-		qq{ drop view if exists joindocs },
+			end},
 
-		   qq{commit}
+		qq{ CREATE VIEW m_text(docid,content)  as select idx ,value from metadata where tag = 'Text'},
+
+	       ($snowball ?
+		   qq{ CREATE VIRTUAL TABLE text using fts5(docid unindexed,content,  content='m_text', content_rowid='docid', tokenize = 'snowball german english')}
+	       :
+		   qq{ CREATE VIRTUAL TABLE text using fts5(docid unindexed,content,  content='m_text', content_rowid='docid', tokenize = 'porter')}
+	       ),
+		qq{ INSERT into text(text) values('rebuild')},
+		qq{ DELETE from cache_lst},
+		qq{ CREATE TABLE IF NOT EXISTS doclabel (idx INT, doclabel primary key unique)},
+
+		#  Callers response... qq{commit}
 	   );
 	foreach(@ops) {
 		print STDERR "EX: $_\n";
