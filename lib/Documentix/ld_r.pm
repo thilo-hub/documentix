@@ -32,35 +32,55 @@ sub new {
 
 sub setup_db {
     my $dh = shift;
-    $dh->do(
-q{ create table if not exists cache_lst ( qidx integer primary key autoincrement,
-			query text unique, nresults integer, last_used integer )}
+    #TODO: outdated...
+    $dh->do( q{ create table if not exists cache_lst ( qidx integer primary key autoincrement,
+			query text unique, nresults integer, hits integer last_used integer )}
     );
-    $dh->do(
-q{ create table if not exists cache_q ( qidx integer, idx integer, cast(snippet as text) text, unique(qidx,idx))}
+    $dh->do( q{ create table if not exists cache_q ( qidx integer, idx integer, cast(snippet as text) text, rank, primary key(qidx,idx))}
     );
 
-    $dh->do(
-        q{
-		CREATE TRIGGER if not exists cache_del before delete on cache_lst begin delete
+    $dh->do( q{ CREATE TRIGGER if not exists cache_del before delete on cache_lst begin delete
 			from cache_q where cache_q.qidx = old.qidx ;
 		end;
 		}
     );
 }
 
+my $date_match = qr{date[:\s*](\d\d\d\d-\d\d-\d\d)\s*\.\.\.\s*(\d\d\d\d-\d\d-\d\d)(\s*|$)};
 # qidx,idx,rowid,snippet from cache_q_tmp
+
+sub mk_query {
+    my ($qidx,$class,$date_from,$date_to) = @_;
+    my $source =
+	($qidx ?
+	        qq{select idx,snippet snippet,qidx,mtime,rank ord from cache_lst natural join cache_q natural join mtime }
+	      : qq{select idx,Content snippet,mtime,-mtime ord from m_content natural join mtime }
+	)
+	.($class ? qq{ natural join tags natural join tagname } : "")
+	.($date_from ? qq{ natural join dates } : "")
+	;
+     $source =~ s,snippet,"<i>" || mtext || "</i> " || snippet, if $date_from;
+     my @add = ();
+	push @add, " date between :fromdate and :enddate  " if $date_from;
+	push @add, " tagname= :tgn " if $class;
+	push @add, " qidx = :qidx " if $qidx;
+     $source .= "where " . join(" AND ",@add) if @add;
+     $source .= "order by ord";
+
+    return $source;
+}
+
 sub ldres {
     my $self = shift;
     my $dh   = $self->{"dh"};
 
-    my ( $class, $idx0, $ppage, $search ) = @_;
-    $search =~ s/\s+$// if defined($search);
-    $search =~ s/^\s+// if defined($search);
+    my ( $class, $idx0, $ppage, $query ) = @_;
+    $query =~ s/\s+$// if defined($query);
+    $query =~ s/^\s+// if defined($query);
 
     my ( $hd, $res ) = ( "", "" );
 
-    undef $search if $search && $search =~ /^\s*$/;
+    undef $query if $query && $query =~ /^\s*$/;
     $idx0  = 1        unless $idx0;
     $ppage = $entries unless $ppage;
 
@@ -70,44 +90,54 @@ sub ldres {
     # either do a new search or get the cached queryid anyhow results are in cache_q(idx) date-range is part of the cache
     # TODO:  does it make sense to make date-range a filter?
     #    (hint: I would loose the snippet part in the date-range)
-    my $idx = search( $search );
-
-    my $full_s   = qq{ select idx,mtime,cast(Content as text) snippet from mtime};;
-    my $cached_s = qq{ select idx,mtime,snippet                       from mtime natural join (select idx,snippet from cache_q where qidx=:qidx)};
-
-    my ( $classes, $ndata );
-
-   my $selclass = "";
-   my $param = {};
-   $ndata = qq{ select count(*) from mtime };
-   if ( $class ) {
-      $selclass = qq{ natural join ( select idx from tags natural join tagname where tagname = :tgn )} ;
-      $ndata = qq{select nresults from cache_lst $selclass};
-      $param->{':tgn'} = $class;
-   }
-
-   $search = qq{$full_s $selclass natural join content order by mtime desc};
-
-
-   if ( my $qidx=$idx ) {
-       $search = qq{$cached_s $selclass};
-       $param->{':qidx'} = $qidx;
-       $ndata = qq{select nresults from cache_lst $selclass where qidx=:qidx};
-   }
-    # total count get number of results
-    print STDERR "ndata: $ndata\n";
-    $ndata   = $dh->prepare_cached($ndata);
-    foreach ( keys %$param ){
-	$ndata->bind_param($_,$param->{$_})
+    my $slimit = 100;
+    my @dates;
+    if ( $query && $query =~ s/$date_match//i ) {
+	print STDERR "Datesearch:  $1 -- $2\n";
+	@dates=($1,$2);
     }
-    $ndata -> execute();
-    my $nres   = $ndata->fetchrow_array();
-    $ndata->finish;
-    $ndata = $nres;
+	$DB::single=1;
+    my ($qidx,$nresults,$hits) = fts_search( $query, $slimit );
 
+
+    #This returns the search index
+    # the data is complete in cache_q
+    #
+    #  filter class
+    if ( $qidx && $idx0 > ($nresults-15) && $hits>$nresults ) {
+	# need more snippets
+	print STDERR "Refetch data";
+        fts_loadmore( $qidx, $idx0+5*$ppage);
+    }
+    my $search = mk_query($qidx,$class,@dates);
+    my %args;
+
+    $args{':qidx'} = $qidx if $qidx;
+    my $ndata =
+      $qidx ?  qq{select hits from cache_lst where qidx = :qidx}
+    	:      qq{select count(*) from hash};
+    {
+	$ndata   = $dh->prepare_cached($ndata);
+	foreach ( keys %args ){
+	    $ndata->bind_param($_,$args{$_})
+	}
+	$ndata -> execute();
+	my $nres   = $ndata->fetchrow_array();
+	$ndata->finish;
+	$ndata = $nres;
+    print STDERR "ndata: $ndata\n";
+    }
+
+    # Date matches are not (yet?) part (substracted) of the counting
+    $args{':fromdate'} = $dates[0] if @dates;
+    $args{':enddate'} = $dates[1] if @dates;
+    $args{':tgn'} = $class if $class;
+    my ( $classes);
+
+    # total count get number of results
     if ($idx0 eq 1){
         # get a collection of tagnames for first result
-	$param->{":lim"} = $maxtags;
+	$args{":lim"} = $maxtags;
 	$classes=qq{ with search as ($search)
 			select tagname,count(*) count
 				from search
@@ -119,35 +149,35 @@ sub ldres {
 			};
 	print STDERR "Classes:  $classes\n";
 	my $sel_t=$dh->prepare_cached($classes);
-	foreach (keys %$param) {
-	    $sel_t->bind_param($_,$param->{$_});
+	foreach (keys %args) {
+	    $sel_t->bind_param($_,$args{$_});
 	}
 	$sel_t->execute();
 	$classes = $sel_t->fetchall_arrayref({});
-    }
+   }
 
     # Assemble final query
     # Now make it into a full result
-    $search .= qq{ limit :lim offset :off};
-    $param->{":lim"} = $ppage;
-    $param->{":off"} = int($idx0-1);
 
     my $get_res=qq{
-        with results as ($search)
+        with results as ($search limit :lim offset :off)
     	select idx,md5,mtime dt,pdfinfo,cast(file as blob) file,tags,cast(snippet as text) snippet
 		from results
 			natural left join hash
 			join pdfinfo using (idx)
 			natural left join taglist
 			natural left join file
-			group by idx order by dt desc
+			group by idx order by ord
     };
+    $args{":lim"} = $ppage;
+    $args{":off"} = int($idx0-1);
 
     # do the result query
     print STDERR "Search: $get_res\n";
+    $DB::single = 1;
     $get_res = $dh->prepare_cached($get_res);
-    foreach (keys %$param) {
-	    $get_res->bind_param($_,$param->{$_});
+    foreach (keys %args) {
+	    $get_res->bind_param($_,$args{$_});
     }
     $get_res->execute();
 
@@ -178,7 +208,7 @@ sub ldres {
 	$_->{tg} = $_->{tags}|| ""; delete $_->{"tags"};
     }
     my $msg = "results: $ndata<br>";
-    $msg .= "qidx: $idx<br>" if $idx;
+    $msg .= "qidx: $qidx<br>" if $qidx;
     my $m = {
 	nresults => int($ndata),                        # max number of items
 	idx      => int($idx0),                         # first item in response
@@ -186,12 +216,13 @@ sub ldres {
 	nitems   => int($ppage),
 
 	# dates => $dater,
-	query => $search,
+	query => $query,
 
-	classes => $classes,
+	# classes => $classes,
 	msg     => $msg,
 	items   => $out,
     };
+    $m->{classes} = $classes if $classes;
     return $m;
     $out = JSON->new->pretty->encode($m);
 
