@@ -11,6 +11,7 @@ use Encode qw{encode decode};
 use Documentix::db;;
 use Documentix::search;
 
+my $debug = $Documentix::config->{debug};
 print STDERR ">>> ld_r.pm\n" if $Documentix::config->{debug} > 2;
 
 my $entries = $Documentix::config->{results_per_page};
@@ -147,7 +148,7 @@ sub ldres {
 				order by count
 				desc limit :lim
 			};
-	print STDERR "Classes:  $classes\n";
+	print STDERR "Classes:  $classes\n" if $debug>0;
 	my $sel_t=$dh->prepare_cached($classes);
 	foreach (keys %args) {
 	    $sel_t->bind_param($_,$args{$_});
@@ -173,7 +174,7 @@ sub ldres {
     $args{":off"} = int($idx0-1);
 
     # do the result query
-    print STDERR "Search: $get_res\n";
+    print STDERR "Search: $get_res\n" if $debug > 0;
     $DB::single = 1;
     $get_res = $dh->prepare_cached($get_res);
     foreach (keys %args) {

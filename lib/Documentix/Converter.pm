@@ -34,9 +34,10 @@ sub mk_ico {
 	my $pg  = undef;
 	my $rot = undef;
 
-	print STDERR "mk_ico... $fromtype $item\n" if ( $debug > 2 );
 
 	return undef if ( $mtime && -r $item && $ntime < $mtime );
+
+	print STDERR "mk_ico... $fromtype $item\n" if ( $debug > 2 );
 	
 	my ( $typ, $out );
 	if ( $fromtype eq "application/zip" ) {

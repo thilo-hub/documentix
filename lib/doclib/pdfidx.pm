@@ -317,7 +317,7 @@ sub ocrpdf_sync {
 	my ( $inpdf, $outpdf, $ascii, $hash, $meta) = @_;
 	my $idx = $self->getidx($meta->{hash});
 	$self->{"idx"} = $idx;
-	print STDERR "ocrpdf_sync: ".Dumper(\@_);
+	print STDERR "ocrpdf_sync: ".Dumper(\@_) if $debug>0;
 	# Otherwise the directory would be deleted
 	open (FH,">$outpdf.wip");
 	print FH "WIP\n";
