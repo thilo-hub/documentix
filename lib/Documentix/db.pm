@@ -1,6 +1,6 @@
 package Documentix::db;
 use Exporter 'import';
-our @EXPORT_OK = qw{dh dbmaintenance};
+our @EXPORT_OK = qw{dh};
 
 use DBI qw(:sql_types);
 

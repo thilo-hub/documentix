@@ -13,6 +13,7 @@ use Cwd 'abs_path';
 use Digest::MD5 qw(md5 md5_hex md5_base64);
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use Encode qw{encode decode};
+use Documentix::db qw{dh};
 
 my $dbversion = "6";
 
@@ -28,7 +29,7 @@ my $error_pdf= Mojo::Asset::File->new(path => "../public/Error.pdf") ;
 my $lcl;
 sub new {
     my $class  = shift;
-    my $dh = Documentix::db::dh();
+    my $dh = dh();
     $thisHost = hostname();
 
     print STDERR "New pdf conn: $dh\n" if $debug > 0;
@@ -403,6 +404,8 @@ sub dbupgrade
     }
     if ( $oldversion < 6) {
 	my @ops = (
+		# This should replaced by the sql init file
+		# which is already non destructiv to exiting content
 		qq{ drop TRIGGER if exists results_fill;},
 		qq{ drop TRIGGER if exists new_search;},
 		qq{ drop TRIGGER if exists cache_fetch;},
@@ -450,7 +453,7 @@ sub dbupgrade
 		qq{ CREATE TRIGGER cache_fill after update of nresults on cache_lst when new.nresults < 0 or (new.nresults > old.nresults and new.hits > old.nresults) begin
 			insert into mylog(idx,md5) values('q'||new.qidx,'cache_fill: '||ifnull(old.nresults,"NULL")|| ' -> ' || new.nresults);
 			update cache_q set snippet=snip2 from (
-				select idx idx2,snippet(text,1,'<b>','</>','...',5) snip2
+				select idx idx2,snippet(text,1,'<b>','</b>','...',5) snip2
 				from (select qidx,idx from cache_q where qidx=new.qidx and snippet is null
 							   order by rank
 							   limit iif(new.nresults < 0,old.nresults,new.nresults-old.nresults))  join text on(docid=idx)
@@ -487,14 +490,17 @@ sub dbmaintenance1 {
 		qq{ DROP TRIGGER if exists metadata_ai},
 
 		qq{ CREATE TRIGGER metadata_au AFTER UPDATE ON metadata when old.tag = 'Text' BEGIN
-			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value); 
-			INSERT INTO "text"(rowid,content) values(new.idx,new.value); 
+			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value);
+			INSERT INTO "text"(rowid,content) values(new.idx,new.value);
 			END},
 		qq{ CREATE TRIGGER metadata_ad AFTER DELETE ON metadata when old.tag = 'Text' BEGIN
-			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value);  
+			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value);
 			end},
 		qq{ CREATE TRIGGER metadata_ai AFTER INSERT ON metadata when new.tag = 'Text' BEGIN
-			INSERT INTO "text"(rowid,content) values(new.idx,new.value); 
+			INSERT INTO "text"(rowid,content) values(new.idx,new.value);
+			insert into cache_q (qidx,idx,snippet,rank) 
+				select qidx,docid,snippet(text,1,'<b>','</b>','...',6) snip,rank   
+					from cache_lst,text where text match query and docid = new.idx; 
 			end},
 
 		qq{ CREATE VIEW m_text(docid,content)  as select idx ,value from metadata where tag = 'Text'},
