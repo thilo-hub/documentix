@@ -41,7 +41,8 @@ sub merge
 	my @results;
 	my @items;
 
-        open(my $mbox, ">>", "/var/tmp/merger.active")
+        my $ldb=$Documentix::config->{database};
+        open(my $mbox, ">>", "$ldb.merger.flag")
 	   or die "Can't open mailbox: $!";
 
 
