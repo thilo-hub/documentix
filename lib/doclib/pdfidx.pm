@@ -1291,7 +1291,7 @@ sub do_text2pdf {
     my $dir = dirname($in);
     my @cmd = ("cd", $dir, qw { && pandoc -s --pdf-engine=wkhtmltopdf
     				--pdf-engine-opt=--disable-local-file-access
-				--pdf-engine-opt=--allow --pdf-engine-opt="." } ,$in,"-o",$out);
+				--pdf-engine-opt=--allow --pdf-engine-opt="." <} ,$in,"-o",$out);
     my @c = (qx{ @cmd });
     die "failed: ".join(" ",@cmd) ."\n@c\n"  unless -f $out;
     utime ((stat($in))[8..9],$out);
