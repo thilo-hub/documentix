@@ -4,8 +4,8 @@ use Mojo::Base 'Mojolicious::Plugin';
 use Mojo::URL;
 use Mojo::Asset::File;
 use doclib::pdfidx;
-use Documentix::dbaccess;;
-use Documentix::db qw{dbmaintenance};
+use Documentix::dbaccess;
+use Documentix::db;
 # use File::Path qw(make_path );
 use Documentix::scantree;
 
@@ -112,7 +112,7 @@ sub _refreshIndexes {
     $DB::single=1;
 
 	dbaccess::new();
-	my $res=dbmaintenance(@args);
+	my $res=dbaccess::dbmaintenance(@args);
 	# Cleanup empty upload dirs
 	system("find '$Documentix::config->{local_storage}' -depth -type d -empty -exec rmdir {} \\;");
 	$job->finish(\$res);
