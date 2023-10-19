@@ -51,7 +51,7 @@ CREATE INDEX if not exists flst on file(md5);
 CREATE INDEX if not exists mtim1 on mtime(mtime);
 
 CREATE VIEW m_pdfinfo              as select idx, value pdfinfo        from metadata where tag = 'pdfinfo' /* m_pdfinfo(idx,pdfinfo) */;
-CREATE VIEW m_size(idx,size)       as select idx,cast(value as int)    from metadata where tag="size" /* m_size(idx,size) */;
+CREATE VIEW m_size(idx,size)       as select idx,cast(value as int)    from metadata where tag='size' /* m_size(idx,size) */;
 CREATE VIEW m_mime                 as select idx,value mime            from metadata where tag='Mime' /* m_mime(idx,mime) */;
 CREATE VIEW m_pages                as select idx,value pages           from metadata where tag='pages' /* m_pages(idx,pages) */;
 CREATE VIEW m_qr                   as select idx,value QR              from metadata where tag='QR' /* m_qr(idx,QR) */;
@@ -89,11 +89,11 @@ CREATE TRIGGER hash_hashrm2 after delete on hash begin delete from doclabel wher
 
 
 CREATE TRIGGER metadata_au AFTER UPDATE ON metadata when old.tag = 'Text' BEGIN
-			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value);
+			INSERT INTO "text"('text', rowid, content) VALUES('delete', old.idx,old.value);
 			INSERT INTO "text"(rowid,content) values(new.idx,new.value);
 			END;
 CREATE TRIGGER metadata_ad AFTER DELETE ON metadata when old.tag = 'Text' BEGIN
-			INSERT INTO "text"("text", rowid, content) VALUES('delete', old.idx,old.value);
+			INSERT INTO "text"('text', rowid, content) VALUES('delete', old.idx,old.value);
 			end;
 CREATE TRIGGER metadata_ai AFTER INSERT ON metadata when new.tag = 'Text' BEGIN
 			INSERT INTO "text"(rowid,content) values(new.idx,new.value);
@@ -102,8 +102,8 @@ CREATE TRIGGER metadata_ai AFTER INSERT ON metadata when new.tag = 'Text' BEGIN
 					from cache_lst,text where text match query and docid = new.idx; 
 			end;
 
-CREATE TRIGGER mtime_del    after delete on metadata when old.tag = "mtime" begin delete from mtime where mtime.idx=old.idx; end;
-CREATE TRIGGER mtime_ins    after insert on metadata when new.tag = "mtime" begin insert into mtime (idx,mtime) values (new.idx,new.value); end;
+CREATE TRIGGER mtime_del    after delete on metadata when old.tag = 'mtime' begin delete from mtime where mtime.idx=old.idx; end;
+CREATE TRIGGER mtime_ins    after insert on metadata when new.tag = 'mtime' begin insert into mtime (idx,mtime) values (new.idx,new.value); end;
 
 CREATE VIEW content as select * from m_content /* content(idx,Content) */;
 CREATE VIEW pdfinfo as select * from m_pdfinfo /* pdfinfo(idx,pdfinfo) */;
@@ -125,12 +125,12 @@ CREATE TRIGGER cache_new after insert on cache_lst when new.nresults is not null
 	update cache_lst set hits = -1  where qidx = new.qidx;
 end;
 CREATE TRIGGER cache_hit  after update of hits on cache_lst when  not new.hits >= 0 begin
-	insert into mylog(idx,md5) values('q'||new.qidx,'cache_hits '||ifnull(old.hits,"NULL")|| ' -> ' || new.hits);
+	insert into mylog(idx,md5) values('q'||new.qidx,'cache_hits '||ifnull(old.hits,'NULL')|| ' -> ' || new.hits);
 	insert or replace into cache_q(qidx,idx,rank) select new.qidx,docid,rank from text where text match new.query;
 	update cache_lst set hits=hit,nresults = -1  from (select nresults nr,hits hit from cache_q_stat where qidx=new.qidx) where new.qidx = qidx;
 end;
 CREATE TRIGGER cache_fill after update of nresults on cache_lst when new.nresults < 0 or (new.nresults > old.nresults and new.hits > old.nresults) begin
-        insert into mylog(idx,md5) values('q'||new.qidx,'cache_fill: '||ifnull(old.nresults,"NULL")|| ' -> ' || new.nresults);
+        insert into mylog(idx,md5) values('q'||new.qidx,'cache_fill: '||ifnull(old.nresults,'NULL')|| ' -> ' || new.nresults);
         update cache_q set snippet=snip2 from (
                 select idx idx2,snippet(text,1,'<b>','</b>','...',5) snip2  
 			from (select qidx,idx from cache_q where qidx=new.qidx and snippet is null
@@ -141,4 +141,23 @@ CREATE TRIGGER cache_fill after update of nresults on cache_lst when new.nresult
                 ) where qidx=new.qidx and idx2 = idx;
         update cache_lst set nresults=nr from (select nresults nr from cache_q_stat where qidx=new.qidx) where new.qidx = qidx;
 end;
+
+
+drop view if exists db_stat;
+create view db_stat as
+    select count(*) cnt,'Metdata' tab from metadata union all
+	select count(*) ,'Files' from file union all
+	select count(*) ,'hash' from hash union all
+	select count(*) ,'Tags' from tagname union all
+	select count(*) ,'Dates' from dates union all
+	select count(*) ,'config' from config union all
+	select count(*) ,'classes' from classes union all
+	select count(*) ,'tags' from tags union all
+	select count(*) ,'dates' from dates union all
+	select count(*) ,'doclabel' from doclabel union all
+	select count(*) ,'mtime' from mtime union all
+	select count(*) ,'mylog' from mylog union all
+	select count(*) ,'cache_q' from cache_q union all
+	select count(*) ,'cache_lst' from cache_lst;
+
 
