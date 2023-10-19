@@ -147,6 +147,7 @@ drop view if exists db_stat;
 create view db_stat as
     select count(*) cnt,'Metdata' tab from metadata union all
 	select count(*) ,'Files' from file union all
+	select format('%3.3f',(sum(length(content)))/1e6), 'Mb Text' from m_text union all
 	select count(*) ,'hash' from hash union all
 	select count(*) ,'Tags' from tagname union all
 	select count(*) ,'Dates' from dates union all
