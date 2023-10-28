@@ -8,7 +8,9 @@ var add_tag = function(foc_el,md5,tg) {
 	    })
 	}, function(data) {
 	    $(foc_el).val($('#tags').val());
-	    $('#msg').html(data + "E:" + tg);
+	    if ( data && data.res ) {
+		    $('#msg').html(data.res + " E:" + tg);
+	    }
 	}))
 }
 var rem_tag = function(foc_el,md5,tg) {
@@ -20,7 +22,9 @@ var rem_tag = function(foc_el,md5,tg) {
 	    })
 	}, function(data) {
 	    $(foc_el).val($('#tags').val());
-	    $('#msg').html(data);
+	    if ( data && data.res ) {
+		    $('#msg').html(data.res);
+	    }
 	    })
     }
 $(function() {
