@@ -27,14 +27,15 @@ $dh = dbaccess->new();
 
 $dh->{dh}->do(qq{CREATE VIEW if not exists idxfile(idx,md5,file) as select idx,md5,file from hash natural join file});
 
+$dh->{dh}->do(qq{drop view if exists taghierarchie});
 $dh->{dh}->do(qq{
-	CREATE VIEW if not exists taglist as
+	CREATE temporary VIEW if not exists taghierarchie as
 	with tglist as (
 	select count(*) rank,tagid,tagname  from tags natural join tagname  group by tagid order by rank desc)
-	select idx,group_concat(tagname,'/') tags from tags natural join tglist  group by idx
+	select idx,group_concat(replace(upper(substr(tagname,1,1))||substr(tagname,2),"Deleted","deleted"),'/') tags from tags natural join tglist  group by idx
 	});
 
-$q = $dh->{dh}->prepare(qq{select * from idxfile natural join taglist});
+$q = $dh->{dh}->prepare(qq{select * from idxfile natural join taghierarchie});
 $q->execute();
 my $destroot = "Docs/Tagged";
 while ( my $r = $q->fetchrow_hashref() ) {
