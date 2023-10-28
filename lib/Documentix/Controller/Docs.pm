@@ -41,12 +41,16 @@ sub senddoc {
 }
 sub tags {
 	my $c = shift;
+	$DB::single=1;
 	my $p=decode_json( url_unescape($c->param('json_string')) );
 
 	my $op=$p->{op};
 	my $id=$p->{md5};
 	my $tag=$p->{tag};
-	my $r= pdf_class_md5($id, ($op eq "rem" )? "-$tag" : "$tag");
+	print STDERR "TAG $op $tag -> $id\n";
+	my $r= ($tag eq "ForceOcr" && $op eq "add") ?
+			$ld_r->reocr( $c,$id)
+			: pdf_class_md5($id, ($op eq "rem" )? "-$tag" : "$tag");
 	$c->render(json => $r);
 
 }
