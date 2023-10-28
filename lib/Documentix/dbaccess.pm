@@ -273,7 +273,7 @@ sub item
 		 if ($hash_ref->{archive})
 		 {
 			 push @md5_l,split(/,/,$hash_ref->{archive});
-			 next;
+			 # next;
 		 }
 		 delete $hash_ref->{archive};
 		 $hash_ref->{doc} =~ s|^.*/([^/]*)(\.[^\.]+)$|$1|;
