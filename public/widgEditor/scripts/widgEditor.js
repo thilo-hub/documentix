@@ -107,6 +107,7 @@ widgToolbarItems.push("unorderedlist");
 widgToolbarItems.push("orderedlist");
 widgToolbarItems.push("image");
 widgToolbarItems.push("htmlsource");
+widgToolbarItems.push("print");
 widgToolbarItems.push("blockformat");
 
 /* Options on block format select element. Consists of string pairs (option value, option label) */
@@ -1020,6 +1021,11 @@ function widgToolbar(theEditor)
 	{
 		switch (widgToolbarItems[i])
 		{
+			case "print":
+				this.addButton(this.theList.id + "ButtonPrint", "widgButtonPrint", "Print", "print");
+				
+				break;
+				
 			case "bold":
 				this.addButton(this.theList.id + "ButtonBold", "widgButtonBold", "Bold", "bold");
 				
@@ -1352,7 +1358,13 @@ function widgToolbarAction()
 			{
 				return false;
 			}
-		
+		case "print":
+			console.log("Printing...");
+			// this.theInput.value = localStorage.ScratchPad;
+			var txt  = localStorage.ScratchPad;
+			console.log(txt);
+			break;
+			
 		default:
 			theIframe.contentWindow.document.execCommand(this.action, false, null);
 			
@@ -1369,6 +1381,13 @@ function widgToolbarAction()
 			if (this.action == "insertunorderedlist")
 			{
 				theAction = "Unordered";
+				theWidgEditor.theToolbar.setState("Ordered", "off");
+			}
+
+			if (this.action == "print")
+			{
+				console.log("Printing...");
+
 				theWidgEditor.theToolbar.setState("Ordered", "off");
 			}
 			
