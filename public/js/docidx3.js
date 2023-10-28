@@ -280,18 +280,43 @@ $(function() {
 	    'cursor': 'default'
 	});
     });
+     var tabKeyPressed = false;
+	var activeTabs=0;
+
+    $("#search").keydown(function(e) {
+	tabKeyPressed = e.keyCode == 9;
+	if (activeTabs == 1 && tabKeyPressed) {
+	    e.preventDefault();
+	    return;
+	}
+    });
+
     // filter taglist with search field
     $("#search").keyup(function(event) {
 	var ms=$("input#search").val();
 	ms = ms.toLowerCase().replace(/^tag:/,"");
+	tabKeyPressed = event.keyCode == 9;
 	   
+	activeTabs=0;
+	var activeTab;
 	$('#taglist').find(".tgbbox").each(function(){
 	    if (ms.length == 0 || this.textContent.toLowerCase().match(ms)) {
 		$(this).show();
+		activeTabs += 1;
+		activeTab=this.textContent;
 	    } else {
 		$(this).hide();
 	    }
 	})
+	if ( tabKeyPressed ) {
+	    console.log("Active: "+activeTabs);
+	    if ( activeTabs == 1 ) {
+		$("input#search").val("tag:"+activeTab);
+		$('#status').html("Searching...");
+		clname = "";
+		load_pages();
+	    }
+	}
     });
     // React on return button in search
     $("#search").keypress(function(event) {
