@@ -35,7 +35,7 @@ $dh->{dh}->do(qq{
 	select idx,group_concat(replace(upper(substr(tagname,1,1))||substr(tagname,2),"Deleted","deleted"),'/') tags from tags natural join tglist  group by idx
 	});
 
-$q = $dh->{dh}->prepare(qq{select * from idxfile natural join taghierarchie});
+$q = $dh->{dh}->prepare(qq{select *,md5 hash  from idxfile natural join taghierarchie});
 $q->execute();
 my $destroot = "Docs/Tagged";
 while ( my $r = $q->fetchrow_hashref() ) {
@@ -43,12 +43,10 @@ while ( my $r = $q->fetchrow_hashref() ) {
     $DB::single=1;
     my $dst = join("/",$destroot,$r->{tags},basename($r->{file}));
     make_path(join("/",$destroot,$r->{tags}));
-    symlink($r->{file},$dst);
-    my $ocr = "Docs/uploads/$1/$r->{md5}/".basename($r->{file},".pdf").".ocr.pdf"
-    	if $r->{md5} =~ m/^(..)/;
-    symlink($ocr,$dst.".ocr.pdf")
-    	if -r $ocr;
-
+    symlink($r->{file},$dst);  # Source 
+    my $ocr = dbaccess::find_pdf($r);
+    $dst =~ s/\.pdf$/.ocr.pdf/;
+    symlink($ocr,$dst) if $ocr ne $r->{file};
 }
 
 
