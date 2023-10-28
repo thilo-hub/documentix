@@ -155,7 +155,7 @@ function Dropit(md5,doc)
 	else
 	{
 		var url =e.href;
-		var html ="<a href='"+e.href+"'>"+e.firstElementChild.outerHTML+doc+"</a>";
+		var html ="<a docid='"+md5+"' href='"+e.href+"'>"+e.firstElementChild.outerHTML+doc+"</a>";
 	}
 
 	event.dataTransfer.setData("text/html",html);

@@ -61,6 +61,11 @@
 	background-image: url(../images/widgeditor_button_bold.gif);
 }
 
+.widgButtonPrint
+{
+	background-image: url(../images/widgeditor_button_print.gif);
+}
+
 .widgButtonHTML
 {
 	background-image: url(../images/widgeditor_button_html.gif);
