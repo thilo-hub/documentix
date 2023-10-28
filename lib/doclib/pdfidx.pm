@@ -1048,7 +1048,7 @@ sub pdf_filename {
     my $md5   = shift;
     my $fn=$self->get_file ($md5);
     my $f_path = dirname(abs_path($fn))."/";
-    my $f_base = basename($fn,(".pdf",".ocr.pdf"));
+    my $f_base = basename($fn,(".ocr.pdf",".pdf"));
 
     my $lcl_store_dir = $self->get_store( $md5,1);
     my $lcl_store = $lcl_store_dir . "/$f_base";
@@ -1073,7 +1073,7 @@ sub pdf_totext {
     print STDERR " pdf_totext $fn\n" if $debug > 1;
     my $f_path = dirname(abs_path($fn))."/";
     # this sheebang stuff might be redundant now
-    my $f_base = basename($fn,(".pdf",".ocr.pdf"));
+    my $f_base = basename($fn,(".ocr.pdf",".pdf"));
 
     my $lcl_store_dir = $self->get_store( $meta->{hash},1);
     my $lcl_store = $lcl_store_dir . "/$f_base";
@@ -1104,6 +1104,20 @@ print STDERR "XXXXXX> $lcl_store_dir \n" if $debug > 1;
     print FH "$job\n";
     close(FH);
     return undef;
+}
+sub do_force_ocr {
+	my ($self,$fn,$md5) = @_;
+	return {res=>"Failure"} unless -r $fn;
+	return {res=>"Failure-I"} if $fn =~ /\.ocr\.pdf$/;
+	my $f_base = basename($fn,(".ocr.pdf",".pdf"));
+	my $lcl_store_dir = $self->get_store( $md5,1);
+	my $lcl_store = $lcl_store_dir . "/$f_base";
+	my $out = $lcl_store . ".ocr.pdf";
+	return {res=>"Failure-O"} if -r $out;
+	my $job = Documentix::Task::Processor::schedule_ocr($fn, $out,undef,$md5, {_file=>$fn,hash=>$md5});
+
+	$DB::single=1;
+	return {res => $job};
 }
 
 sub pdf_text {

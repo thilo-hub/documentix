@@ -140,6 +140,7 @@ sub pdf_class_file {
 	}
 	return ($ln,$r);
     }
+    return pdfidx::do_force_ocr($fn,$md5) if $class eq "ForceOcr";
 
     my $tmp_doc = get_popfile_r( $fn, $md5, $rtxt );
     my $op      = "handle_message";
