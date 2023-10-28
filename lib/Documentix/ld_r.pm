@@ -135,6 +135,7 @@ sub ldres {
     $args{':tgn'} = $class if $class;
     my ( $classes);
 
+    $DB::single = 1;
     # total count get number of results
     if ($idx0 eq 1){
         # get a collection of tagnames for first result
@@ -202,7 +203,8 @@ sub ldres {
 	$_->{doc}  =~ s/%20/ /g;
 	$_->{doc}  =~ s/%2F/\//g; #Not sure if best. The filename uses %xx and the doc-name is then problematic?
 
-	$_->{tip} = encode('UTF-8',$_->{snippet}); delete $_->{"snippet"};
+	$_->{tip} = $_->{snippet}; delete $_->{"snippet"};
+	#$_->{tip} = encode('UTF-8',$_->{snippet}); delete $_->{"snippet"};
 	$_->{tip} =~ s/["']/\&quot;/g;
 	$_->{tip} =~ s/\n\s*\n/\n/gs;
 	$_->{tip} =~ s/\n/<br>/g;
