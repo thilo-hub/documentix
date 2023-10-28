@@ -13,6 +13,7 @@ use DBI qw(:sql_types);
 use doclib::datelib;
 use Encode qw{encode decode};
 use Archive::Libarchive::Extract;
+use doclib::ZipPdf;
 # $File::Temp::KEEP_ALL = 1;
 my $debug=5;
 
@@ -944,6 +945,7 @@ $DB::single=1;
 	my @archive = $extract->entry_list;
 
 	my @md5_archive=();
+	my $zipPage = doclib::ZipPdf->new($i,"/docs/pdf/");
 	foreach ( @archive ) {
 	        my $_a = decode("utf-8",$_);
 		my $f="$of/$_a";
@@ -951,6 +953,7 @@ $DB::single=1;
 		die "File not exists?  >$f<" unless -r $f;
 		next if -d $f;
 		my $hash = file_md5_hex($f);
+		$zipPage->addEntry($_,$hash);
 		my @tags=split("/+",$_a);
 		pop @tags;
 		# remove file unles it will be processed
@@ -959,8 +962,21 @@ $DB::single=1;
 		push @md5_archive,$hash;
 	}
 	$pmeta->{"archive"}=join(",",@md5_archive);
-	push @{$pmeta->{_taglist}},"deleted";
-	$type = "Unizped (".scalar(@md5_archive).") files";
+	my $type;
+	if(1){
+		my $dst = $of."/".basename($i).".ocr.pdf";
+		$zipPage->generatePdf($dst);
+		my $hash = file_md5_hex($dst);
+		my @tg = qw{Archive};
+		$pmeta->{_taglist} = \@tg;
+		$type = "application/pdf";
+		$pmeta->{__file}=$i;
+		$pmeta->{"_file"} = $dst;
+		# unlink unless dbaccess::insert_file($self,$hash,$dst,\["Archive"]);
+	}else{
+		push @{$pmeta->{_taglist}},"deleted";
+		$type = "Unizped (".scalar(@md5_archive).") files";
+	}
 
         return $type;
     }

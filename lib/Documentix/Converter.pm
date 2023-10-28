@@ -40,7 +40,7 @@ sub mk_ico {
 	print STDERR "mk_ico... $fromtype $item\n" if ( $debug > 2 );
 	
 	my ( $typ, $out );
-	if ( $fromtype eq "application/zip" ) {
+	if ( $fromtype eq "application/zip" && !$ra->{pdf} ) {
 		( $typ, $out ) = ("image/png", slurp("../public/icon/zip.png"));
 
 	} else {
