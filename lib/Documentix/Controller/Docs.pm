@@ -169,6 +169,7 @@ sub lkup {
 			$c->redirect_to($viewer."/docs/pdf/$doc/doc_$id.pdf");
 		}
 	} else {
+		Documentix::Task::Processor::schedule_importer();
 		$c->render(text => 'Not for you', status => 451);
 	}
 }
