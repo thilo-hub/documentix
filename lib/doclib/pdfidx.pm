@@ -943,7 +943,13 @@ $DB::single=1;
 	$pmeta->{__file}=$i;
 
         my $of = $pmeta->{_lcl_store};
-	my $extract = Archive::Libarchive::Extract->new( filename => $i);
+	my $filter = sub {
+	   my $e = shift;
+	   return 0 if $e->filetype ne "reg";  # Only reg files
+	   return 0 if $e->size == 0;
+	   return 1;
+        };
+	my $extract = Archive::Libarchive::Extract->new( filename => $i, entry => $filter);
 	$extract->extract(to => $of);
 	my @archive = $extract->entry_list;
 
@@ -953,12 +959,14 @@ $DB::single=1;
 	        my $_a = decode("utf-8",$_);
 		my $f="$of/$_a";
 		print STDERR "Do: $_\n" if $debug > 1;
-		die "File not exists?  >$f<" unless !-l $_ || -r $f;
-		next unless -f $f; # Ignore symbolic links...
+		die "File not exists?  >$f<" unless -f $f;
+
 		my $hash = file_md5_hex($f);
 		$zipPage->addEntry($_,$hash);
 		my @tags=split("/+",$_a);
 		pop @tags;
+		push @tags,@{$pmeta->{_taglist}} if $pmeta->{_taglist};
+		@tags = grep { $_ ne "." && $_ ne ".."} @tags;
 		# remove file unles it will be processed
 		unlink unless
 			dbaccess::insert_file($self,$hash,$f,\@tags);
