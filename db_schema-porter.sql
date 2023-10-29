@@ -98,7 +98,7 @@ CREATE TRIGGER metadata_ad AFTER DELETE ON metadata when old.tag = 'Text' BEGIN
 CREATE TRIGGER metadata_ai AFTER INSERT ON metadata when new.tag = 'Text' BEGIN
 			INSERT INTO "text"(rowid,content) values(new.idx,new.value);
 			insert into cache_q (qidx,idx,snippet,rank) 
-				select qidx,docid,snippet(text,1,'<b>','</b>','...',6) snip,rank   
+				select qidx,docid,snippet(text,1,'<b>','</b>','...',20) snip,rank   
 					from cache_lst,text where text match query and docid = new.idx; 
 			end;
 
@@ -132,7 +132,7 @@ end;
 CREATE TRIGGER cache_fill after update of nresults on cache_lst when new.nresults < 0 or (new.nresults > old.nresults and new.hits > old.nresults) begin
         insert into mylog(idx,md5) values('q'||new.qidx,'cache_fill: '||ifnull(old.nresults,'NULL')|| ' -> ' || new.nresults);
         update cache_q set snippet=snip2 from (
-                select idx idx2,snippet(text,1,'<b>','</b>','...',5) snip2  
+                select idx idx2,snippet(text,1,'<b>','</b>','...',20) snip2  
 			from (select qidx,idx from cache_q where qidx=new.qidx and snippet is null
                                            order by rank
                                            limit iif(new.nresults < 0,old.nresults,new.nresults-old.nresults)
