@@ -41,6 +41,7 @@ sub _ocr {
   $job->finish( $r);
 }
 sub schedule_importer {
+        return if 0 < $minion->jobs({states => ['active'], tasks => ['importer']})->total;
 	my $id = $minion->enqueue(importer=>[@_]=>{priority=>2});
         $minion->result_p($id);
 	return "Reading...";
@@ -50,7 +51,7 @@ sub _importer {
   my ($job) = @_;
   use Documentix::Importer;
   return $job->finish('Previous job is still active')
-    unless my $guard = $minion->guard('Scanner Import', 7200);
+    unless my $guard = $minion->guard('Scanner Import', 7200, {limit => 1});
   my $imports =Documentix::Importer::update();
   $job->finish( $imports);
 }
