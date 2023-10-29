@@ -953,8 +953,8 @@ $DB::single=1;
 	        my $_a = decode("utf-8",$_);
 		my $f="$of/$_a";
 		print STDERR "Do: $_\n" if $debug > 1;
-		die "File not exists?  >$f<" unless -r $f;
-		next if -d $f;
+		die "File not exists?  >$f<" unless !-l $_ || -r $f;
+		next unless -f $f; # Ignore symbolic links...
 		my $hash = file_md5_hex($f);
 		$zipPage->addEntry($_,$hash);
 		my @tags=split("/+",$_a);
