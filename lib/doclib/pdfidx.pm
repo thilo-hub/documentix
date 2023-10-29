@@ -360,10 +360,13 @@ sub ocrpdf_offline
 
             # short version
 	    my $c = summary(\$t);
+            $c = "ProCessIng=". ($2 eq "Front"? "Back" : "Front") . " missing"
+		    if ( $meta->{QR} =~ m/(\d+):QR-Code:(Front|Back) Page/ );
             $self->ins_e( $idx, "Content", $c );
 	    $self->{dh}->do(qq{delete from tags where idx=? and tagid=(select tagid from tagname where tagname = 'empty') },undef,$idx);
 	    my ($popfile,$class) = ( pdf_class_file( $fn, \$t, $meta->{hash},  join("/",@{$meta->{"_taglist"}})  ) );
         }
+
 	return count_text($t);
 }
 
