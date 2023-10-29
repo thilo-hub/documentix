@@ -40,8 +40,8 @@ CREATE TABLE if not exists classes (class text primary key unique, count integer
 CREATE TABLE if not exists tags (tagid integer,idx integer,constraint tagid unique (tagid,idx));
 CREATE TABLE if not exists tagname (tagid integer primary key autoincrement, tagname text unique);
 CREATE TABLE if not exists dates (date DATE, mtext TEXT, idx INTEGER,unique(date,idx));
-CREATE TABLE if not exists doclabel (idx INT, doclabel primary key unique);
-CREATE TABLE if not exists mtime (idx INT,mtime INT);
+CREATE TABLE if not exists doclabel (idx INT unique, doclabel primary key unique not null);
+CREATE TABLE if not exists mtime (idx INT primary key ,mtime INT);
 
 CREATE INDEX if not exists tagsi on tags(tagid);
 CREATE INDEX if not exists tagsii on tags(idx);
