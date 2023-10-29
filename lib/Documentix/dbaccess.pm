@@ -291,7 +291,7 @@ sub item
 		 $hash_ref->{sz} =conv_size($1) if  $hash_ref->{pdfinfo} =~ m|<td>File size</td><td>\s+(\d+) bytes</td>|;
 		 delete $hash_ref->{pdfinfo};
 
-		 $hash_ref->{tg} = ($3?$3:"Working...") if  $hash_ref->{tip} && $hash_ref->{tip} =~ s/^(ProCessIng)(=(.*))?$/$1/;
+		 $hash_ref->{tg} = ($3?$3:"Working...") if !$hash_ref->{tg} =~ m|deleted| &&  $hash_ref->{tip} && $hash_ref->{tip} =~ s/^(ProCessIng)(=(.*))?$/$1/;
 		 push @res,$hash_ref;
 	 }
 	 return \@res;
