@@ -359,11 +359,11 @@ sub addqr {
 }
 sub lkup {
 	my ($self,$id) = @_;
-	my $sel = $self->{dh}->prepare_cached(qq{ select md5 from docid where doclabel=cast( ? as text) limit 1});
+	my $sel = $self->{dh}->prepare_cached(qq{ select * from doclabel natural join idxfile  where doclabel=cast( ? as text) limit 1});
         $sel->execute($id);
-	my $res="";
+	my $res=undef;
         while( my $ra = $sel->fetchrow_hashref ) {
-		$res = $ra->{md5};
+		$res = $ra;
 	}
 	return $res;
 }

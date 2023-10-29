@@ -3,6 +3,7 @@ use Data::Dumper;
 use IO::Scalar;
 use Date::Parse;
 use Encode qw{encode decode};
+use File::Basename;
 
 use Mojo::Base 'Mojolicious::Controller';
 use Mojo::JSON qw(decode_json encode_json);
@@ -41,7 +42,6 @@ sub senddoc {
 }
 sub tags {
 	my $c = shift;
-	$DB::single=1;
 	my $p=decode_json( url_unescape($c->param('json_string')) );
 
 	my $op=$p->{op};
@@ -63,7 +63,6 @@ sub upload {
    return $c->render(text => 'File is too big.', status => 200)
      if $c->req->is_limit_exceeded;
 
-     $DB::single=1;
    my $f=Mojo::Asset::File->new()->add_chunk($c->req->body);
    my $mtime = str2time($c->req->headers->header('X-File-Date')) || time;
    my ($status,$rv)=$dba->load_asset($c,$f,url_unescape($c->req->headers->header('X-File-Name')),$mtime);
@@ -166,7 +165,8 @@ sub lkup {
 		} else {
 			# Start document viewer
 			my $viewer = "/web/viewer.html?file=..";
-			$c->redirect_to($viewer."/docs/pdf/$doc/doc_$id.pdf");
+			my $f = basename($doc->{file});
+			$c->redirect_to($viewer."/docs/pdf/$doc->{md5}/$f");
 		}
 	} else {
 		Documentix::Task::Processor::schedule_importer();
