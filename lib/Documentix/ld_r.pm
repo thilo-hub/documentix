@@ -126,7 +126,7 @@ sub ldres {
 	my $nres   = $ndata->fetchrow_array();
 	$ndata->finish;
 	$ndata = $nres;
-    print STDERR "ndata: $ndata\n";
+    print STDERR "ndata: $ndata\n" if $debug>0;
     }
 
     # Date matches are not (yet?) part (substracted) of the counting
@@ -175,8 +175,8 @@ sub ldres {
     $args{":off"} = int($idx0-1);
 
     # do the result query
-    print STDERR "Search: $get_res\n" if $debug > 0;
-    $DB::single = 1;
+    print STDERR "Search: $get_res\n" if $debug > 1;
+    # $DB::single = 1;
     $get_res = $dh->prepare_cached($get_res);
     foreach (keys %args) {
 	    $get_res->bind_param($_,$args{$_});
