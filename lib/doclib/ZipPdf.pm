@@ -56,7 +56,7 @@ sub generatePdf {
 
 
  # 1 while($self->{markdown} =~ s/\n## [^\n]+\n+## /\n## /gs);
- open(my $dbg,">dbg.markdown"); print $dbg $self->{markdown}; 
+ # open(my $dbg,">dbg.markdown"); print $dbg $self->{markdown}; 
  open(TOPDF,qq{|pandoc -s --pdf-engine=wkhtmltopdf --pdf-engine-opt=--keep-relative-links  --pdf-engine-opt=--disable-local-file-access --pdf-engine-opt=--allow --pdf-engine-opt="." -o '$outpdf'});
  print TOPDF $self->{markdown};
  close(TOPDF);
