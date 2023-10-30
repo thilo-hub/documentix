@@ -254,8 +254,11 @@ $(function() {
 			    p.show();
 		    }
 
-		    if (e) {
+		    if(e) {
 			    e.target.scrollIntoViewIfNeeded(true);
+			    setTimeout(function() {
+				    $('.left')[0].scrollIntoView();
+			    }, 1000)
 		    }
 		    p.prop("src",u);
 		}
