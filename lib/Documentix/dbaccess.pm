@@ -42,6 +42,13 @@ sub new {
     # Check db version and run maintenance if (major) version is too small
 
     $dh->do(q{begin exclusive transaction});
+    my $text=$dh->selectrow_hashref(q{select * from sqlite_schema where name='text'});
+    if ( $Documentix::config->{tokenizer} && $text->{sql} !~ m/tokenize = '$Documentix::config->{tokenizer}'/) {
+	    # tokenizer is changes... recreate...
+	    $text->{sql} =~ s/tokenize\s*=\s*'[^']*'/tokenize = '$Documentix::config->{tokenizer}'/;
+	    $dh->do(qq{drop table text});
+	    $dh->do($text->{sql});
+    }
     my $dbver = $dh->selectrow_hashref(q{select value from config where var = 'dbversion'});
     unless (defined($dbver->{value}) && $dbver->{value} >= $dbversion) {
 	    $self->dbupgrade($dh,$dbver->{value});
