@@ -183,5 +183,16 @@ sub fixsearchdb {
 	$c->render(text => 'Database maintenance scheduled');
 	return $c->redirect_to("/minion/jobs?state=active");
 }
+# Return basic configuration info
+sub config {
+  my $c = shift;
+ 
+  my $conf = {
+	  instance => $Documentix::config->{Instance} ||
+				  "Unnamed Documentix",
+	  tokenizer => "snowball german english",
+  };
+	$c->render(json => $conf);
+}
 
 1;

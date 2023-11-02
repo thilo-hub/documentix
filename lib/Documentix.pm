@@ -56,6 +56,7 @@ $self->hook(before_dispatch => sub {
   $r->get('/lkup')->to('docs#lkup');
   $r->get('/lkup/*DXID')->to('docs#lkup');
   $r->get('/fixsearchdb')->to('docs#fixsearchdb');
+  $r->get('/config')->to('docs#config');
  
 
 }

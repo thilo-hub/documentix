@@ -79,9 +79,20 @@ div.page {height:100%; overflow:hidden;}
 </style>
 
 <script>
-$( function() {
-    $( "#sub-tabs" ).tabs({ collapsible : true}).tooltip();
-  } );
+    $( function() {
+	$( "#sub-tabs" ).tabs({ collapsible : true}).tooltip();
+    } );
+   var configuration ;
+   $.ajax({
+			url: "config",
+			dataType: "json",
+			success: function(data) {
+				configuration = data;
+				document.title = configuration.instance;
+				console.log(data);
+			}
+		});
+
 </script>
 
 
