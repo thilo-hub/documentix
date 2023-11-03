@@ -76,23 +76,26 @@
 }
 body, html {height:100%;margin:0}
 div.page {height:100%; overflow:hidden;}
+<style>
+fieldset {
+      background-color: #eeeeee;
+}
+
+legend {
+    background-color: gray;
+    color: white;
+    padding: 5px 10px;
+}
+.sml {
+    font-size: 14px;
+}
+
 </style>
 
 <script>
     $( function() {
 	$( "#sub-tabs" ).tabs({ collapsible : true}).tooltip();
     } );
-   var configuration ;
-   $.ajax({
-			url: "config",
-			dataType: "json",
-			success: function(data) {
-				configuration = data;
-				document.title = configuration.instance;
-				console.log(data);
-			}
-		});
-
 </script>
 
 
@@ -131,9 +134,24 @@ div.page {height:100%; overflow:hidden;}
 
 		        <div id="tabs-minion" >
 				<ul>
-					<li><a class="glyphicon glyphicon-play" href="minion">View minion Jobs</a></li>
-					<li><a class="glyphicon glyphicon-play" href="fixsearchdb">Rebuild Database -- this might block for long</a></li>
-					    <li class="viewopt dbg" id="msg">Debug Field</li>
+					<li> <a class="ui-button ui-widget ui-corner-all glyphicon glyphicon-play" href="#">Minion</a></li>
+					<li> <a class="ui-button ui-widget ui-corner-all glyphicon glyphicon-play" href="fixsearchdb">Rebuild Database</a></li>
+					<li> Configuration <br><table id="sysconf"></table></li>
+					<div class="widget" id=langId>
+					      <fieldset>
+						    <legend class="sml">tokenizer Select supported languages: </legend>
+						    <label for="checkbox-1">Deutsch</label>
+						    <input type="checkbox" name="checkbox-1" id="checkbox-1">
+						    <label for="checkbox-2">English</label>
+						    <input type="checkbox" name="checkbox-2" id="checkbox-2">
+						    <label for="checkbox-3">Romanian</label>
+						    <input type="checkbox" name="checkbox-3" id="checkbox-3">
+						    <br>
+					    </fieldset>
+					</div>
+						    <input class="ui-button ui-widget ui-corner-all" type="submit" value="Update Config">
+					<hr>
+					<li> <div class="viewopt dbg" id="msg">Debug Field</div></li>
 				</ul>
 			</div>
 

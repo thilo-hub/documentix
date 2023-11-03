@@ -369,6 +369,33 @@ $(function() {
 			}
 		});
 
+	$( "#langId input" ).checkboxradio({
+	    icon: false
+	});
+   var configuration ;
+   $.ajax({
+			url: "config",
+			dataType: "json",
+			success: function(data) {
+			        var tbl_body = document.createElement("tbody");
+			        var odd_even = false;
+			        $.each(data, function(k,v) {
+				            var tbl_row = tbl_body.insertRow();
+				            tbl_row.className = odd_even ? "odd" : "even";
+					    var cell = tbl_row.insertCell();
+					    cell.appendChild(document.createTextNode(k.toString()));
+					    var cell = tbl_row.insertCell();
+					    cell.appendChild(document.createTextNode(v.toString()));
+				            odd_even = !odd_even;
+				        });
+			        $("table#sysconf").append(tbl_body);
+
+				configuration = data;
+				document.title = configuration.instance;
+				console.log(data);
+			}
+		});
+
 });
 function getCookie(name) {
     var nameEQ = name + "=";

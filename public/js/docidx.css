@@ -355,5 +355,6 @@ li.viewopt {
 	font-size: x-large;
 	display: none;
 }
+table#sysconf td { padding: 3px; }
 
 
