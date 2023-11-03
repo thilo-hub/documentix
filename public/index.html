@@ -166,9 +166,9 @@ $( function() {
 		    </script>
 		    <script id="template_result_items" type="text/x-jsrender">
 			<li class="rbox
-			    {{if tg && tg.match("deleted")}} deleted {{/if}}
-			    {{if tip && tip.match("ProCessIng")}}  updateneeded  processing {{/if}}
-			    {{if tg && tg.match("failed")}} failed {{/if}}
+			    {{if tg && tg.match("deleted")}} deleted
+			    {{else tg && tg.match("failed")}} failed
+			    {{else tip && tip.match("ProCessIng")}}  updateneeded  processing {{/if}}
 			    "
 			    id="{{:md5}}" docname="{{:doc.toUri()}}"
 			    oncontextmenu="DoContext(event)"
