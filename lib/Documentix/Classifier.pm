@@ -164,7 +164,7 @@ sub pdf_class_file {
 	$rv = pop_call( "remove_message_from_bucket", $b, $tmp_doc ) if $b;
 
 	$dh->do( qq{
-		update metadata set value=trim(replace('/'||value||'/','/'||?2||'/','/'),'/') where idx=(select idx from hash where md5=?1)
+		update metadata set value=trim(replace('/'||value||'/','/'||?2||'/','/'),'/') where tag='tags' and idx=(select idx from hash where md5=?1)
 		},undef,($md5,$class));
     }
     elsif ($class) {
