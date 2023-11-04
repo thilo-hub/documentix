@@ -49,7 +49,7 @@ sub tags {
 	my $tag=$p->{tag};
 	# Manual tags /add are always starting with upper
 	$tag =~ s/[A-Za-z]/uc($&)/e
-		if $op ne "rem";
+		if $op ne "rem" && $tag ne "deleted";
 	print STDERR "TAG $op $tag -> $id\n";
 	my $r= ($tag eq "ForceOcr" && $op eq "add") ?
 			$ld_r->reocr( $c,$id)
