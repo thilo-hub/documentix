@@ -41,7 +41,7 @@ sub mk_ico {
 	
 	my ( $typ, $out );
 	if ( $fromtype eq "application/zip" && !$ra->{pdf} ) {
-		( $typ, $out ) = ("image/png", slurp("../public/icon/zip.png"));
+		( $typ, $out ) = ("image/png", $Documentix::icon_zip->slurp);
 
 	} else {
 		( $typ, $out ) = pdf_icon( $ra->{pdf}, $pg, $rot );
@@ -109,7 +109,7 @@ sub pdf_icon {
     return undef unless length($png);
 
     # Error case - return lock
-    $png=slurp("../public/icon/Keys-icon.png"); 
+    $png=$Documentix::icon_lock->slurp; 
     # Return failure icon
     return undef unless length($png);
     return ( "image/png", $png );
