@@ -47,6 +47,9 @@ sub tags {
 	my $op=$p->{op};
 	my $id=$p->{md5};
 	my $tag=$p->{tag};
+	# Manual tags /add are always starting with upper
+	$tag =~ s/[A-Za-z]/uc($&)/e
+		if $op ne "rem";
 	print STDERR "TAG $op $tag -> $id\n";
 	my $r= ($tag eq "ForceOcr" && $op eq "add") ?
 			$ld_r->reocr( $c,$id)
