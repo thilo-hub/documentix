@@ -190,9 +190,9 @@ var docscroll = function(element) {
 			    element.off("scroll");
 			    itm= undefined;
 			    dbg_msg("End");
-			    if ( data.idx == 1 && data.nresults == 0 ) {
-				itm = `<li class="rbox "> 
-						<img class="thumb img-responsive" src="icon/no-result.png"" /> 
+			    if ( data.idx == 1 && data.nresults <= 0 ) {
+				itm = `<li class="rbox ">
+						<img class="thumb img-responsive" src="icon/no-result.png"" />
 				    </li>`;
 			    }
 			}
