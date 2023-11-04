@@ -1,0 +1,172 @@
+body, html {height:100%;margin:0}
+.rcontent {
+  _width: 100%;
+  height: 100%;
+  /* background: green;*/
+}
+.page {
+  display: flex;
+  flex-flow: row;
+  align-items: flex-start;
+  align-content: flex-start;
+  /*
+  height:100vh ;
+  overflow:hidden;
+  */
+}
+.vbarplane {
+  width: 100vw;
+  height: 100vh;
+  background: transparent;
+  z-index: 39;
+  position: absolute;
+  display: none;
+  }
+
+.vbar {
+  width: 8px;
+  height: 100vh;
+  background: gold;
+  cursor:col-resize;
+  padding-left: 2px;
+  padding-right: 2px;
+  z-index: 40;
+  position: absolute;
+}
+.lmenuitm {
+   width: -webkit-fill-available;
+}
+
+Xli.left {
+  width: 100%;
+}
+.mynav {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  z-index: 30;
+  position: relative;
+}
+.tab-nav {
+  float: left;
+}
+.left {
+	overflow: hidden;
+	height: 100vh;
+}
+.right {
+  width: 100%;
+  height: 100vh;
+}
+.lb {
+    display: flex;
+    flex-flow: row wrap;
+    height: 100%;
+    overflow-y: scroll;
+    /* border: inset #ccc; */
+    padding-inline-start: 0px;
+    margin: 0px;
+    justify-content: space-between;
+}
+.rbox {
+    border: inset #888;
+    padding: 1px;
+    width: 240px;
+    /* width: 25%; */
+    height: 120px;
+    float: left;
+    list-style-type: none;
+}
+.rbox:hover {
+   background: #cccccc;
+}
+a.thumb {
+    border: none;
+    width: 100%;
+    float: left;
+    width: 30%;
+    background-color: #ccc;
+}
+div.descr {
+    border: none;
+    background: transparent;
+    width: 68%;
+    float: left;
+    padding-left: 4px;
+    font-size: 9pt;
+}
+
+#taglist {
+  color: blue;
+  #border: thin red;
+  display: flex;
+  flex-flow: row wrap;
+}
+
+
+.tgbbox {
+  min-width: 1vw;
+  min-height: 1vw;
+  }
+
+.tags {
+
+  word-wrap: break-word;
+  border: black;
+  border-width: 1px;
+  border-radius: 20px;
+  /* background: #73AD21; */
+  padding: 2px;
+  border: 1px solid #afb2ac;
+}
+
+.deleted {
+	display: none;
+}
+
+ .pdfviewer {
+   /* top: 0px;
+   right: 0px;
+   */
+   width: inherit;
+   height: 100%;
+   background: "#3c4";
+   /* float: right; */
+   display:none;
+   /* position: absolute;*/
+ }
+.viewing {
+    border-style:round;
+    border-width: 3px;
+    border-style: inset;
+    border-color:red;
+
+}
+
+.custom-menu {
+    display: none;
+    z-index: 1000;
+    position: absolute;
+    overflow: hidden;
+    border: 1px solid #CCC;
+    white-space: nowrap;
+    font-family: sans-serif;
+    background: #FFF;
+    color: #333;
+    border-radius: 5px;
+    padding: 0;
+}
+
+/* Each of the items in the list */
+.custom-menu li {
+    padding: 8px 12px;
+    cursor: pointer;
+    list-style-type: none;
+    transition: all .3s ease;
+    user-select: none;
+}
+
+.custom-menu li:hover {
+    background-color: #DEF;
+}
+

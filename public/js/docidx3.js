@@ -257,7 +257,7 @@ $(function() {
 		    if(e) {
 			    e.target.scrollIntoViewIfNeeded(true);
 			    setTimeout(function() {
-				    $('.left')[0].scrollIntoView();
+				    $('#navi')[0].scrollIntoView();
 			    }, 1000)
 		    }
 		    p.prop("src",u);

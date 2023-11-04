@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html xmlns="lib/xhtml" lang="en-US" xml:lang="en-US">
+    <head>
+	<title>Documentix Document Manager</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<link rel="stylesheet" href="js/docidx.css" type="text/css"/>
+<link rel="stylesheet" href="js/upload.css" type="text/css"/>
+<!-- <link rel="stylesheet" href="js/style.css" type="text/css"/> -->
+<link rel="stylesheet" href="lib/jquery-ui.css" type="text/css"/>
+<link rel="stylesheet" href="lib/bootstrap.min.css">
+<link media="all" rel="stylesheet" href="lib/all.css">
+<link rel="stylesheet" href="lib/jquery.tagsinput.min.css"/>
+
+
+<script type="text/javascript" src="lib/jquery-latest.js"></script>
+<script type="text/javascript" src="lib/jquery-ui.js"></script>
+<script type="text/javascript" src="js/jquery.ui.touch-punch.min.js"></script>
+<script src="lib/jsrender.min.js" integrity="sha256-jCkC+X+pO2BXAAX0QCzoPNXDJKA7XY1luH2l/Tpzb1Y=" crossorigin="anonymous"></script>
+<script type="text/javascript" src="js/tagmgmt.js"></script>
+<script type="text/javascript" src="js/clipboard.min.js"></script>
+<script type="text/javascript" src="js/docidx3.js"></script>
+<script type="text/javascript" src="js/popper.min.js"></script>
+
+
+<script src="lib/bootstrap.min.js"></script>
+
+
+<script src="lib/jquery.tagsinput.min.js"></script>
+<script type="text/javascript" src="js/script.js"></script>
+<script type="text/javascript" src="js/3rd/filedrop.js"></script>
+
+<style type="text/css" media="all">
+	@import "widgEditor/css/info.css";
+	@import "widgEditor/css/main.css";
+	@import "widgEditor/css/widgEditor.css";
+</style>
+
+<style>
+.tooltip2 {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+.tooltip2 .tooltiptext2 {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  top: 150%;
+  left: 50%;
+  margin-left: -60px;
+}
+
+.tooltip2 .tooltiptext2::after {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent black transparent;
+}
+
+.tooltip2:hover .tooltiptext2 {
+  visibility: visible;
+}
+body, html {height:100%;margin:0}
+<style>
+fieldset {
+      background-color: #eeeeee;
+}
+
+legend {
+    background-color: gray;
+    color: white;
+    padding: 5px 10px;
+}
+.sml {
+    font-size: 14px;
+}
+
+</style>
+
+<script>
+    $( function() {
+	$( "#sub-tabs" ).tabs({ collapsible : true}).tooltip();
+    } );
+</script>
+
+
+	<script type="text/javascript" src="widgEditor/scripts/widgEditor.js"></script>
+    <link rel="stylesheet" href="css/layout.css"/>
+    <script src="js/layout.js"></script>
+<style>
+
+</style>
+</head>
+
+  <body>
+    <script type="text/javascript" src="js/3rd/wz_tooltip.js"></script>
+    <div>
+      <div class="vbarplane"></div>
+      <div class="vbar"></div>
+      <div class="page">
+	  <!-- Left part -->
+	  <div>
+	<div class="left" id="left">
+	  <ul id=navi class="mynav">
+	    <li>
+	      <div id="zone" class="filedrop">
+		<legend class="leg1">
+		  <img loading="lazy" title="Upload / complete" width="30px" src="icon/iu.png"  alt="Upload / complete">
+		</legend>
+		<input id="search" class="form-control" type="text" placeholder="search string">
+	      </div>
+	      <div id="droplist"></div>
+	    </li>
+	      <!-- Begin menu -->
+	      <div id="sub-tabs">
+		<ul >
+		  <li><a href="#tabs-label"  class="glyphicon glyphicon-tag"           title="Show document labels"></a></li>
+		  <li><a href="#tabs-help"   class="glyphicon glyphicon-question-sign" title="Some small help"></a></li>
+		  <li><a href="#tabs-import" class="glyphicon glyphicon-print"         title="Import from external devices"></a></li>
+		  <li><a href="#tabs-minion" class="glyphicon glyphicon-cog"           title="Minion job manager"></a></li>
+		  <li><a href="#tabs-editor" class="glyphicon glyphicon-edit"          title="Scratch pad editor"></a></li>
+		</ul>
+
+		<div id="tabs-label" >
+		  <li style="width: -webkit-fill-available;" >
+		    <div id="taglist" ondrop="dropTag(event)" 
+		      ondragleave="dragoverend(event)" 
+		      ondragover="dragovertag(event)">
+		    </div>
+		  </li>
+		</div>
+
+		<div id="tabs-help" >
+		  <p>Available short cuts:</p>
+		  <p><em>tag:&lt;tagname&gt;</em> To only act on selected tag name</p>
+		  <p><em>date:&lt;yyyy-mm-dd...yyyy-mm-dd&gt;</em> To only find documents having a date in the range</p>
+		  <p>AND OR etc shoudl work like described in fts5 - sqlite manual</p>
+		</div>
+
+		<div id="tabs-import" >
+		  <a class="glyphicon glyphicon-print" href="import"  onclick="DoImport(event)">Import </a>
+		  from MX870 scanner 
+		</div>
+
+		<div id="tabs-minion" >
+		  <ul>
+		    <li> <a class="ui-button ui-widget ui-corner-all glyphicon glyphicon-play" href="minion">Minion</a></li>
+		    <li> <a class="ui-button ui-widget ui-corner-all glyphicon glyphicon-play" href="fixsearchdb">Rebuild Database</a></li>
+		    <li> Configuration <br><table id="sysconf"></table></li>
+		    <li>
+		      <div class="widget" id=langId>
+			<fieldset>
+			  <legend class="sml">tokenizer Select supported languages: </legend>
+			  <label for="checkbox-1">Deutsch</label>
+			  <input type="checkbox" name="checkbox-1" id="checkbox-1">
+			  <label for="checkbox-2">English</label>
+			  <input type="checkbox" name="checkbox-2" id="checkbox-2">
+			  <label for="checkbox-3">Romanian</label>
+			  <input type="checkbox" name="checkbox-3" id="checkbox-3">
+			  <br>
+			</fieldset>
+		      </div>
+		      <input class="ui-button ui-widget ui-corner-all" type="submit" value="Update Config">
+		      <hr>
+		    </li>
+		    <li> <div class="viewopt dbg" id="msg">Debug Field</div></li>
+		  </ul>
+		</div>
+
+		<div id="tabs-editor"  style=" max-height: 600px" >
+		  <div>
+		    <form id="scratch" class="_nothidden">
+		      <textarea id="scratchpad" class="widgEditor "></textarea>
+		    </form>
+		  </div>
+		</div>
+
+	      </div>
+	      <!-- End menu -->
+	    <!--------------------->
+	    <li>
+	    </li>
+	    <li class="lmenutim viewopt dbg" id="fmsg">Debug Field</li>
+	    <li class="lmenutim viewopt dbg" id="status">Status Field</li>
+	  </ul>
+	</div>
+	  </div>
+	<!-- end Left part -->
+	<div class=right id="right" >
+	    <div class=rcontent id="resview" >
+		<div id="tagedit" class="tageditor"> <input id="tags"/> </div>
+		<ul id="result" class="lb"> </ul>
+		<script id="template_result" type="text/x-jsrender">
+		    {{for items tmpl="template_result_items"/}}
+		</script>
+		<script id="template_result_items" type="text/x-jsrender">
+		    <li class="rbox
+			{{if tg && tg.match("deleted")}} deleted
+			{{else tg && tg.match("failed")}} failed
+			{{else tip && tip.match("ProCessIng")}}  updateneeded  processing {{/if}}
+			"
+			id="{{:md5}}" docname="{{:doc.toUri()}}"
+			oncontextmenu="DoContext(event)"
+			onclick="DoViewer(event)" >
+
+			<div class="rcell" >
+			    <a class="thumb" href='docs/raw/{{:md5}}/{{:doc.toUri()}}.{{:doct}}' 
+				ondragstart="Dropit('{{:md5}}','{{:doc}}.{{:doct}}')" 
+				onmouseout="UnTip()" 
+				ontouchcancel="UnTip()" 
+				onmouseover="itemTip(event)">
+				    <img class="thumb  img-responsive" 
+					src="docs/ico/{{:md5}}/{{:doc.toUri()}}{{if tip == "ProCessIng"}}.tmp{{/if}}.ico" />
+			    </a>
+			    <div class="itemtip">{{html:tip}}</div>
+			    <div class="descr">
+				<div class="doclink" onclick="event.stopPropagation()">
+				    <a tabindex=-1 class="doclink glyphicon glyphicon-download" 
+					    href="docs/raw/{{:md5}}/{{:doc.toUri()}}.{{:doct}}" 
+					    download></a>
+					    <a 
+						    href="docs/pdf/{{:md5}}/{{:doc.toUri()}}.{{:doct}}" 
+						    onclick="DoViewer(event)"
+					    >
+					    {{:doc}}{{if doct && !doct.match("pdf")}}.{{:doct}}{{/if}}
+					    </a>
+				</div>
+				<a tabindex=-1 class="dtags">
+				    <p class="tagfield" >
+					<input tabindex=0 onclick="tageditor(event)" 
+						onfocus="tageditor(event)" 
+						class="tagbox" 
+						xid="{{:md5}}" name="tags" type="text" value="{{:tg}}" />
+				    </p>
+				</a>
+				{{:dt}}
+				<span class="info"><p> Pages: {{:pg}} / {{:sz}}</p></span>
+			    </div>
+			</div>
+		    </li>
+		</script>
+	    </div>
+	    <iframe id="pdfview" class="pdfviewer " name="pdfviewer" src="" ></iframe>
+	</div>
+	  <ul class="custom-menu">
+	      <li data-action="open" class="tas fa-share" alt="open URL">Open URL</li>
+	      <li data-action="copy" class="tas fa-copy" alt="copy URL">Copy URL</li>
+	      <li data-action="log" class="tas fa-thilo" alt="Add to clipboard">Add in edit</li>
+	  </ul>
+      </div>
+    </div>
+  </body>
+  </html>
+

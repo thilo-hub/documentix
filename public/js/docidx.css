@@ -148,9 +148,6 @@ a.dtags {
 .tagbox.filtered {
 	color: grey;
 }
-.rbox {
-	z-index:10;
-}
 .tagbox {
     background-color: transparent;
     border: none;
