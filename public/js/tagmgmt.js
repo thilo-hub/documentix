@@ -55,10 +55,10 @@ $(function() {
 		    rem_tag(foc_el,foc_id,"unclassified");
 		    foc_el.value=foc_el.value.replace("unclassified","");
 	    }
-	    add_tag(foc_el,foc_id,elem);
+	    add_tag(foc_el,foc_id,elem_tags);
         },
         onRemoveTag: function(elem, elem_tags) {
-		rem_tag(foc_el,foc_id,elem);
+		rem_tag(foc_el,foc_id,elem_tags);
         }
     });
     $('input#tags_tag').keypress(function(event) {
