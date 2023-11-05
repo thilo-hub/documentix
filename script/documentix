@@ -30,6 +30,10 @@ for  my $c (qw{pop_userdir local_storage} ){
   next if -d $f;
   make_path($f);
 }
+
+( Mojolicious::Commands->start_app('Documentix'), exit )
+	if $ENV{MINION_DAEMON};
+
 unless (-f (my $c=$config->{pop_userdir}."/popfile.cfg") ){
 	  my $f = path($c)->dirname;;
 	  make_path($f) unless -d $f;
