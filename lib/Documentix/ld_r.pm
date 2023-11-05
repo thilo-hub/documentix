@@ -54,19 +54,21 @@ sub mk_query {
     my ($qidx,$class,$date_from,$date_to) = @_;
     my $source =
 	($qidx ?
-	        qq{select idx,Snippet snippet,qidx,mtime,rank ord from cache_lst natural join cache_q natural join mtime }
-	      : qq{select idx,Content snippet,mtime,-mtime ord from m_content natural join mtime }
+	        qq{select idx,Snippet snippet,qidx,mtime,-rank ord from cache_lst natural cross join cache_q natural join mtime }
+		: qq{select idx,Content snippet,mtime,mtime ord from mtime natural cross join m_content }
 	)
 	.($class ? qq{ natural join tags natural join tagname } : "")
 	.($date_from ? qq{ natural join dates } : "")
 	;
      $source =~ s,([A-Z][a-z]+) snippet,'<i>' || mtext || '</i> ' || $1 snippet, if $date_from;
+     $source =~ s/\sfrom\s/ from (select * from dates where  date between :fromdate and :enddate group by idx) natural join /
+     		if $date_from;
      my @add = ();
-	push @add, " date between :fromdate and :enddate  " if $date_from;
+     # push @add, " date between :fromdate and :enddate  " if $date_from;
 	push @add, " tagname= :tgn " if $class;
 	push @add, " qidx = :qidx " if $qidx;
      $source .= "where " . join(" AND ",@add) if @add;
-     $source .= "order by ord";
+     $source .= "order by ord desc";
 
     return $source;
 }
