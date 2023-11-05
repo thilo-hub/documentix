@@ -106,12 +106,10 @@ sub pdf_icon {
     $fn .= ".pdf" if ( -f $fn . ".pdf" );
     my $png = do_convert_icon( $fn, $pn );
     return ( "image/png", $png ) if length($png);
-    return undef unless length($png);
 
-    # Error case - return lock
-    $png=$Documentix::icon_lock->slurp; 
     # Return failure icon
-    return undef unless length($png);
+    # Error case - return unknown
+    $png=$Documentix::icon_unknown->slurp; 
     return ( "image/png", $png );
 }
 

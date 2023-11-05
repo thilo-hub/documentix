@@ -21,11 +21,12 @@ $self->hook(before_dispatch => sub {
   # Load configuration from hash returned by config file
   our $config;
   $config = $self->plugin ( Config => {file => $ENV{"PWD"}.'/documentix.conf'});
-  our ($icon_zip,$icon_noresult,$icon_lock,$error_pdf);
+  our ($icon_zip,$icon_noresult,$icon_lock,$error_pdf,$icon_unknown);
 
   $icon_zip = $self->static->file("icon/zip.png");
   $icon_noresult = $self->static->file("icon/zip.png");
   $icon_lock = $self->static->file("icon/Keys-icon.png");
+  $icon_unknown = $self->static->file("icon/unknown.png");
   $error_pdf = $self->static->file("Error.pdf");
 
   # Configure the application
