@@ -4,6 +4,7 @@ var startSearch=0;
 var viewer_url_base="web/viewer.html?file=../docs/pdf/%doc";
 var viewer_url=viewer_url_base;
 var viewer_url_srch=viewer_url_base+'#&search="%qu"';
+var lastOpenedPdf = "";
 
 var check_updates = function() {
 	var items=[];
@@ -260,7 +261,9 @@ $(function() {
 				    $('#navi')[0].scrollIntoView();
 			    }, 1000)
 		    }
+	            lastOpenedPdf = u;
 		    p.prop("src",u);
+
 		}
 		else
 		{

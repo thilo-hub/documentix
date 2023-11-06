@@ -1,3 +1,4 @@
+var calling;
 $(function() {
 
     fd.jQuery();
@@ -127,5 +128,17 @@ $(function() {
 	  zone.onUpload(e.originalEvent);
 	}
     })
+  calling = function(blob,url,filename,options) {
+    console.log("Last: "+lastOpenedPdf);
+    console.log(blob.size + " : "+ url + " => " + filename );
+    // var e = new ClipboardEvent('drop', { dataTransfer: new DataTransfer() });
+    var e= new DragEvent('Drop',{ dataTransfer: new DataTransfer()})
+     e.dataTransfer.setData(blob.type,blob)
+    // const data = [new ClipboardItem({ [blob.type]: blob })];
+    // var e = new ClipboardEvent('drop', { dataTransfer: new DataTransfer() });
+
+    
+    zone.File(new File([blob],filename));
+  }
 });
 
