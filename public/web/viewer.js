@@ -840,6 +840,41 @@ const PDFViewerApplication = {
       await this.downloadManager.downloadUrl(url, filename, options);
     }
   },
+  //async upload(){ console.error("Not uploading"); },
+  async upload(options = {}) {
+  console.error("Not uploading");
+    if (this._saveInProgress) {
+      return;
+    }
+    this._saveInProgress = true;
+    await this.pdfScriptingManager.dispatchWillSave();
+    const url = this._downloadUrl,
+      filename = this._docFilename;
+    try {
+      this._ensureDownloadComplete();
+      const data = await this.pdfDocument.saveDocument();
+      const blob = new Blob([data], {
+        type: "application/pdf"
+      });
+      //await this.downloadManager.download(blob, url, filename, options);
+      parent.calling(blob,url,filename,options);
+
+    } catch (reason) {
+      console.error(`Error when saving the document: ${reason.message}`);
+      await this.download(options);
+    } finally {
+      await this.pdfScriptingManager.dispatchDidSave();
+      this._saveInProgress = false;
+    }
+    if (this._hasAnnotationEditors) {
+      this.externalServices.reportTelemetry({
+        type: "editing",
+        data: {
+          type: "save"
+        }
+      });
+    }
+  },
   async save(options = {}) {
     if (this._saveInProgress) {
       return;
@@ -1435,6 +1470,7 @@ const PDFViewerApplication = {
       eventBus._on("pagechanging", _boundEvents.reportPageStatsPDFBug);
     }
     eventBus._on("fileinputchange", webViewerFileInputChange);
+    eventBus._on("uploadfile", webViewerUploadFile);
     eventBus._on("openfile", webViewerOpenFile);
   },
   bindWindowEvents() {
@@ -1554,6 +1590,7 @@ const PDFViewerApplication = {
       _boundEvents.reportPageStatsPDFBug = null;
     }
     eventBus._off("fileinputchange", webViewerFileInputChange);
+    eventBus._off("uploadfile", webViewerUploadFile);
     eventBus._off("openfile", webViewerOpenFile);
     _boundEvents.beforePrint = null;
     _boundEvents.afterPrint = null;
@@ -1826,6 +1863,10 @@ function webViewerHashchange(evt) {
       url: URL.createObjectURL(file),
       originalUrl: file.name
     });
+  };
+  var webViewerUploadFile = function (evt) {
+    console.error("Thilo");
+    PDFViewerApplication.upload();
   };
   var webViewerOpenFile = function (evt) {
     const fileInput = PDFViewerApplication.appConfig.openFileInput;
@@ -3850,6 +3891,7 @@ class AltTextManager {
   #optionDescription;
   #optionDecorative;
   #overlayManager;
+  #uploadButton;
   #saveButton;
   #textarea;
   #uiManager;
@@ -3864,6 +3906,7 @@ class AltTextManager {
     optionDecorative,
     textarea,
     cancelButton,
+    uploadButton,
     saveButton
   }, container, overlayManager, eventBus) {
     this.#dialog = dialog;
@@ -3871,6 +3914,7 @@ class AltTextManager {
     this.#optionDecorative = optionDecorative;
     this.#textarea = textarea;
     this.#cancelButton = cancelButton;
+    this.#uploadButton = uploadButton;
     this.#saveButton = saveButton;
     this.#overlayManager = overlayManager;
     this.#eventBus = eventBus;
@@ -3882,13 +3926,14 @@ class AltTextManager {
       }
     });
     cancelButton.addEventListener("click", this.#finish.bind(this));
+    //uploadButton.addEventListener("click", this.#upload.bind(this));
     saveButton.addEventListener("click", this.#save.bind(this));
     optionDescription.addEventListener("change", this.#boundUpdateUIState);
     optionDecorative.addEventListener("change", this.#boundUpdateUIState);
     this.#overlayManager.register(dialog);
   }
   get _elements() {
-    return (0, _pdfjsLib.shadow)(this, "_elements", [this.#optionDescription, this.#optionDecorative, this.#textarea, this.#saveButton, this.#cancelButton]);
+    return (0, _pdfjsLib.shadow)(this, "_elements", [this.#optionDescription, this.#optionDecorative, this.#textarea, this.#uploadButton, this.#saveButton, this.#cancelButton]);
   }
   #createSVGElement() {
     if (this.#svgElement) {
@@ -4052,6 +4097,9 @@ class AltTextManager {
   }
   #updateUIState() {
     this.#textarea.disabled = this.#optionDecorative.checked;
+  }
+  #upload() {
+    console.error("Ups??");
   }
   #save() {
     const altText = this.#textarea.value.trim();
@@ -12016,6 +12064,11 @@ class SecondaryToolbar {
       close: true
     }];
     this.buttons.push({
+      element: options.uploadFileButton,
+      eventName: "uploadfile",
+      close: true
+    });
+    this.buttons.push({
       element: options.openFileButton,
       eventName: "openfile",
       close: true
@@ -12251,6 +12304,10 @@ class Toolbar {
         }
       }
     }];
+    this.buttons.push({
+      element: options.uploadFile,
+      eventName: "uploadfile"
+    });
     this.buttons.push({
       element: options.openFile,
       eventName: "openfile"
@@ -13959,6 +14016,7 @@ function getViewerConfiguration() {
       zoomIn: document.getElementById("zoomIn"),
       zoomOut: document.getElementById("zoomOut"),
       viewFind: document.getElementById("viewFind"),
+      uploadFile: document.getElementById("uploadFile"),
       openFile: document.getElementById("openFile"),
       print: document.getElementById("print"),
       editorFreeTextButton: document.getElementById("editorFreeText"),
@@ -13973,6 +14031,7 @@ function getViewerConfiguration() {
       toolbar: document.getElementById("secondaryToolbar"),
       toggleButton: document.getElementById("secondaryToolbarToggle"),
       presentationModeButton: document.getElementById("presentationMode"),
+      uploadFileButton: document.getElementById("secondaryUploadFile"),
       openFileButton: document.getElementById("secondaryOpenFile"),
       printButton: document.getElementById("secondaryPrint"),
       downloadButton: document.getElementById("secondaryDownload"),
@@ -14054,6 +14113,7 @@ function getViewerConfiguration() {
       optionDecorative: document.getElementById("decorativeButton"),
       textarea: document.getElementById("descriptionTextarea"),
       cancelButton: document.getElementById("altTextCancel"),
+      //uploadButton: document.getElementById("altTextUpload"),
       saveButton: document.getElementById("altTextSave")
     },
     annotationEditorParams: {
