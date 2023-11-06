@@ -128,17 +128,52 @@ $(function() {
 	  zone.onUpload(e.originalEvent);
 	}
     })
-  calling = function(blob,url,filename,options) {
-    console.log("Last: "+lastOpenedPdf);
-    console.log(blob.size + " : "+ url + " => " + filename );
-    // var e = new ClipboardEvent('drop', { dataTransfer: new DataTransfer() });
-    var e= new DragEvent('Drop',{ dataTransfer: new DataTransfer()})
-     e.dataTransfer.setData(blob.type,blob)
+
+
+  calling = async function(blob,url,filename,options) {
     // const data = [new ClipboardItem({ [blob.type]: blob })];
     // var e = new ClipboardEvent('drop', { dataTransfer: new DataTransfer() });
+    // Get more info about upload
+    var md5 = lastOpenedPdf.match(/pdf\/([0-9a-f]{32})\//)[1];
+    if ( typeof md5 !== "undefined" ) {
+      // We only upload if we know it exists
+      var tags = $('#'+md5+ " input").val().split(/,/);
 
-    
-    zone.File(new File([blob],filename));
+      try {
+	var file = new File([blob],filename);
+	tags.push("fileUpdate");
+	tags.push(md5);  // fileUpdate/{md5} will be used to mark an edited file based on md5
+	tags.push(file.name);
+
+	const myHeaders = new Headers();
+	myHeaders.append( "Content-Type", blob.type);
+	myHeaders.append( "X-File-Name" , encodeURI(tags.join("/")));
+	myHeaders.append( "X-File-Date" , new Date()); //file.lastModifiedDate);
+
+	const myRequest = new Request("/upload", {
+	    method: "POST",
+	    headers: myHeaders,
+	    body: file
+	});
+	const response = await fetch(myRequest);
+	if (!response.ok) {
+	  throw new Error("Network response was not OK");
+	}
+	const obj = await response.json();
+
+	var rv;
+	if ( obj.items ) {
+	  rv=insert_item(obj);
+	  Hidepdf();
+	}
+	else if ( obj.msg )
+	  $('#msg').append(obj.msg);
+	else
+	  $('#msg').append("Wrong response");
+      } catch (error) {
+	console.error("There has been a problem with your fetch operation:", error);
+      }
+    }
   }
 });
 

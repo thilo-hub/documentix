@@ -136,7 +136,7 @@ sub get_icon{
 
  # Install file basis in DB and schedule indexing of it
  sub insert_file {
-	 my ($self,$dgst,$ob,$tags)=@_;
+	 my ($self,$dgst,$ob,$tags,$origFile)=@_;
 	 my $type = magic($ob);
 	 require doclib::pdfidx;
 	 return undef unless pdfidx::mime_handler($type);
@@ -149,6 +149,9 @@ sub get_icon{
 	 $add_meta->execute($dgst,"Mime",$type);
 	 $add_meta->execute($dgst,"Content","ProCessIng=Loading...");
 	 $add_meta->execute($dgst,"mtime",0);
+
+	 $add_meta->execute($dgst,"Original",$origFile)
+		if $origFile;
 	 return Documentix::Task::Processor::schedule_loader($dgst,$ob,$tags);
 }
 
@@ -188,8 +191,10 @@ sub load_asset {
 	 my $rv = $add_hash->execute($dgst);
 
 	 #TODO: shall we mandate CamelCase for tasg ?
-	 my @taglist=split("/",lc($name));
+	 my $isUpdateOf = $2 if $name =~ s|(fileUpdate/)([0-9a-f]{32})/|$1|;
+	 my @taglist=split("/",$name);
 	 $name=pop @taglist;  # remove basename
+
 $DB::single = 1;
 	 if ( $rv == 0E0 ) {
 		 # return know info
@@ -220,7 +225,7 @@ $DB::single = 1;
 		utime($mtime,$mtime,$ob);
 	}
 
-	 my $id = $self->insert_file($dgst,$asset->path,\@taglist);
+	 my $id = $self->insert_file($dgst,$asset->path,\@taglist,$isUpdateOf);
 	 $dh->do("commit");
 	 return "Loading",{ md5 => $dgst,
 		  doc => $file,
