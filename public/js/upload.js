@@ -7,7 +7,7 @@ $(function() {
     // document.getElementById("zone").addEventListener('paste', function (e) { paste_auto(e); }, false);
 
     // Do something when a user chooses or drops a file:
-    var upl_f=function (files) { 
+    var upl_f=function (files) {
       // Check if it is a url
       // then retrieve it and send upstream
       var itm=files.dataTransfer && files.dataTransfer.getData("text/uri-list")
@@ -137,7 +137,8 @@ $(function() {
     var md5 = lastOpenedPdf.match(/pdf\/([0-9a-f]{32})\//)[1];
     if ( typeof md5 !== "undefined" ) {
       // We only upload if we know it exists
-      var tags = $('#'+md5+ " input").val().split(/,/);
+      var tags = $('#'+md5+ " input").val().
+		    split(/,/).filter(function(value,index,add){ return !value.match(/fileupdate/i); });
 
       try {
 	var file = new File([blob],filename);
