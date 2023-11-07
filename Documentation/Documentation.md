@@ -17,8 +17,9 @@ and enter search queries... and click on the icon to view...
 
 Adding new documents works in multiple ways:
 
+-   Click on the upload button
 -   Drag and Drop local file to browser window
--   copy and paste images using the paste buffer ( think Windows-shift-S
+-   Pasted images using the paste buffer ( think Windows-shift-S
     and Control-V )
 -   Tell the running instance to import a locally accessible file
 -   Ask a build-in importer ( for example the MX870-office-printer ) to
@@ -26,7 +27,7 @@ Adding new documents works in multiple ways:
 
 You might have noticed, image or scans usually show text, but it's hard
 to search in it. Documentix solves this by internally OCR'ing all
-documents that seem to no have text. These documents are then by default
+documents that seem to not have text. These documents are then by default
 shown in the main window and their content is searched for.
 
 
@@ -132,6 +133,10 @@ It essentially configures
 
 | Entry       |       Default      |  Usage  |
 |-------------|--------------------|---------|
+| Instance    | Documentix Server  | Server title on web page |
+| QR_base_urls|  [ qr{.*/q/(\S+)} ] | An Array of regular expressions that are matched against the QR code. 
+                                      Matches to this regular expression will record the 
+				      $1 parameter in a lookup database for the document. \
 | auth_disable            |  1                       |   |
 | browser_start           |  0                       | |
 | cache_db                |  "db/doc_cache.db"       | caching database |
@@ -146,6 +151,15 @@ It essentially configures
 | debug                   |  2                       | |
 | debug_js                |  1                       | |
 | database_extensions     |  ['fts5stemmer.so']      | full-text search uses it |
+| tokenizer               |  snowball german english | The languages the stemmer.
+							This SQLIte tokenizer allows many languages.. 
+							(please search for supported languages and use them
+							It controlls the stemming of words, such that a 
+							searches for like likely likes... 
+							will all return the same results.
+							Changing of this value will recreate the search database.
+							( expect a few minutes waiting for a few GB of text.. |
+
 | ebook_convert_enabled   |  0                       | |
 | icon_size               |  100                     | |
 | index_html              |  "index.html"            | Entry page |
@@ -166,6 +180,33 @@ It essentially configures
 
 Docs:  TODO
 
+## New features:
+
+- The latest pdf.js editor allows editing of PDF's (annotate).
+A "safe" button will uplaed the modified PDF to documentix.
+( TODO: Visually represent different edited versions of an original document and have them kind of "sub-selectable"
+
+- QR handling
+  A double sided page having the QR code "Front" / "Back" on it.
+  If this page is part af two separate scans, documentix will colate the front and back pages in the correct order into a single new document.
+
+  QR codes matching the the config value, enable a lookup entry into the document to be used.
+    I am using this with a  generated a 128 bit random QR code plus some integer identifier.
+    If the the url /lkup/{...} is hit, the page that contained the code is returned.
+    The software also uses this QR code to separate documents into multiple.
+    THe `use-case` is to scan a pile of pages in an autofeeder and each separate document in it has a QR label attached.
+    After processing Documentix maintains X-new documents each containing the pages from one qr-lable to the next.
+    (Script not checked in yet - if you care let know)
+
+
+
+## Configuration options
+
+```documentix.conf``` is the current system configuration. You can copy and modify the documentix.conf.tmpl.
+Some interesting entries:
+
+
+  
 
 --- Starting:
 
