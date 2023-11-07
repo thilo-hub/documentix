@@ -161,7 +161,7 @@ sub get_icon{
 # passed in name is used for tagging
 # content  is in asset
 sub load_asset {
-	my ($self,$app,$asset,$name,$mtime) = @_;
+	my ($self,$app,$asset,$name,$mtime,$ignoreTags) = @_;
 
         $name = "Unknown" unless $name;
 	my $root_dir = abs_path($Documentix::config->{root_dir});
@@ -190,6 +190,9 @@ sub load_asset {
 	 my $add_hash = $dh->prepare_cached(q{insert or ignore into hash (md5) values(?)});
 	 my $rv = $add_hash->execute($dgst);
 
+         # Remove path component from tag list
+	 $name =~ s/^\Q$ignoreTags\E\///
+	 	if $ignoreTags;
 	 #TODO: shall we mandate CamelCase for tasg ?
 	 my $isUpdateOf = $2 if $name =~ s|(fileUpdate/)([0-9a-f]{32})/|$1|;
 	 my @taglist=split("/",$name);

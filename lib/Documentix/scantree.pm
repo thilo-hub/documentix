@@ -41,10 +41,13 @@ sub scantree {
     # make sure its all absolute
     $top = Mojo::File->new($top)->to_abs;;
 
-    # Ignore the local storage
     my $skip= Mojo::File->new($Documentix::config->{local_storage})->to_abs;
     my $md5 = Digest::MD5->new;
 
+    $DB::single=1; # the local storage
+    my $ignoredTags  = $top;
+    my $absRoot = Mojo::File->new($Documentix::config->{root_dir})->to_abs;
+    $ignoredTags =~ s|$absRoot/||;
     my $ignore={};
     my $update_file = sub
     {
@@ -62,7 +65,7 @@ sub scantree {
 	    if ( $mime_supported{$type}) {
 		# Turn back into relative to root-dir file
 		$f =~ s|^$dir/*|$Documentix::config{root_dir}|;
-		$dba->load_asset("??APP??",undef,$f);
+		$dba->load_asset("??APP??",undef,$f,undef,$ignoredTags);
 		return;
 	    }
 	    #die "Type: $type";
