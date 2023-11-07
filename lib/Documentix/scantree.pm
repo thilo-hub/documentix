@@ -91,7 +91,7 @@ print STDERR "PWD: $dir\n";
 
 	    my $f = $File::Find::name;
 	    return if $ignore->{$f};
-	    return unless  $f =~ /^$skip/;
+	    return if  $f =~ /^$skip/;
 	
 
 	    push @flist,$f;
