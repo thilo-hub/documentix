@@ -1,8 +1,7 @@
 FROM ubuntu:latest
 MAINTAINER thilo-hub@nispuk.com
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update --fix-missing
-RUN apt-get update --fix-missing
+RUN apt-get update 
 RUN  apt-get install -y \
 	 libhtml-template-perl  libdigest-md5-file-perl \
 	 imagemagick poppler-utils \
@@ -51,7 +50,7 @@ WORKDIR /documentix
 ADD . /documentix
 #RUN git clone --depth 1 -b mojofw https://github.com/thilo-hub/documentix /documentix
 RUN  sh build_local.sh /
-RUN cp /usr/local/lib/fts5stemmer.so /usr/lib
+#RUN cp /usr/lib/fts5stemmer.so /usr/lib
 #RUN apt-get remove  -y git make gcc wget
 LABEL version="0.93"
 LABEL description="documentix provides a document management system\
