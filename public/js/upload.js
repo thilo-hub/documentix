@@ -1,7 +1,7 @@
 var calling;
+fd.jQuery();
 $(function() {
 
-    fd.jQuery();
 
     //handlers
     // document.getElementById("zone").addEventListener('paste', function (e) { paste_auto(e); }, false);
