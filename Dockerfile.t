@@ -42,7 +42,7 @@ RUN apt-get update --fix-missing
 
 ##- 
 WORKDIR /documentix
-RUN git clone --shallow-submodules --depth 1 -b mojofw https://github.com/thilo-hub/documentix /playLayout
+RUN git clone --shallow-submodules --depth 1 -b playLayout https://github.com/thilo-hub/documentix /documentix
 # ADD . /documentix
 ADD ./build_local.sh .
 RUN sh ./build_local.sh /usr
