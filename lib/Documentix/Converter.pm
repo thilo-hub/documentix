@@ -35,20 +35,15 @@ sub mk_ico {
 	my $rot = undef;
 
 
-	return undef if ( $mtime && -r $item && $ntime < $mtime );
+	return (undef,undef) if ( $mtime && -r $item && $ntime < $mtime );
 
 	print STDERR "mk_ico... $fromtype $item\n" if ( $debug > 2 );
 	
-	my ( $typ, $out );
 	if ( $fromtype eq "application/zip" && !$ra->{pdf} ) {
-		( $typ, $out ) = ("image/png", $Documentix::icon_zip->slurp);
-
+		return ("zip", undef);
 	} else {
-		( $typ, $out ) = pdf_icon( $ra->{pdf}, $pg, $rot );
+		return pdf_icon( $ra->{pdf}, $pg, $rot );
 	}
-	return undef unless $out;
-	print STDERR "     ...new cache\n" if ( $debug > 1 );
-	return ( $typ, $out );
 }
 
 
@@ -109,8 +104,7 @@ sub pdf_icon {
 
     # Return failure icon
     # Error case - return unknown
-    $png=$Documentix::icon_unknown->slurp; 
-    return ( "image/png", $png );
+    return ("unknown" ,undef );
 }
 
 sub slurp {

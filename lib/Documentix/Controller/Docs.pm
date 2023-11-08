@@ -34,11 +34,13 @@ sub senddoc {
 
 
    my $res = $dba->getFilePath($hash,$type);
-   return $c->reply->asset($res) if $res;
+   return $c->reply->asset($res) if ref $res eq "Mojo::Asset::Memory";
    # Failures...
    $c->res->headers->cache_control("no-cache");
+   return $c->redirect_to("/icon/zip.png") if $res eq "zip";
+   return $c->redirect_to("/icon/Keys-icon.png") if $res eq "error";
+   return $c->redirect_to("/icon/no-result.png") if $res eq "unknown";
    return $c->redirect_to("/Error.pdf") if $type eq "pdf";
-   return $c->redirect_to("/icon/Keys-icon.png");
 }
 sub tags {
 	my $c = shift;

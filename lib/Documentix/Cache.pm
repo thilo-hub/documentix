@@ -42,8 +42,7 @@ sub get_cache {
 
     my ( $type, $data ) = $callback->( $p1,$item, $idx, @$q[0],$fromtype );
     return ( @$q[1], @$q[2] ) if @$q[2] && !$data;
-    return undef unless $data;
-    return ( "text/text", "ERROR" ) unless $data;
+    return ( "failed", undef ) unless $data;
 
     my $ins_d = $self->{dh}->prepare_cached(
         "insert or replace into cache (ref,date,type,data) values(?,?,?,?)");

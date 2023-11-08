@@ -24,8 +24,6 @@ use Sys::Hostname;
 my $thisHost = hostname();
 
 my $cache;
-my $error_file= Mojo::Asset::File->new(path => "../public/icon/Keys-icon.png") ;
-my $error_pdf= Mojo::Asset::File->new(path => "../public/Error.pdf") ;
 my $lcl;
 sub new {
     my $class  = shift;
@@ -68,7 +66,7 @@ sub getFilePath {
     # die "Bad init $$ - $jobid" unless $jobid == $$;
 
     my $dh = $self->{"dh"};
-    die "Bad input"  unless $hash =~ m/^[0-9a-f]{32}$/;
+    return "unknown"  unless $hash =~ m/^[0-9a-f]{32}$/;
 
     $ph->execute($hash);
     while( my $ra = $ph->fetchrow_hashref ) {
@@ -78,7 +76,7 @@ sub getFilePath {
 	$ra->{"hash"} = $hash;
 	return converter($type,$ra);
     }
-    return undef;
+    return "unknown";
 }
 
 #Only raw / pdf or icon is supported
@@ -91,7 +89,7 @@ sub converter
 		"ico" => \&get_icon,
 	};
 	my $c=$cv->{$totype};
-	return   undef  unless $c;
+	return   "unknown"  unless $c;
 	return &$c($ra);
 }
 
@@ -127,11 +125,11 @@ sub get_bestpdf
 sub get_icon{
 	 my $ra=shift;
 	my $pdf=find_pdf($ra);
-	return undef unless $pdf;
+	return "unknown" unless $pdf;
 	$ra->{pdf}=$pdf;
 	my ( $m, $res ) = $cache->get_cache( $ra->{file}, "$ra->{hash}-ico", \&Converter::mk_ico,$self,$ra );
 	return Mojo::Asset::Memory->new()->add_chunk($res) if (length($res));
-	return undef;
+	return $m;
  }
 
  # Install file basis in DB and schedule indexing of it
