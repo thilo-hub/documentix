@@ -32,9 +32,8 @@ sub senddoc {
    my $hash = $c->stash('hash');
    my $doc = $c->stash('doc');
 
-
    my $res = $dba->getFilePath($hash,$type);
-   return $c->reply->asset($res) if ref $res eq "Mojo::Asset::Memory";
+   return $c->reply->asset($res) if ref ($res) =~ /Mojo::Asset/;
    # Failures...
    $c->res->headers->cache_control("no-cache");
    return $c->redirect_to("/icon/zip.png") if $res eq "zip";
